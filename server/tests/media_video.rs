@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use littledays::media::{
+use chagokmoa::media::{
     sniff::MediaType,
     video::{Playback, extract_poster, make_playback, playback_plan, probe},
 };

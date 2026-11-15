@@ -39,7 +39,7 @@ export const FILES = {
   mp4: path.join(filesDir, 'clip-h264.mp4'),
 }
 
-const CSRF = { 'X-Requested-With': 'LittleDays' }
+const CSRF = { 'X-Requested-With': 'Chagokmoa' }
 
 // API 로그인. page.request 는 브라우저 컨텍스트와 쿠키 공유.
 export async function login(

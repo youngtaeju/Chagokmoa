@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE: ghcr.io/youngtaeju/littledays
+  IMAGE: ghcr.io/youngtaeju/chagokmoa
 
 jobs:
   release:
@@ -63,11 +63,11 @@ jobs:
           context: .
           file: docker/Dockerfile
           platforms: linux/amd64
-          tags: littledays:release
+          tags: chagokmoa:release
           load: true
           cache-from: type=gha
       - name: 스모크
-        run: bash docker/smoke.sh littledays:release
+        run: bash docker/smoke.sh chagokmoa:release
       # 스모크한 이미지와 같은 이미지라는 보장은 캐시 적중에 의존. 미적중 시 재빌드.
       - name: 이미지 빌드와 push
         uses: docker/build-push-action@v7

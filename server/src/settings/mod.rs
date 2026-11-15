@@ -26,7 +26,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            instance_name: "LittleDays".to_string(),
+            instance_name: "차곡모아".to_string(),
             timezone: "Asia/Seoul".to_string(),
             default_locale: "ko".to_string(),
             derivatives_avif: false,

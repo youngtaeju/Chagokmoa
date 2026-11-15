@@ -2,13 +2,13 @@ mod common;
 
 use axum::http::StatusCode;
 use axum_test::{TestResponse, TestServer};
-use chrono::{DateTime, Utc};
-use common::{AssetSeed, XRW, XRW_VALUE, assert_error, insert_asset, media_app};
-use littledays::{
+use chagokmoa::{
     babies::{self, BabyInput},
     settings,
     users::Role,
 };
+use chrono::{DateTime, Utc};
+use common::{AssetSeed, XRW, XRW_VALUE, assert_error, insert_asset, media_app};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -108,7 +108,7 @@ fn strs(ids: &[Uuid]) -> Vec<String> {
 fn preset_list_matches_spec() {
     // 스펙 §8 표 순서
     assert_eq!(
-        littledays::milestones::presets::PRESET_KEYS,
+        chagokmoa::milestones::presets::PRESET_KEYS,
         [
             "first_smile",
             "neck_control",

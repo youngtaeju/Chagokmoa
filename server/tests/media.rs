@@ -2,12 +2,12 @@ mod common;
 
 use axum::http::{StatusCode, header};
 use axum_test::TestServer;
-use common::{AssetSeed, MediaApp, XRW, XRW_VALUE, assert_error, insert_asset, media_app};
-use littledays::{
+use chagokmoa::{
     app::build_router,
     media::storage,
     users::{self, Role},
 };
+use common::{AssetSeed, MediaApp, XRW, XRW_VALUE, assert_error, insert_asset, media_app};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use uuid::Uuid;

@@ -5,11 +5,11 @@ use std::time::Duration;
 use axum::http::{Method, StatusCode, header};
 use axum_test::{TestRequest, TestResponse, TestServer};
 use base64::{Engine, engine::general_purpose::STANDARD};
+use chagokmoa::{maintenance, media::storage, users::Role};
 use common::{
     MediaApp, OFFSET_STREAM, TUS_RESUMABLE, TUS_VERSION, XRW, XRW_VALUE, assert_error, http_server,
     media_app, tus_create, tus_patch,
 };
-use littledays::{maintenance, media::storage, users::Role};
 use serde_json::Value;
 use sqlx::PgPool;
 use tokio::{io::AsyncWriteExt, net::TcpStream, time::Instant};
@@ -104,7 +104,7 @@ async fn partial_patch(
     );
     let mut stream = TcpStream::connect(&addr).await.expect("connect");
     let head = format!(
-        "PATCH {} HTTP/1.1\r\nHost: {addr}\r\nCookie: {cookie}\r\nX-Requested-With: LittleDays\r\n\
+        "PATCH {} HTTP/1.1\r\nHost: {addr}\r\nCookie: {cookie}\r\nX-Requested-With: Chagokmoa\r\n\
          Tus-Resumable: 1.0.0\r\nUpload-Offset: 0\r\nContent-Type: {OFFSET_STREAM}\r\n\
          Content-Length: {total}\r\n\r\n",
         path(id)
@@ -118,7 +118,7 @@ async fn partial_patch(
 #[sqlx::test]
 async fn options_advertises_extensions(pool: PgPool) {
     let app = media_app(&pool, Role::Guardian).await;
-    let server = TestServer::new(littledays::app::build_router(app.state.clone())).unwrap();
+    let server = TestServer::new(chagokmoa::app::build_router(app.state.clone())).unwrap();
 
     let res = server.method(Method::OPTIONS, "/api/uploads").await;
 

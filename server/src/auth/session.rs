@@ -13,7 +13,7 @@ use crate::{
     users::{Role, User},
 };
 
-pub const COOKIE_NAME: &str = "ld_session";
+pub const COOKIE_NAME: &str = "cgm_session";
 /// 쿠키 Max-Age. SQL 의 `interval '30 days'` 와 동일 값.
 const TTL_SECS: u64 = 30 * 24 * 3600;
 const USER_AGENT_MAX_CHARS: usize = 512;

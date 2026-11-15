@@ -1,5 +1,5 @@
 #[derive(utoipa::OpenApi)]
-#[openapi(info(title = "LittleDays API"))]
+#[openapi(info(title = "Chagokmoa API"))]
 pub struct ApiDoc;
 
 /// 바이너리 본문 문서 전용 스키마. `type: string, format: binary`.

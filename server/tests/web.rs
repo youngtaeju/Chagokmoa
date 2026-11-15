@@ -2,7 +2,7 @@ mod common;
 
 use axum::http::{StatusCode, header};
 use axum_test::TestServer;
-use littledays::{app::build_router, config::Config, state::AppState};
+use chagokmoa::{app::build_router, config::Config, state::AppState};
 use sqlx::PgPool;
 use tempfile::TempDir;
 

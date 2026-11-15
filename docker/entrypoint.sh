@@ -8,15 +8,15 @@ DATA_DIR="${DATA_DIR:-/data}"
 
 # --user 로 이미 비 root 실행 시 전환 불가. 그대로 실행.
 if [ "$(id -u)" != "0" ]; then
-    exec /app/littledays "$@"
+    exec /app/chagokmoa "$@"
 fi
 
 # 같은 id 가 이미 있으면 재사용(컨테이너 재시작, 기존 시스템 그룹 등).
 if ! getent group "$PGID" >/dev/null; then
-    groupadd -g "$PGID" littledays
+    groupadd -g "$PGID" chagokmoa
 fi
 if ! getent passwd "$PUID" >/dev/null; then
-    useradd -u "$PUID" -g "$PGID" -d /app -M -s /usr/sbin/nologin littledays
+    useradd -u "$PUID" -g "$PGID" -d /app -M -s /usr/sbin/nologin chagokmoa
 fi
 
 mkdir -p "$DATA_DIR"
@@ -39,4 +39,4 @@ for sub in originals derivatives tmp orphans; do
     fi
 done
 
-exec setpriv --reuid="$PUID" --regid="$PGID" --init-groups /app/littledays "$@"
+exec setpriv --reuid="$PUID" --regid="$PGID" --init-groups /app/chagokmoa "$@"

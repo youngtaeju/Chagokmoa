@@ -88,7 +88,7 @@ export function setSignedIn(qc: QueryClient, user: User): void {
 // 서비스 워커 런타임 캐시(vite.config.ts). 남기면 세션 없이도 이전 사용자 응답 제공.
 function clearOfflineCaches(): void {
   if (!('caches' in window)) return
-  for (const name of ['ld-api', 'ld-derivatives']) {
+  for (const name of ['cgm-api', 'cgm-derivatives']) {
     caches.delete(name).catch(() => undefined)
   }
 }

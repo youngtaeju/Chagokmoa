@@ -10,6 +10,6 @@ describe('lastBaby', () => {
     expect(loadLastBaby()).toBeNull()
     saveLastBaby('b1')
     expect(loadLastBaby()).toBe('b1')
-    expect(localStorage.getItem('ld.baby.last')).toBe('b1')
+    expect(localStorage.getItem('cgm.baby.last')).toBe('b1')
   })
 })

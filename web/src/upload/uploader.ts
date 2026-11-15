@@ -36,7 +36,7 @@ export function uppyOptions(): TusOptions<UploadMeta, TusBody> {
     endpoint: `${location.origin}/api/uploads`,
     chunkSize: TUS_CHUNK_SIZE,
     retryDelays: TUS_RETRY_DELAYS,
-    headers: { 'X-Requested-With': 'LittleDays' },
+    headers: { 'X-Requested-With': 'Chagokmoa' },
     withCredentials: true,
     // 새로고침 후 같은 파일 다시 선택 시 이어 올리기.
     storeFingerprintForResuming: true,

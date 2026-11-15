@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # 빌드한 이미지로 compose 기동 후 기본 동작 확인.
-# 사용: docker/smoke.sh [이미지 태그]   (기본 littledays:dev, 호스트 포트 SMOKE_PORT 기본 18090)
+# 사용: docker/smoke.sh [이미지 태그]   (기본 chagokmoa:dev, 호스트 포트 SMOKE_PORT 기본 18090)
 set -euo pipefail
 
-IMAGE="${1:-littledays:dev}"
+IMAGE="${1:-chagokmoa:dev}"
 PORT="${SMOKE_PORT:-18090}"
-PROJECT=littledays-smoke
+PROJECT=chagokmoa-smoke
 PUID=1234
 WORK="$(mktemp -d)"
 BASE="http://localhost:$PORT"
@@ -54,7 +54,7 @@ in_image sh -c '
         f=$(ls /usr/lib/*/libheif/plugins/libheif-$p.so)
         if ldd "$f" | grep -q "not found"; then echo "$f: missing deps"; exit 1; fi
     done
-    if ldd /app/littledays | grep -q "not found"; then echo "littledays: missing deps"; exit 1; fi
+    if ldd /app/chagokmoa | grep -q "not found"; then echo "chagokmoa: missing deps"; exit 1; fi
 ' || fail "libheif 플러그인 또는 바이너리 의존성"
 pass "libheif plugins, binary deps"
 

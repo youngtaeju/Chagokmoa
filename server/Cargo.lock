@@ -377,6 +377,44 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 
 [[package]]
+name = "chagokmoa"
+version = "0.4.1"
+dependencies = [
+ "anyhow",
+ "argon2",
+ "axum",
+ "axum-extra",
+ "axum-test",
+ "base64",
+ "blurhash",
+ "chrono",
+ "clap",
+ "dotenvy",
+ "fast_image_resize",
+ "futures-util",
+ "hmac",
+ "image",
+ "kamadak-exif",
+ "libheif-rs",
+ "moxcms",
+ "rand 0.9.5",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sqlx",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "utoipa",
+ "utoipa-axum",
+ "uuid",
+ "webp",
+]
+
+[[package]]
 name = "chrono"
 version = "0.4.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1346,44 +1384,6 @@ name = "litrs"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4744e383959f0db86ede514b809b1c53251889093803c05267acc7d4e7030d70"
-
-[[package]]
-name = "littledays"
-version = "0.4.1"
-dependencies = [
- "anyhow",
- "argon2",
- "axum",
- "axum-extra",
- "axum-test",
- "base64",
- "blurhash",
- "chrono",
- "clap",
- "dotenvy",
- "fast_image_resize",
- "futures-util",
- "hmac",
- "image",
- "kamadak-exif",
- "libheif-rs",
- "moxcms",
- "rand 0.9.5",
- "serde",
- "serde_json",
- "sha2",
- "sqlx",
- "tempfile",
- "thiserror",
- "tokio",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "utoipa",
- "utoipa-axum",
- "uuid",
- "webp",
-]
 
 [[package]]
 name = "lock_api"

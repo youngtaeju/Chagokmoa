@@ -18,7 +18,7 @@ describe('api client', () => {
     })
     await call(api.POST('/api/auth/logout'))
     await call(api.GET('/api/auth/me')).catch(() => undefined)
-    expect(seen.post).toBe('LittleDays')
+    expect(seen.post).toBe('Chagokmoa')
     expect(seen.get).toBeNull()
   })
 

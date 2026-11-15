@@ -38,7 +38,7 @@ pub fn verify(plain: &str, hash: &str) -> bool {
 /// 더미 해시 생성 실패 시 검증 생략(로그인 실패 응답은 동일).
 pub fn verify_dummy(plain: &str) {
     static DUMMY_HASH: LazyLock<Option<String>> =
-        LazyLock::new(|| hash("littledays-dummy-password").ok());
+        LazyLock::new(|| hash("chagokmoa-dummy-password").ok());
     if let Some(dummy) = DUMMY_HASH.as_deref() {
         std::hint::black_box(verify(plain, dummy));
     }

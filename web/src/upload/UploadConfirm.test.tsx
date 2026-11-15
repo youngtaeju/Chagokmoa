@@ -127,7 +127,7 @@ describe('UploadConfirm', () => {
   })
 
   it('multi_baby_defaults_last', async () => {
-    localStorage.setItem('ld.upload.babies', JSON.stringify([B2.id, 'gone']))
+    localStorage.setItem('cgm.upload.babies', JSON.stringify([B2.id, 'gone']))
     const { user } = await renderShell([B1, B2])
     const file = jpg()
     await user.upload(fileInput(), file)
@@ -147,7 +147,7 @@ describe('UploadConfirm', () => {
     await waitFor(() => {
       expect(add).toHaveBeenCalledWith([file], [B1.id, B2.id])
     })
-    expect(localStorage.getItem('ld.upload.babies')).toBe(
+    expect(localStorage.getItem('cgm.upload.babies')).toBe(
       JSON.stringify([B1.id, B2.id]),
     )
   })

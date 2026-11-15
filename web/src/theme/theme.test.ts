@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { applyTheme, getThemePref } from './theme'
+import initScript from '../../public/theme-init.js?raw'
+import { applyTheme, getThemePref, setThemePref } from './theme'
 
 afterEach(() => {
   document.head.querySelector('meta[data-app-theme]')?.remove()
@@ -8,6 +9,14 @@ afterEach(() => {
 })
 
 describe('theme', () => {
+  // 첫 페인트 스크립트와 같은 키. 어긋나면 새로고침 때 테마 깜빡임.
+  it('theme_init_uses_same_key', () => {
+    expect(initScript).toContain("localStorage.getItem('cgm.theme')")
+    setThemePref('dark')
+    expect(localStorage.getItem('cgm.theme')).toBe('dark')
+    localStorage.clear()
+  })
+
   it('system_follows_media', () => {
     applyTheme('system', true)
     expect(document.documentElement).toHaveClass('dark')

@@ -143,9 +143,9 @@ const CSRF_EXEMPT: &[&str] = &[
     "/api/auth/signup",
     "/api/invites/{raw}/accept",
 ];
-const CSRF_HEADER_VALUE: HeaderValue = HeaderValue::from_static("LittleDays");
+const CSRF_HEADER_VALUE: HeaderValue = HeaderValue::from_static("Chagokmoa");
 
-/// 쿠키 인증의 상태 변경 요청에 `X-Requested-With: LittleDays` 요구.
+/// 쿠키 인증의 상태 변경 요청에 `X-Requested-With: Chagokmoa` 요구.
 /// Bearer 요청과 세션 쿠키 없는 요청은 대상 외. Basic 등 다른 `Authorization` 은 면제 사유 아님.
 pub async fn csrf_layer(req: Request, next: Next) -> Response {
     let state_changing = matches!(

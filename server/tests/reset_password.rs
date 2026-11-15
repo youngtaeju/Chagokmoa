@@ -3,11 +3,11 @@ mod common;
 use std::process::Command;
 
 use axum::http::StatusCode;
-use common::{PASSWORD, assert_error};
-use littledays::{
+use chagokmoa::{
     auth::password,
     users::{self, NewUser, Role, reset},
 };
+use common::{PASSWORD, assert_error};
 use serde_json::json;
 use sqlx::PgPool;
 
@@ -95,7 +95,7 @@ async fn database_url_only(pool: PgPool) {
     // .env 탐색 차단용 빈 작업 디렉터리.
     let cwd = tempfile::tempdir().expect("tempdir");
     let run = |args: &[&str]| {
-        Command::new(env!("CARGO_BIN_EXE_littledays"))
+        Command::new(env!("CARGO_BIN_EXE_chagokmoa"))
             .args(args)
             .env_clear()
             .env("DATABASE_URL", &url)

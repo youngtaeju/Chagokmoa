@@ -15,12 +15,12 @@
 이 디렉터리에서 실행합니다. `heif-enc` 의 HEVC 인코더(`libheif-plugin-x265`)가 Recommends 로 설치되므로 `--no-install-recommends` 를 쓰지 않습니다.
 
 ```bash
-docker build -t littledays-fixtures - <<'EOF'
+docker build -t chagokmoa-fixtures - <<'EOF'
 FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y imagemagick libimage-exiftool-perl libheif-examples libvips-tools
 EOF
 
-docker run --rm -i -u "$(id -u):$(id -g)" -v "$PWD":/work -w /work littledays-fixtures sh -s <<'EOF'
+docker run --rm -i -u "$(id -u):$(id -g)" -v "$PWD":/work -w /work chagokmoa-fixtures sh -s <<'EOF'
 set -e
 magick -size 320x240 -define gradient:direction=SouthEast gradient:red-blue -depth 8 -strip -quality 90 orient6.jpg
 exiftool -q -overwrite_original -Orientation#=6 '-DateTimeOriginal=2024:05:01 10:20:30' -Make=TestMake -Model=TestModel -GPSLatitude=37.5665 -GPSLatitudeRef=N -GPSLongitude=126.9780 -GPSLongitudeRef=E orient6.jpg

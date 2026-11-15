@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 이미지 태그로 compose 스택(빈 DB) 기동·정리. smoke.sh 는 source, e2e 는 직접 실행.
-# 직접 실행: docker/stack.sh up|down|logs [이미지 태그]   (기본 littledays:dev)
+# 직접 실행: docker/stack.sh up|down|logs [이미지 태그]   (기본 chagokmoa:dev)
 #   호스트 포트 STACK_PORT(기본 18090), 작업 디렉터리 STACK_DIR(기본 임시 디렉터리 아래 고정 경로)
 # source 시 호출 측이 IMAGE, PORT, PROJECT, WORK, PUID 지정.
 
@@ -37,7 +37,7 @@ EOF
     cat >"$WORK/.env" <<EOF
 PORT=$PORT
 POSTGRES_PASSWORD=stack
-DATABASE_URL=postgres://littledays:stack@postgres:5432/littledays
+DATABASE_URL=postgres://chagokmoa:stack@postgres:5432/chagokmoa
 PUBLIC_URL=http://localhost:$PORT
 SECRET_KEY=$secret
 PUID=$PUID
@@ -55,11 +55,11 @@ stack_down() {
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
     set -euo pipefail
-    IMAGE="${2:-littledays:dev}"
+    IMAGE="${2:-chagokmoa:dev}"
     PORT="${STACK_PORT:-18090}"
-    PROJECT=littledays-e2e
+    PROJECT=chagokmoa-e2e
     PUID="$(id -u)"
-    WORK="${STACK_DIR:-${TMPDIR:-/tmp}/littledays-e2e}"
+    WORK="${STACK_DIR:-${TMPDIR:-/tmp}/chagokmoa-e2e}"
     case "${1:-}" in
     up)
         # 이전 실행 잔여물 정리. 항상 빈 DB 에서 시작.

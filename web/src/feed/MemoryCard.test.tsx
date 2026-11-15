@@ -13,7 +13,7 @@ import {
 } from '@/test/fixtures'
 import { renderApp } from '@/test/router'
 
-const KEY = 'ld:memory-dismissed'
+const KEY = 'cgm.memory.dismissed'
 const SKY = babyFixture({ birth_date: '2024-01-31' })
 const SEA = babyFixture({
   id: '00000000-0000-4000-8000-0000000000b2',

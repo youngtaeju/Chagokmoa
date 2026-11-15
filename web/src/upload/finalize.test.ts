@@ -21,7 +21,7 @@ describe('finalizeUpload', () => {
     const outcome = await finalizeUpload(URL_U1, ['b1'], lastModified)
     expect(outcome).toEqual({ kind: 'created', asset: assetFixture('a1') })
     expect(new URL(req?.url ?? '').pathname).toBe('/api/uploads/u1/finalize')
-    expect(req?.headers.get('X-Requested-With')).toBe('LittleDays')
+    expect(req?.headers.get('X-Requested-With')).toBe('Chagokmoa')
     expect(body).toEqual({
       baby_ids: ['b1'],
       file_modified_at: '2024-05-10T03:00:00.000Z',

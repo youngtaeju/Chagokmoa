@@ -1,10 +1,10 @@
 # 운영용. 같은 디렉터리의 .env 필요(.env.example 복사).
 # 데이터: ./data(원본·파생물), ./postgres(DB).
-name: littledays
+name: chagokmoa
 
 services:
   app:
-    image: ghcr.io/youngtaeju/littledays:${LITTLEDAYS_VERSION:-latest}
+    image: ghcr.io/youngtaeju/chagokmoa:${CHAGOKMOA_VERSION:-latest}
     restart: unless-stopped
     env_file: .env
     environment:
@@ -30,14 +30,14 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: littledays
-      POSTGRES_DB: littledays
+      POSTGRES_USER: chagokmoa
+      POSTGRES_DB: chagokmoa
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - ./postgres:/var/lib/postgresql/data
     healthcheck:
       # TCP 확인. 최초 initdb 중 임시 서버(소켓 전용)를 준비 완료로 오인 방지.
-      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "littledays", "-d", "littledays"]
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "chagokmoa", "-d", "chagokmoa"]
       interval: 5s
       timeout: 5s
       retries: 20

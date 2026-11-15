@@ -1,14 +1,14 @@
 mod common;
 
 use axum::http::StatusCode;
-use chrono::{DateTime, Duration, NaiveDate, TimeZone, Utc};
-use common::{AssetSeed, assert_error, insert_asset, media_app, test_server};
-use littledays::{
+use chagokmoa::{
     assets,
     babies::{self, BabyInput},
     settings,
     users::Role,
 };
+use chrono::{DateTime, Duration, NaiveDate, TimeZone, Utc};
+use common::{AssetSeed, assert_error, insert_asset, media_app, test_server};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use uuid::Uuid;

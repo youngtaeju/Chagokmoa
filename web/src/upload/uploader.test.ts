@@ -23,7 +23,7 @@ describe('uploader', () => {
   it('uppy_options', () => {
     const o = uppyOptions()
     expect(o.chunkSize).toBe(8388608)
-    expect(o.headers).toEqual({ 'X-Requested-With': 'LittleDays' })
+    expect(o.headers).toEqual({ 'X-Requested-With': 'Chagokmoa' })
     expect(
       (o.retryDelays ?? []).reduce((a, b) => a + b, 0),
     ).toBeGreaterThanOrEqual(69000)

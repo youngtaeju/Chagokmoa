@@ -5,8 +5,7 @@ use axum::http::{HeaderName, HeaderValue, StatusCode, header};
 use axum_extra::extract::cookie::Cookie;
 use axum_test::{TestResponse, TestServer};
 use base64::{Engine, engine::general_purpose::STANDARD};
-use chrono::{DateTime, Utc};
-use littledays::{
+use chagokmoa::{
     app::build_router,
     auth::{password, session},
     config::Config,
@@ -14,6 +13,7 @@ use littledays::{
     state::AppState,
     users::{self, NewUser, Role, User},
 };
+use chrono::{DateTime, Utc};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use std::path::PathBuf;
@@ -21,7 +21,7 @@ use tempfile::TempDir;
 use uuid::Uuid;
 
 pub const XRW: HeaderName = HeaderName::from_static("x-requested-with");
-pub const XRW_VALUE: HeaderValue = HeaderValue::from_static("LittleDays");
+pub const XRW_VALUE: HeaderValue = HeaderValue::from_static("Chagokmoa");
 pub const PASSWORD: &str = "password123";
 pub const TUS_RESUMABLE: HeaderName = HeaderName::from_static("tus-resumable");
 pub const TUS_VERSION: HeaderValue = HeaderValue::from_static("1.0.0");

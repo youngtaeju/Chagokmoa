@@ -77,7 +77,7 @@ describe('UploadQueue', () => {
       within(row).getByRole('button', { name: ko.upload.restore }),
     )
     expect(await within(row).findByText(ko.upload.restored)).toBeInTheDocument()
-    expect(restoreReq?.headers.get('X-Requested-With')).toBe('LittleDays')
+    expect(restoreReq?.headers.get('X-Requested-With')).toBe('Chagokmoa')
     expect(
       within(row).queryByRole('button', { name: ko.upload.restore }),
     ).toBeNull()

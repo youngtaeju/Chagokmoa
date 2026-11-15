@@ -1,5 +1,5 @@
 // 아기 2명 이상일 때 업로드 확인의 기본 선택. 기기별 저장.
-const KEY = 'ld.upload.babies'
+const KEY = 'cgm.upload.babies'
 
 // existing = 현재 아기 ID. 지운 아기는 제외.
 export function loadLastBabies(existing: readonly string[]): string[] {

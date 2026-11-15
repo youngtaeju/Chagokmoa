@@ -5,7 +5,7 @@
 ## 버전 올리기
 
 1. `server/Cargo.toml` 의 `version` 과 `web/package.json` 의 `version` 을 같은 값으로 올립니다.
-2. `cd server && cargo update --workspace` 로 `Cargo.lock` 의 `littledays` 버전을 갱신하고 함께 커밋합니다. 다른 크레이트는 바뀌지 않습니다.
+2. `cd server && cargo update --workspace` 로 `Cargo.lock` 의 `chagokmoa` 버전을 갱신하고 함께 커밋합니다. 다른 크레이트는 바뀌지 않습니다.
 3. OpenAPI 문서에 버전이 들어가므로 `cd server && cargo run -q -- openapi > ../web/openapi.json` 으로 다시 만들고 함께 커밋합니다. 빠뜨리면 CI 의 OpenAPI 신선도 검사가 실패합니다.
 4. PR 로 main 에 병합합니다.
 
@@ -27,7 +27,7 @@ git push origin vX.Y.Z
 
 1. 태그 형식(`vX.Y.Z`)과 `server/Cargo.toml` 버전 일치 검사
 2. `docker/Dockerfile` 로 `linux/amd64` 이미지를 빌드하고 `docker/smoke.sh` 로 스모크 검사. 실패하면 push 하지 않습니다.
-3. `ghcr.io/youngtaeju/littledays` 에 `X.Y.Z`, `X.Y`, `latest` 태그로 push (OCI 라벨: source, version, licenses=AGPL-3.0-only)
+3. `ghcr.io/youngtaeju/chagokmoa` 에 `X.Y.Z`, `X.Y`, `latest` 태그로 push (OCI 라벨: source, version, licenses=AGPL-3.0-only)
 4. 생성된 릴리스 노트로 GitHub Release 생성
 
 ## 릴리스 전 수동 확인
@@ -37,14 +37,14 @@ git push origin vX.Y.Z
 태그를 만들기 전이라 레지스트리에 이미지가 없으므로, 릴리스 대상 커밋에서 이미지를 로컬로 빌드해 사용합니다.
 
 ```sh
-docker build -f docker/Dockerfile -t littledays:dev .
+docker build -f docker/Dockerfile -t chagokmoa:dev .
 ```
 
-compose 는 이미지를 `ghcr.io/youngtaeju/littledays:${LITTLEDAYS_VERSION:-latest}` 로 참조합니다. 로컬 이미지를 쓰려면 같은 이름으로 태그를 붙이고 `LITTLEDAYS_VERSION` 을 그 태그로 지정합니다(`.env` 의 값 또는 환경 변수).
+compose 는 이미지를 `ghcr.io/youngtaeju/chagokmoa:${CHAGOKMOA_VERSION:-latest}` 로 참조합니다. 로컬 이미지를 쓰려면 같은 이름으로 태그를 붙이고 `CHAGOKMOA_VERSION` 을 그 태그로 지정합니다(`.env` 의 값 또는 환경 변수).
 
 ```sh
-docker tag littledays:dev ghcr.io/youngtaeju/littledays:local
-LITTLEDAYS_VERSION=local docker compose up -d --pull never
+docker tag chagokmoa:dev ghcr.io/youngtaeju/chagokmoa:local
+CHAGOKMOA_VERSION=local docker compose up -d --pull never
 ```
 
 업데이트 안내 흐름은 이전 버전 이미지가 필요합니다. 이전 커밋(첫 릴리스라면 main 의 더 앞선 커밋)을 체크아웃해 같은 방법으로 `local-old` 같은 태그로 빌드하고, 먼저 그 이미지로 기동해 PWA 를 설치한 뒤 새 이미지(`local`)로 교체합니다.
@@ -63,5 +63,5 @@ LITTLEDAYS_VERSION=local docker compose up -d --pull never
 - GHCR 패키지는 처음 push 하면 비공개일 수 있습니다. 비공개이면 사용자의 `docker compose pull` 이 실패하므로, 패키지 설정(Package settings)의 가시성(visibility)을 public 으로 바꿉니다.
 - 패키지가 이 저장소에 연결되어 있지 않으면 연결(Connect repository)합니다.
 - 패키지를 public 으로 바꾸면 다시 private 으로 되돌릴 수 없습니다. 공개 전환 시점을 확인한 뒤 바꿉니다.
-- 로그인하지 않은 환경에서 `docker pull ghcr.io/youngtaeju/littledays:latest` 가 되는지 확인합니다.
+- 로그인하지 않은 환경에서 `docker pull ghcr.io/youngtaeju/chagokmoa:latest` 가 되는지 확인합니다.
 - push 가 403 `write_package` 로 실패하면 같은 이름의 패키지가 이미 있고 이 저장소의 Actions 에 쓰기 권한이 없는 경우입니다. 패키지 설정에서 이 저장소의 Actions 에 쓰기 권한을 부여합니다.

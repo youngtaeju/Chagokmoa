@@ -9,16 +9,16 @@ afterEach(() => {
 describe('lastBabies', () => {
   it('roundtrip_filters_missing', () => {
     saveLastBabies(['b1', 'b2'])
-    expect(localStorage.getItem('ld.upload.babies')).toBe('["b1","b2"]')
+    expect(localStorage.getItem('cgm.upload.babies')).toBe('["b1","b2"]')
     // 지운 아기(b2)는 제외.
     expect(loadLastBabies(['b1', 'b3'])).toEqual(['b1'])
   })
 
   it('ignores_bad_value', () => {
     expect(loadLastBabies(['b1'])).toEqual([])
-    localStorage.setItem('ld.upload.babies', '{')
+    localStorage.setItem('cgm.upload.babies', '{')
     expect(loadLastBabies(['b1'])).toEqual([])
-    localStorage.setItem('ld.upload.babies', '[1,"b1"]')
+    localStorage.setItem('cgm.upload.babies', '[1,"b1"]')
     expect(loadLastBabies(['b1'])).toEqual(['b1'])
   })
 

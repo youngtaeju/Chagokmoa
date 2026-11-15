@@ -121,7 +121,7 @@ describe('AppShell', () => {
       sort_order: 2,
     })
     // 마지막으로 본 아기가 기본 선택.
-    localStorage.setItem('ld.baby.last', sea.id)
+    localStorage.setItem('cgm.baby.last', sea.id)
     const { user, router } = await renderShell(
       'guardian',
       '/',

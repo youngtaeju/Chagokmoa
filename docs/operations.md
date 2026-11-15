@@ -1,6 +1,6 @@
 # 운영 안내
 
-Docker Compose 로 설치한 LittleDays 를 운영할 때의 안내입니다. 설치와 업그레이드는 [README](../README.md) 를 참고하십시오. 아래 명령은 `docker-compose.yml` 이 있는 디렉터리에서 실행하며, 서비스 이름은 `app`(애플리케이션)과 `postgres` 입니다.
+Docker Compose 로 설치한 차곡모아를 운영할 때의 안내입니다. 설치와 업그레이드는 [README](../README.md) 를 참고하십시오. 아래 명령은 `docker-compose.yml` 이 있는 디렉터리에서 실행하며, 서비스 이름은 `app`(애플리케이션)과 `postgres` 입니다.
 
 ## 리버스 프록시와 https
 
@@ -13,7 +13,7 @@ Docker Compose 로 설치한 LittleDays 를 운영할 때의 안내입니다. �
 ```nginx
 server {
     listen 443 ssl;
-    server_name littledays.example.com;
+    server_name chagokmoa.example.com;
 
     # ssl_certificate, ssl_certificate_key 설정은 생략
 
@@ -38,7 +38,7 @@ server {
 Caddy 는 https 인증서를 자동으로 발급하며 `X-Forwarded-*` 헤더도 기본으로 설정합니다.
 
 ```caddyfile
-littledays.example.com {
+chagokmoa.example.com {
     reverse_proxy 127.0.0.1:8080 {
         transport http {
             read_timeout 300s
@@ -100,7 +100,7 @@ Cloudflare Tunnel 은 요청당 응답 대기 시간이 100초로 제한됩니�
 `derivatives/` 도 백업해야 합니다. 현재는 파생물을 일괄 재생성하는 수단이 없습니다. DB 와 `originals/` 만 복원하면 모든 항목이 `ready` 상태로 남지만 썸네일과 변환본은 404 가 됩니다.
 
 ```bash
-docker compose exec -T postgres pg_dump -U littledays littledays | gzip > littledays-$(date +%F).sql.gz
+docker compose exec -T postgres pg_dump -U chagokmoa chagokmoa | gzip > chagokmoa-$(date +%F).sql.gz
 rsync -a --exclude tmp/ ./data/ /path/to/backup/data/
 ```
 
@@ -112,7 +112,7 @@ rsync -a --exclude tmp/ ./data/ /path/to/backup/data/
 
 ```bash
 docker compose up -d postgres
-gunzip -c littledays-YYYY-MM-DD.sql.gz | docker compose exec -T postgres psql -U littledays littledays
+gunzip -c chagokmoa-YYYY-MM-DD.sql.gz | docker compose exec -T postgres psql -U chagokmoa chagokmoa
 rsync -a /path/to/backup/data/ ./data/
 docker compose up -d
 ```
@@ -122,7 +122,7 @@ docker compose up -d
 소유자가 비밀번호를 잃어버렸을 때(이메일 발송 기능이 없습니다) 서버에서 새 비밀번호를 발급합니다.
 
 ```bash
-docker compose exec app /app/littledays reset-password <username>
+docker compose exec app /app/chagokmoa reset-password <username>
 ```
 
 새 비밀번호가 출력되고, 해당 사용자의 기존 세션은 모두 로그아웃됩니다. 이 명령은 DB 만 사용하므로 컨테이너의 환경 변수만으로 동작합니다. 로그인한 뒤 비밀번호를 바꾸십시오.

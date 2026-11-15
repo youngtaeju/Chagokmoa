@@ -1,7 +1,7 @@
 import { primaryBaby } from './usePrimaryBaby'
 
 // 아기 탭 진입 시 마지막으로 본 아기. 기기별 저장.
-const KEY = 'ld.baby.last'
+const KEY = 'cgm.baby.last'
 
 export function loadLastBaby(): string | null {
   try {
