@@ -103,7 +103,7 @@ function renderBabies(
 
 describe('BabyProfilePage', () => {
   it('redirects_to_last_baby', async () => {
-    localStorage.setItem('ld.baby.last', SEA.id)
+    localStorage.setItem('cgm.baby.last', SEA.id)
     const { router } = renderBabies('/babies', [SKY, SEA])
     expect(
       await screen.findByRole('heading', { level: 1, name: '바다' }),
@@ -112,7 +112,7 @@ describe('BabyProfilePage', () => {
     cleanup()
 
     // 저장된 아기가 지워졌으면 첫째.
-    localStorage.setItem('ld.baby.last', 'gone')
+    localStorage.setItem('cgm.baby.last', 'gone')
     const second = renderBabies('/babies', [SKY, SEA])
     expect(
       await screen.findByRole('heading', { level: 1, name: '하늘' }),
@@ -146,7 +146,7 @@ describe('BabyProfilePage', () => {
       await screen.findByRole('heading', { level: 1, name: '바다' }),
     ).toBeInTheDocument()
     expect(router.state.location.pathname).toBe(`/babies/${SEA.id}`)
-    expect(localStorage.getItem('ld.baby.last')).toBe(SEA.id)
+    expect(localStorage.getItem('cgm.baby.last')).toBe(SEA.id)
   })
 
   it('profile_numbers', async () => {

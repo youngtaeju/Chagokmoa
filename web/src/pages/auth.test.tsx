@@ -62,7 +62,7 @@ describe('login', () => {
       expect(router.state.location.pathname).toBe('/babies')
     })
     expect(body).toEqual({ username: 'mom', password: 'pw123456' })
-    expect(csrf).toBe('LittleDays')
+    expect(csrf).toBe('Chagokmoa')
     expect(
       (await screen.findAllByText(settingsFixture.instance_name)).length,
     ).toBeGreaterThan(0)
@@ -523,7 +523,7 @@ describe('forgot_password', () => {
   })
 
   it('login_title_uses_remembered_instance_name', async () => {
-    localStorage.setItem('ld.instance.name', '하늘이네')
+    localStorage.setItem('cgm.instance.name', '하늘이네')
     mockFetch(authRoutes({ me: null }))
     renderApp('/login')
     expect(
@@ -538,7 +538,7 @@ describe('forgot_password', () => {
     mockFetch(authRoutes(state))
     renderApp('/')
     await waitFor(() => {
-      expect(localStorage.getItem('ld.instance.name')).toBe(
+      expect(localStorage.getItem('cgm.instance.name')).toBe(
         settingsFixture.instance_name,
       )
     })
@@ -551,7 +551,7 @@ describe('forgot_password', () => {
     mockFetch(authRoutes({ me: null }))
     const { user } = renderApp('/login')
     await user.click(await screen.findByRole('button', { name: 'English' }))
-    expect(localStorage.getItem('ld.lang')).toBe('en')
+    expect(localStorage.getItem('cgm.lang')).toBe('en')
     expect(pickLocale(null, 'ko-KR')).toBe('en')
     localStorage.clear()
   })

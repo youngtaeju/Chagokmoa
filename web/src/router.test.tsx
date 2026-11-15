@@ -146,7 +146,7 @@ describe('router', () => {
     expect(first.router.history.length).toBe(1)
     cleanup()
 
-    localStorage.setItem('ld.baby.last', SKY.id)
+    localStorage.setItem('cgm.baby.last', SKY.id)
     const second = renderApp('/babies')
     expect(
       await screen.findByRole('heading', { level: 1, name: SKY.name }),

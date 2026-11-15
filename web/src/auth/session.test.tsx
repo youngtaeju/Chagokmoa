@@ -47,7 +47,7 @@ describe('session', () => {
       progress: 0,
       resume: { size: 1, lastModified: 1, babyIds: [] },
     })
-    expect(localStorage.getItem('ld.upload.pending')).not.toBeNull()
+    expect(localStorage.getItem('cgm.upload.pending')).not.toBeNull()
     mockFetch({
       'GET /api/auth/me': () =>
         json(401, { error: 'auth.required', params: {} }),
@@ -55,7 +55,7 @@ describe('session', () => {
     const { qc } = setup()
     expect(await loadMe(qc)).toBeNull()
     expect(uploadStore.getSnapshot()).toEqual([])
-    expect(localStorage.getItem('ld.upload.pending')).toBeNull()
+    expect(localStorage.getItem('cgm.upload.pending')).toBeNull()
   })
 
   it('apiErrorLogout', async () => {
@@ -156,7 +156,7 @@ describe('session', () => {
         queryFn: () => call(api.GET('/api/babies')),
       }),
     ).rejects.toThrow()
-    expect(del).toHaveBeenCalledWith('ld-derivatives')
+    expect(del).toHaveBeenCalledWith('cgm-derivatives')
   })
 
   // 오프라인 API 캐시도 삭제. 같은 기기에서 이전 사용자 화면 노출 방지.
@@ -170,8 +170,8 @@ describe('session', () => {
     const { wrapper } = setup()
     const { result } = renderHook(() => useLogout(), { wrapper })
     await result.current()
-    expect(del).toHaveBeenCalledWith('ld-api')
-    expect(del).toHaveBeenCalledWith('ld-derivatives')
+    expect(del).toHaveBeenCalledWith('cgm-api')
+    expect(del).toHaveBeenCalledWith('cgm-derivatives')
   })
 
   // 세션 만료(me 401)도 로그아웃과 동일. 캐시된 이전 me 로 오프라인 진입 방지.
@@ -185,7 +185,7 @@ describe('session', () => {
     })
     const { qc } = setup()
     expect(await loadMe(qc)).toBeNull()
-    expect(del).toHaveBeenCalledWith('ld-api')
-    expect(del).toHaveBeenCalledWith('ld-derivatives')
+    expect(del).toHaveBeenCalledWith('cgm-api')
+    expect(del).toHaveBeenCalledWith('cgm-derivatives')
   })
 })

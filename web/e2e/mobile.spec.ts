@@ -132,7 +132,7 @@ test('browse_screens_fit_width', async ({ ownerPage: page }) => {
   await expectNoHorizontalOverflow(page)
 
   // 긴 이름(공백 없음) 앨범 화면과 뷰어 앨범에 담기 시트. 끝나면 지움.
-  const headers = { 'X-Requested-With': 'LittleDays' }
+  const headers = { 'X-Requested-With': 'Chagokmoa' }
   const name = '하늘빛처럼맑은아기의첫번째여행'.repeat(3)
   const photos = (await listAssets(page)).filter((a) => a.kind === 'photo')
   const created = await page.request.post('/api/albums', {
@@ -356,7 +356,7 @@ test('fab_and_pill_fit', async ({ ownerPage: page }) => {
   await page.goto('/')
   await page.evaluate(() => {
     localStorage.setItem(
-      'ld.upload.pending',
+      'cgm.upload.pending',
       JSON.stringify([
         {
           id: 'e2e-pill',
@@ -381,7 +381,7 @@ test('fab_and_pill_fit', async ({ ownerPage: page }) => {
     expect(pillBox.y + pillBox.height).toBeLessThanOrEqual(barBox.y)
   } finally {
     await page.evaluate(() => {
-      localStorage.removeItem('ld.upload.pending')
+      localStorage.removeItem('cgm.upload.pending')
     })
   }
 })

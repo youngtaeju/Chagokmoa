@@ -21,7 +21,7 @@ use tempfile::TempDir;
 use uuid::Uuid;
 
 pub const XRW: HeaderName = HeaderName::from_static("x-requested-with");
-pub const XRW_VALUE: HeaderValue = HeaderValue::from_static("LittleDays");
+pub const XRW_VALUE: HeaderValue = HeaderValue::from_static("Chagokmoa");
 pub const PASSWORD: &str = "password123";
 pub const TUS_RESUMABLE: HeaderName = HeaderName::from_static("tus-resumable");
 pub const TUS_VERSION: HeaderValue = HeaderValue::from_static("1.0.0");

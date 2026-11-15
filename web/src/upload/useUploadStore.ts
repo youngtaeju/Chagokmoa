@@ -121,7 +121,7 @@ function computePill(): PillState {
 }
 
 // 진행 중·실패 파일. 새로고침 뒤 이어올리기 대기로 복원. 기기별 저장.
-const PENDING_KEY = 'ld.upload.pending'
+const PENDING_KEY = 'cgm.upload.pending'
 let persisted: string | null = null
 
 interface PendingRecord extends ResumeInfo {

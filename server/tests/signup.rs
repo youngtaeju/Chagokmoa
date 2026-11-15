@@ -47,7 +47,7 @@ async fn first_signup_creates_owner(pool: sqlx::PgPool) {
         .expect("instance_name");
     assert_eq!(name, json!("우리집"));
 
-    assert_eq!(res.cookie("ld_session").value().len(), 43);
+    assert_eq!(res.cookie("cgm_session").value().len(), 43);
     let me = server.get("/api/auth/me").await;
     me.assert_status_ok();
     me.assert_json(&json);

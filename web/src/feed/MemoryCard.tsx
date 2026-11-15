@@ -8,7 +8,7 @@ import { useToday } from '@/settings/useSettings'
 import { previewUrl } from '@/timeline/media'
 import { useMemory } from './useMemory'
 
-const DISMISSED_KEY = 'ld:memory-dismissed'
+const DISMISSED_KEY = 'cgm.memory.dismissed'
 
 // 숨긴 날짜(기기 저장). 저장소 접근 실패는 없는 것으로.
 function readDismissed(): string | null {

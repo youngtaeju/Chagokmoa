@@ -64,13 +64,13 @@ describe('useUploadStore', () => {
       progress: 1,
       resume,
     })
-    const saved = localStorage.getItem('ld.upload.pending')
+    const saved = localStorage.getItem('cgm.upload.pending')
     expect(saved).not.toBeNull()
 
     // 새로고침: 모듈 상태 소실, 저장값만 남음.
     uploadStore.reset()
-    expect(localStorage.getItem('ld.upload.pending')).toBeNull()
-    localStorage.setItem('ld.upload.pending', saved ?? '')
+    expect(localStorage.getItem('cgm.upload.pending')).toBeNull()
+    localStorage.setItem('cgm.upload.pending', saved ?? '')
     restorePendingUploads()
     expect(uploadStore.getSnapshot()).toEqual([
       { id: 'f1', name: 'a.jpg', status: 'resumable', progress: 0, resume },
@@ -86,7 +86,7 @@ describe('useUploadStore', () => {
       progress: 1,
       resume,
     })
-    expect(localStorage.getItem('ld.upload.pending')).toBeNull()
+    expect(localStorage.getItem('cgm.upload.pending')).toBeNull()
   })
 
   // 이야기, 마일스톤, 앨범에 붙일 새 사진. 새로고침 뒤 이어올리기에도 같은 대상.
@@ -104,13 +104,13 @@ describe('useUploadStore', () => {
       progress: 0.5,
       resume,
     })
-    const saved = localStorage.getItem('ld.upload.pending')
+    const saved = localStorage.getItem('cgm.upload.pending')
     expect(JSON.parse(saved ?? '[]')).toEqual([
       { id: 'f1', name: 'a.jpg', ...resume },
     ])
 
     uploadStore.reset()
-    localStorage.setItem('ld.upload.pending', saved ?? '')
+    localStorage.setItem('cgm.upload.pending', saved ?? '')
     restorePendingUploads()
     expect(uploadStore.getSnapshot()).toEqual([
       { id: 'f1', name: 'a.jpg', status: 'resumable', progress: 0, resume },
@@ -119,7 +119,7 @@ describe('useUploadStore', () => {
     // 모양이 틀린 attach 는 기록째 버림.
     uploadStore.reset()
     localStorage.setItem(
-      'ld.upload.pending',
+      'cgm.upload.pending',
       JSON.stringify([
         {
           id: 'f2',
@@ -149,9 +149,9 @@ describe('useUploadStore', () => {
       progress: 0.5,
       resume,
     })
-    const saved = localStorage.getItem('ld.upload.pending')
+    const saved = localStorage.getItem('cgm.upload.pending')
     uploadStore.reset()
-    localStorage.setItem('ld.upload.pending', saved ?? '')
+    localStorage.setItem('cgm.upload.pending', saved ?? '')
     restorePendingUploads()
     expect(uploadStore.getSnapshot()).toEqual([
       { id: 'f1', name: 'a.jpg', status: 'resumable', progress: 0, resume },
@@ -161,7 +161,7 @@ describe('useUploadStore', () => {
   it('permanent_errors_not_persisted', () => {
     const resume = { size: 1, lastModified: 1, babyIds: [] }
     const pending = () =>
-      JSON.parse(localStorage.getItem('ld.upload.pending') ?? '[]') as {
+      JSON.parse(localStorage.getItem('cgm.upload.pending') ?? '[]') as {
         id: string
       }[]
     uploadStore.put({
@@ -219,10 +219,10 @@ describe('useUploadStore', () => {
   })
 
   it('restore_ignores_bad_value', () => {
-    localStorage.setItem('ld.upload.pending', '[{"id":1}]')
+    localStorage.setItem('cgm.upload.pending', '[{"id":1}]')
     restorePendingUploads()
     expect(uploadStore.getSnapshot()).toEqual([])
-    localStorage.setItem('ld.upload.pending', '{')
+    localStorage.setItem('cgm.upload.pending', '{')
     restorePendingUploads()
     expect(uploadStore.getSnapshot()).toEqual([])
   })
@@ -235,9 +235,9 @@ describe('useUploadStore', () => {
       progress: 0,
       resume: { size: 1, lastModified: 1, babyIds: [] },
     })
-    expect(localStorage.getItem('ld.upload.pending')).not.toBeNull()
+    expect(localStorage.getItem('cgm.upload.pending')).not.toBeNull()
     clearUploads()
-    expect(localStorage.getItem('ld.upload.pending')).toBeNull()
+    expect(localStorage.getItem('cgm.upload.pending')).toBeNull()
   })
 
   // 셸·세션은 Uppy 지연 청크를 정적으로 끌어오지 않음. 타입 import 만 허용.

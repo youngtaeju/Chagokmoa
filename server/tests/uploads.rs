@@ -104,7 +104,7 @@ async fn partial_patch(
     );
     let mut stream = TcpStream::connect(&addr).await.expect("connect");
     let head = format!(
-        "PATCH {} HTTP/1.1\r\nHost: {addr}\r\nCookie: {cookie}\r\nX-Requested-With: LittleDays\r\n\
+        "PATCH {} HTTP/1.1\r\nHost: {addr}\r\nCookie: {cookie}\r\nX-Requested-With: Chagokmoa\r\n\
          Tus-Resumable: 1.0.0\r\nUpload-Offset: 0\r\nContent-Type: {OFFSET_STREAM}\r\n\
          Content-Length: {total}\r\n\r\n",
         path(id)

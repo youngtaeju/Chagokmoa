@@ -10,7 +10,7 @@ function isLocale(v: string | null | undefined): v is Locale {
   return v === 'ko' || v === 'en'
 }
 
-const LANG_KEY = 'ld.lang'
+const LANG_KEY = 'cgm.lang'
 
 // 로그인 전 선택 언어(기기 저장). 저장소 접근 불가 시 없음으로 취급.
 function storedLocale(): Locale | null {

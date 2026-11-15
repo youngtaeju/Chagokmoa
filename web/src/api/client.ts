@@ -7,7 +7,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 const csrf: Middleware = {
   onRequest({ request }) {
     if (!SAFE_METHODS.has(request.method)) {
-      request.headers.set('X-Requested-With', 'LittleDays')
+      request.headers.set('X-Requested-With', 'Chagokmoa')
     }
     return request
   },

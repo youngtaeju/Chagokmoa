@@ -227,7 +227,7 @@ describe('UploadPill', () => {
   it('resumable_after_reload', async () => {
     // 새로고침 전 저장된 진행 중 파일 2개(태그 다름).
     localStorage.setItem(
-      'ld.upload.pending',
+      'cgm.upload.pending',
       JSON.stringify([
         { id: 'f1', name: 'a.jpg', ...resume([B2.id]) },
         { id: 'f2', name: 'b.jpg', ...resume([B1.id, 'gone']) },
@@ -286,7 +286,7 @@ describe('UploadPill', () => {
       within(sheet).getByRole('button', { name: ko.upload.discard }),
     )
     expect(uploadStore.getSnapshot()).toEqual([])
-    expect(localStorage.getItem('ld.upload.pending')).toBeNull()
+    expect(localStorage.getItem('cgm.upload.pending')).toBeNull()
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.queryByRole('button', { name: /이어서/ })).toBeNull()
   })

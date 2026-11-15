@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 
 export type ThemePref = 'system' | 'light' | 'dark'
 
-const STORAGE_KEY = 'ld.theme'
+const STORAGE_KEY = 'cgm.theme'
 // index.html 정적 메타와 동일 값.
 const THEME_COLOR_LIGHT = '#FFFFFF'
 const THEME_COLOR_DARK = '#121416'

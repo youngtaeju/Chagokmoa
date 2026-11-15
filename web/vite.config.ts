@@ -81,18 +81,18 @@ export default defineConfig({
       },
       workbox: {
         // 앱 셸: 기본 globPatterns(js·css·html) + includeAssets + 매니페스트 아이콘.
-        // 글꼴 서브셋(약 90개, 3 MB)은 precache 제외. 쓰는 글자 범위만 ld-fonts 런타임 캐시.
+        // 글꼴 서브셋(약 90개, 3 MB)은 precache 제외. 쓰는 글자 범위만 cgm-fonts 런타임 캐시.
         globIgnores: ['**/*.woff2'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/s\//],
-        // 규칙 없는 요청은 네트워크 그대로. ld-api·ld-derivatives 는 로그아웃 시 삭제(auth/session.ts).
+        // 규칙 없는 요청은 네트워크 그대로. cgm-api, cgm-derivatives 는 로그아웃 시 삭제(auth/session.ts).
         runtimeCaching: [
           {
             // 네트워크 우선. 응답이 있으면 상태 그대로(401 포함), 실패·지연 시에만 캐시.
             urlPattern: isOfflineApi,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'ld-api',
+              cacheName: 'cgm-api',
               expiration: { maxEntries: 1000, purgeOnQuotaError: true },
               plugins: [{ cacheWillUpdate: onlyCacheable }],
             },
@@ -101,7 +101,7 @@ export default defineConfig({
             urlPattern: isDerivative,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'ld-derivatives',
+              cacheName: 'cgm-derivatives',
               expiration: {
                 maxEntries: 2000,
                 maxAgeSeconds: 30 * 24 * 60 * 60,
@@ -118,7 +118,7 @@ export default defineConfig({
             urlPattern: isFont,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'ld-fonts',
+              cacheName: 'cgm-fonts',
               expiration: { maxEntries: 120, purgeOnQuotaError: true },
               plugins: [{ cacheWillUpdate: onlyCacheable }],
             },

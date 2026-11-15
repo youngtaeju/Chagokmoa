@@ -335,7 +335,7 @@ test('invite_family_cannot_upload', async ({
 
 // 이전 시도가 남긴 하트와 소유자 댓글 제거. 재시도해도 같은 상태에서 시작.
 async function resetReactions(page: Page, assetId: string): Promise<void> {
-  const headers = { 'X-Requested-With': 'LittleDays' }
+  const headers = { 'X-Requested-With': 'Chagokmoa' }
   const unlike = await page.request.delete(`/api/assets/${assetId}/like`, {
     headers,
   })
@@ -433,7 +433,7 @@ test('reactions_round_trip', async ({
 
 // 이전 시도가 남긴 즐겨찾기 제거. 재시도해도 빈 즐겨찾기에서 시작.
 async function resetFavorites(page: Page): Promise<void> {
-  const headers = { 'X-Requested-With': 'LittleDays' }
+  const headers = { 'X-Requested-With': 'Chagokmoa' }
   const res = await page.request.get('/api/favorites?limit=100')
   expect(res.status()).toBe(200)
   const { items } = (await res.json()) as AssetPage
@@ -798,7 +798,7 @@ test('calendar_flow', async ({ ownerPage: page }) => {
 })
 
 test('memory_card', async ({ ownerPage: page }) => {
-  const headers = { 'X-Requested-With': 'LittleDays' }
+  const headers = { 'X-Requested-With': 'Chagokmoa' }
   const settings = (await (await page.request.get('/api/settings')).json()) as {
     timezone: string
   }
@@ -848,7 +848,7 @@ async function resetAlbums(page: Page): Promise<void> {
   for (const a of (await res.json()) as AlbumSummary[]) {
     if (!a.name.startsWith(ALBUM_NAME)) continue
     const del = await page.request.delete(`/api/albums/${a.id}`, {
-      headers: { 'X-Requested-With': 'LittleDays' },
+      headers: { 'X-Requested-With': 'Chagokmoa' },
     })
     expect(del.status()).toBeLessThan(300)
   }
