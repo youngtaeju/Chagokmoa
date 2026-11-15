@@ -81,6 +81,7 @@ describe('OfflineBanner', () => {
       'GET /api/memories': offline,
       'GET /api/days': offline,
       'GET /api/users': offline,
+      'GET /api/notifications/unread-count': offline,
     })
     const app = createApp(
       createTestQueryClient,

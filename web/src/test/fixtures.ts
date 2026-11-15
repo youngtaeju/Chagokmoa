@@ -6,6 +6,7 @@ import type {
   Comment,
   DaySummary,
   Milestone,
+  AppNotification,
   Role,
   Settings,
   Story,
@@ -218,10 +219,31 @@ export function dayFixture(
   }
 }
 
+// 엄마(다른 가족)가 올린 사진 1장. 대상 요약과 종류는 over 로.
+export function notificationFixture(
+  id: string,
+  over: Partial<AppNotification> = {},
+): AppNotification {
+  return {
+    id,
+    kind: 'upload',
+    count: 1,
+    actor: { id: '00000000-0000-4000-8000-000000000002', display_name: '엄마' },
+    asset: assetSummaryFixture('a'),
+    story: null,
+    milestone: null,
+    comment: null,
+    created_at: '2026-11-16T03:00:00Z',
+    updated_at: '2026-11-16T03:00:00Z',
+    ...over,
+  }
+}
+
 // `/` 도착 시 피드 요청. 빈 목록.
 export const emptyFeedRoutes = {
   'GET /api/babies': () => json(200, []),
   'GET /api/days': () => json(200, { items: [], next_cursor: null }),
   'GET /api/memories': () => json(200, null),
   'GET /api/users': () => json(200, { users: [] }),
+  'GET /api/notifications/unread-count': () => json(200, { count: 0 }),
 }

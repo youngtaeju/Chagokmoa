@@ -1112,3 +1112,64 @@ test('service_worker_registered', async ({ ownerPage: page }) => {
     )
     .toBe(true)
 })
+
+test('notifications_flow', async ({
+  ownerPage: page,
+  browser,
+  baseURL,
+  locale,
+  timezoneId,
+}) => {
+  // 가입 이후 올린 것만 알림 대상. 재시도마다 가족이 늘어 이름 고유화.
+  const retry = String(test.info().retry)
+  const { guest, close } = await createFamilyPage(page, browser, {
+    baseURL,
+    locale,
+    timezoneId,
+    displayName: `알림가족${retry}`,
+    username: `notifyfam${retry}`,
+  })
+  try {
+    await page.goto('/')
+    const chooser = page.waitForEvent('filechooser')
+    await sidebarUpload(page)
+    await (
+      await chooser
+    ).setFiles({
+      name: `notify-${retry}.jpg`,
+      mimeType: 'image/jpeg',
+      buffer: uniqueJpeg(`notify-${retry}-${String(Date.now())}`),
+    })
+    await page
+      .getByRole('dialog', { name: /올리기$/ })
+      .getByRole('button', { name: '올리기' })
+      .click()
+    await expect(
+      page.getByRole('button', { name: '1개 올렸어요' }),
+    ).toBeVisible({ timeout: 60_000 })
+
+    // 사이드바에도 알림 링크가 있어 홈 머리글로 한정.
+    await guest.reload()
+    const header = guest.getByRole('banner')
+    const bell = header.getByRole('link', { name: '알림, 새 알림 1개' })
+    await expect(bell).toBeVisible()
+    await bell.click()
+    await expect(guest).toHaveURL(/\/notifications$/)
+    const row = guest.getByText(/님이 사진을 올렸어요/)
+    await expect(row).toBeVisible()
+
+    // 화면을 열면 읽음 처리.
+    await guest.goBack()
+    await expect(
+      header.getByRole('link', { name: '알림', exact: true }),
+    ).toBeVisible()
+
+    await header.getByRole('link', { name: '알림', exact: true }).click()
+    await guest.getByText(/님이 사진을 올렸어요/).click()
+    await expect(guest).toHaveURL(/\/photos\//)
+  } finally {
+    // 이어지는 모바일 프로젝트가 타일 수를 단정. 휴지통은 픽스처가 복구하므로 완전 삭제.
+    await resetStories(page, 'notify-')
+    await close()
+  }
+})

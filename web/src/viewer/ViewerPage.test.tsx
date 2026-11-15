@@ -57,6 +57,7 @@ function renderViewer(opts: {
       json(200, opts.assets?.[id] ?? assetFixture(id))
   }
   mockFetch({
+    'GET /api/notifications/unread-count': () => json(200, { count: 0 }),
     'GET /api/auth/me': () =>
       json(200, { user: userFixture(opts.role ?? 'guardian') }),
     'GET /api/settings': () => json(200, settingsFixture),
@@ -1288,6 +1289,52 @@ describe('ViewerPage', () => {
     await new Promise((r) => setTimeout(r, 300))
     expect(router.state.location.pathname).toBe('/photos/b')
     expect(box).toHaveValue('안녕')
+  })
+
+  it('panel_comments_opens_comments', async () => {
+    const extra = {
+      'GET /api/assets/a/comments': () =>
+        json(200, { items: [commentFixture('c1')], next_cursor: null }),
+    }
+    const assets = { a: assetFixture('a', { comment_count: 1 }) }
+    // 휴대폰은 댓글 시트.
+    renderViewer({
+      path: '/photos/a?panel=comments',
+      ids: ['a'],
+      assets,
+      extra,
+    })
+    expect(
+      await screen.findByRole('dialog', { name: '댓글 1' }),
+    ).toBeInTheDocument()
+    cleanup()
+
+    // 그 밖의 값은 버림.
+    const other = renderViewer({
+      path: '/photos/a?panel=foo',
+      ids: ['a'],
+      assets,
+      extra,
+    })
+    await screen.findByRole('button', { name: '댓글 보기, 1개' })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(other.router.state.location.search).not.toHaveProperty('panel')
+    cleanup()
+
+    // 넓은 화면은 오른쪽 댓글 탭.
+    wideScreen()
+    renderViewer({
+      path: '/photos/a?panel=comments',
+      ids: ['a'],
+      assets,
+      extra,
+    })
+    const panel = await screen.findByRole('complementary', {
+      name: ko.comments.label,
+    })
+    expect(
+      await within(panel).findByRole('tab', { name: '댓글 1' }),
+    ).toHaveAttribute('aria-selected', 'true')
   })
 
   it('favorites_neighbors', async () => {

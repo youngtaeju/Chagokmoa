@@ -5,6 +5,7 @@ import type { Baby } from '@/api/types'
 import { Avatar } from '@/babies/Avatar'
 import { usePrimaryBaby } from '@/babies/usePrimaryBaby'
 import { dayNumber, dueIn } from '@/lib/age'
+import { NotificationBell } from '@/notifications/NotificationBell'
 import { useToday } from '@/settings/useSettings'
 import { useBabies } from '@/timeline/useBabies'
 import { BabyChips } from './BabyChips'
@@ -59,7 +60,7 @@ function BabyPill({ baby, today }: { baby: Baby; today: string }) {
   )
 }
 
-// 한 줄: 왼쪽 우리 집 이름, 오른쪽 아기 알약(칩으로 고른 아이, 아니면 대표 아기).
+// 한 줄: 왼쪽 우리 집 이름, 오른쪽 아기 알약(칩으로 고른 아이, 아니면 대표 아기)과 알림 종.
 // 아기 2명 이상이면 아래 칩 줄.
 export function HomeHeader({ instanceName }: { instanceName?: string }) {
   const { baby } = route.useSearch()
@@ -69,11 +70,12 @@ export function HomeHeader({ instanceName }: { instanceName?: string }) {
   const target = babies?.find((b) => b.id === baby) ?? primary
   return (
     <div className="px-4">
-      <div className="flex h-14 items-center justify-between gap-3">
+      <div className="flex h-14 items-center justify-between gap-1">
         <p className="min-w-0 flex-1 truncate text-base font-bold">
           {instanceName}
         </p>
         {target && <BabyPill baby={target} today={today} />}
+        <NotificationBell />
       </div>
       {babies &&
         (babies.length >= 2 ||

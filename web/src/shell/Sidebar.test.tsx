@@ -19,6 +19,7 @@ afterEach(() => {
 function renderShell(role: Role, path = '/') {
   mockFetch({
     ...emptyFeedRoutes,
+    'GET /api/notifications/unread-count': () => json(200, { count: 2 }),
     'GET /api/auth/me': () => json(200, { user: userFixture(role) }),
     'GET /api/settings': () => json(200, settingsFixture),
     'GET /api/trash': () => json(200, { items: [], next_cursor: null }),
@@ -55,18 +56,24 @@ describe('Sidebar', () => {
       'href',
       '/babies',
     )
+    // 알림 줄은 모든 역할.
+    const more = within(root.getByRole('navigation', { name: ko.nav.more }))
+    const notifications = more.getByRole('link', {
+      name: new RegExp(ko.notifications.title),
+    })
+    expect(notifications).toHaveAttribute('href', '/notifications')
+    await waitFor(() => {
+      expect(notifications).toHaveTextContent('2')
+    })
     if (!canUpload) {
-      expect(root.queryByRole('navigation', { name: ko.nav.more })).toBeNull()
+      expect(more.queryByRole('link', { name: ko.nav.trash })).toBeNull()
       expect(root.queryByRole('button', { name: ko.addSheet.open })).toBeNull()
       return
     }
     expect(
       root.getByRole('button', { name: ko.addSheet.open }),
     ).toBeInTheDocument()
-    const more = within(root.getByRole('navigation', { name: ko.nav.more }))
-    expect(more.getAllByRole('link').map((l) => l.textContent)).toEqual([
-      ko.nav.trash,
-    ])
+    expect(more.getByRole('link', { name: ko.nav.trash })).toBeInTheDocument()
     expect(more.getByRole('link', { name: ko.nav.trash })).toHaveAttribute(
       'href',
       '/me/trash',
