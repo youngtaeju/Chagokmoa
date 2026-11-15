@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT author_id AS \"id!\" FROM stories WHERE id = $1\n                   UNION\n                   SELECT author_id FROM story_comments WHERE story_id = $1 AND id <> $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "0412bb3f12a2ffeae6a97ff7231e6a9854dedde5879cf081f499189531403a7a"
+}

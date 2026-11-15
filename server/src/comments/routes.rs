@@ -10,6 +10,7 @@ use crate::{
     assets::{Page, cursor},
     auth::extract::CurrentUser,
     error::{AppError, AppResult, ErrorBody},
+    notifications::{self, record::CommentTarget},
     reactions::require_visible,
     request::{Json as JsonBody, Path, Query},
     state::AppState,
@@ -68,6 +69,11 @@ async fn create_comment(
     require_visible(&mut *tx, id).await?;
     let body = validate(&mut *tx, &req.body).await?;
     let comment = queries::insert(&mut *tx, id, current.user.id, body).await?;
+    let target = CommentTarget::Asset {
+        asset_id: id,
+        comment_id: comment.id,
+    };
+    notifications::record::record_comment(&mut tx, current.user.id, target, body).await?;
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(comment)))
 }

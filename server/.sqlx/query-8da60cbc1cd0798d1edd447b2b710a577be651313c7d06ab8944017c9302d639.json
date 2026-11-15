@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO notifications (id, user_id, kind, actor_id, asset_id, created_at, updated_at)\n         SELECT gen_random_uuid(), $1, 'upload', $2, $3, t, t\n         FROM generate_series(1, $4) g, LATERAL (SELECT now() - make_interval(secs => g)) s(t)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8da60cbc1cd0798d1edd447b2b710a577be651313c7d06ab8944017c9302d639"
+}

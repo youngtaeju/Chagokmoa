@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO notifications (id, user_id, kind, actor_id, asset_id, created_at, updated_at)\n         VALUES (gen_random_uuid(), $1, 'upload', $2, $3,\n                 $4::timestamptz - interval '1 hour', $4::timestamptz - interval '1 hour')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ac5476fb864bcbe69f6af9c6d35df41367dfa992db997db5eb49aed10acffbe8"
+}

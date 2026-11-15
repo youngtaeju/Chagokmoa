@@ -708,6 +708,54 @@ export interface paths {
         patch: operations["update_milestone"];
         trace?: never;
     };
+    "/api/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_notifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["mark_seen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["unread_count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/settings": {
         parameters: {
             query?: never;
@@ -1504,6 +1552,70 @@ export interface components {
             /** @description 인스턴스 시간대 기준 `YYYY-MM`. */
             month: string;
         };
+        /**
+         * @description 알림 한 줄. 대상 요약은 종류별로 채움.
+         *     사진 댓글은 `asset` + `comment`, 이야기 댓글은 `story` + `comment`, 이야기 본문 멘션은 `story` 만.
+         */
+        Notification: {
+            actor: components["schemas"]["NotificationActor"];
+            asset: null | components["schemas"]["AssetSummary"];
+            comment: null | components["schemas"]["NotificationComment"];
+            /**
+             * Format: int32
+             * @description 묶인 사진 수. 사진 외 종류는 1.
+             */
+            count: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["NotificationKind"];
+            milestone: null | components["schemas"]["NotificationMilestone"];
+            story: null | components["schemas"]["NotificationStory"];
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description 알림을 만든 사용자. */
+        NotificationActor: {
+            display_name: string;
+            /** Format: uuid */
+            id: string;
+        };
+        NotificationComment: {
+            /** @description 본문 앞 100자(문자 수). 멘션 토큰 그대로. */
+            excerpt: string;
+        };
+        /**
+         * @description 알림 종류. DB 는 `text` 소문자.
+         * @enum {string}
+         */
+        NotificationKind: "upload" | "comment" | "mention" | "story" | "milestone";
+        NotificationMilestone: {
+            cover: null | components["schemas"]["AssetSummary"];
+            custom_label: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @description `preset_key` 와 `custom_label` 중 하나만 값. */
+            preset_key: string | null;
+        };
+        /** @description 알림 목록 페이지. */
+        NotificationPage: {
+            items: components["schemas"]["Notification"][];
+            /** @description 다음 페이지가 없으면 `null`. */
+            next_cursor: string | null;
+            /**
+             * Format: date-time
+             * @description 마지막으로 알림을 본 시각. 본 적 없으면 가입 시각.
+             */
+            seen_at: string;
+        };
+        NotificationStory: {
+            cover: null | components["schemas"]["AssetSummary"];
+            /** @description 본문 앞 100자(문자 수). 멘션 토큰 그대로. */
+            excerpt: string;
+            /** Format: uuid */
+            id: string;
+        };
         /** @description 커서 페이지. */
         Page_AssetSummary: {
             items: {
@@ -1801,6 +1913,11 @@ export interface components {
              * @description 휴지통 이동 시각.
              */
             deleted_at: string;
+        };
+        /** @description 안 읽은 알림 수. 100 에서 멈춤. */
+        UnreadCount: {
+            /** Format: int64 */
+            count: number;
         };
         /** @description 보낸 필드만 교체. */
         UpdateAlbumRequest: {
@@ -5156,6 +5273,114 @@ export interface operations {
             };
             /** @description 같은 아기에 같은 미리 정한 항목 (`milestone.duplicate`) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    list_notifications: {
+        parameters: {
+            query?: {
+                /** @description 이전 응답의 `next_cursor`. */
+                cursor?: string;
+                /** @description 1~100, 기본 30. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 내 알림 최신순. 대상 사진이 휴지통이면 제외 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPage"];
+                };
+            };
+            /** @description 쿼리 오류 (`request.invalidQuery`, `asset.invalidCursor`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    mark_seen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 지금까지의 알림을 읽음으로 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    unread_count: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 본 시각 이후 알림 수. 100 에서 멈춤 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCount"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

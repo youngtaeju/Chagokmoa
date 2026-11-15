@@ -11,6 +11,7 @@ use crate::{
     auth::extract::CurrentUser,
     error::{AppError, AppResult, ErrorBody},
     links::{self, LinkKind},
+    notifications,
     records::{self, baby_birth_date, present},
     request::{Json as JsonBody, Path},
     settings,
@@ -148,6 +149,7 @@ async fn create_milestone(
         current.user.id,
     )
     .await?;
+    notifications::record::record_milestone(&mut tx, current.user.id, id).await?;
     links::replace_assets(&mut tx, LinkKind::Milestone, id, &asset_ids).await?;
     let milestone = queries::get(&mut tx, &timezone, id)
         .await?

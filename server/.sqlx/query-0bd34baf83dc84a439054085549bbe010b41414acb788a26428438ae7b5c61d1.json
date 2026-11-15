@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO notifications (id, user_id, kind, actor_id, asset_id, created_at,\n                                            updated_at)\n                 VALUES (gen_random_uuid(), $1, 'upload', $1, $2,\n                         now() - make_interval(days => $3), now() - make_interval(days => $3))\n                 RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0bd34baf83dc84a439054085549bbe010b41414acb788a26428438ae7b5c61d1"
+}
