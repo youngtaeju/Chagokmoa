@@ -1,7 +1,7 @@
 mod common;
 
 use axum_test::TestServer;
-use littledays::{app::build_router, config::Config, state::AppState};
+use chagokmoa::{app::build_router, config::Config, state::AppState};
 use sqlx::PgPool;
 
 const CSP: &str = "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'";

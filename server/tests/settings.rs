@@ -2,8 +2,8 @@ mod common;
 
 use axum::http::StatusCode;
 use axum_test::{TestResponse, TestServer};
+use chagokmoa::{settings, users::Role};
 use common::{XRW, XRW_VALUE, assert_error, server_as, signup};
-use littledays::{settings, users::Role};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 
@@ -28,7 +28,7 @@ async fn defaults_then_patch(pool: PgPool) {
     assert_eq!(
         get_settings(&server).await,
         json!({
-            "instance_name": "LittleDays",
+            "instance_name": "차곡모아",
             "timezone": "Asia/Seoul",
             "default_locale": "ko",
             "derivatives_avif": false,
@@ -93,7 +93,7 @@ async fn invalid_timezone_400(pool: PgPool) {
         );
     }
     // 검증 실패 시 다른 필드도 미반영.
-    assert_eq!(get_settings(&server).await["instance_name"], "LittleDays");
+    assert_eq!(get_settings(&server).await["instance_name"], "차곡모아");
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -130,7 +130,7 @@ async fn family_cannot_patch_403(pool: PgPool) {
     for (username, role) in [("dad", Role::Guardian), ("grandma", Role::Family)] {
         let (server, _) = server_as(&pool, username, role).await;
         // 조회는 모든 역할 허용.
-        assert_eq!(get_settings(&server).await["instance_name"], "LittleDays");
+        assert_eq!(get_settings(&server).await["instance_name"], "차곡모아");
         assert_error(
             &patch_settings(&server, json!({ "instance_name": "x" })).await,
             StatusCode::FORBIDDEN,
@@ -165,7 +165,7 @@ async fn patch_without_csrf_header_403(pool: PgPool) {
         StatusCode::FORBIDDEN,
         "auth.csrf",
     );
-    assert_eq!(get_settings(&server).await["instance_name"], "LittleDays");
+    assert_eq!(get_settings(&server).await["instance_name"], "차곡모아");
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -183,7 +183,7 @@ async fn wrong_typed_stored_value_falls_back_to_default(pool: PgPool) {
     assert_eq!(
         get_settings(&server).await,
         json!({
-            "instance_name": "LittleDays",
+            "instance_name": "차곡모아",
             "timezone": "UTC",
             "default_locale": "ko",
             "derivatives_avif": false,

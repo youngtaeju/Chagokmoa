@@ -61,8 +61,8 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'LittleDays',
-        short_name: 'LittleDays',
+        name: '차곡모아',
+        short_name: '차곡모아',
         start_url: '/',
         scope: '/',
         display: 'standalone',

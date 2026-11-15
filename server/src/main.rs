@@ -1,8 +1,7 @@
 use std::net::SocketAddr;
 
 use anyhow::Context;
-use clap::{Parser, Subcommand};
-use littledays::{
+use chagokmoa::{
     app::{build_router, openapi},
     config::{self, Config},
     db, jobs, maintenance,
@@ -11,9 +10,10 @@ use littledays::{
     state::AppState,
     users::reset,
 };
+use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "littledays", version, about = "LittleDays server")]
+#[command(name = "chagokmoa", version, about = "Chagokmoa server")]
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,

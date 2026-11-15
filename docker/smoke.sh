@@ -54,7 +54,7 @@ in_image sh -c '
         f=$(ls /usr/lib/*/libheif/plugins/libheif-$p.so)
         if ldd "$f" | grep -q "not found"; then echo "$f: missing deps"; exit 1; fi
     done
-    if ldd /app/littledays | grep -q "not found"; then echo "littledays: missing deps"; exit 1; fi
+    if ldd /app/chagokmoa | grep -q "not found"; then echo "chagokmoa: missing deps"; exit 1; fi
 ' || fail "libheif 플러그인 또는 바이너리 의존성"
 pass "libheif plugins, binary deps"
 

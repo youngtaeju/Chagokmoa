@@ -515,7 +515,7 @@ describe('forgot_password', () => {
     const dialog = await screen.findByRole('dialog')
     expect(dialog).toHaveTextContent(ko.auth.login.forgotAskAdmin)
     expect(dialog).toHaveTextContent(
-      'docker compose exec app /app/littledays reset-password <아이디>',
+      'docker compose exec app /app/chagokmoa reset-password <아이디>',
     )
     expect(
       screen.getByRole('button', { name: ko.common.copy }),
@@ -572,7 +572,7 @@ describe('forgot_password', () => {
     mockFetch(authRoutes({ me: null }))
     renderApp('/login')
     expect(
-      await screen.findByRole('heading', { name: 'LittleDays' }),
+      await screen.findByRole('heading', { name: '차곡모아' }),
     ).toBeInTheDocument()
     expect(screen.getByText(ko.auth.login.subtitle)).toBeInTheDocument()
   })

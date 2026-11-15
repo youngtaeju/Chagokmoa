@@ -24,7 +24,7 @@ ENV SQLX_OFFLINE=true
 RUN --mount=type=cache,id=littledays-cargo-registry,target=/usr/local/cargo/registry \
     --mount=type=cache,id=littledays-target,target=/src/server/target \
     cargo build --release --locked \
-    && cp target/release/littledays /littledays
+    && cp target/release/chagokmoa /chagokmoa
 
 FROM debian:trixie-slim AS runtime
 # --no-install-recommends: libheif1 의 Recommends 인 x265(GPL) 플러그인 제외.
@@ -33,7 +33,7 @@ RUN apt-get update \
         ca-certificates curl ffmpeg libheif1 \
         libheif-plugin-libde265 libheif-plugin-dav1d libheif-plugin-aomenc \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=server /littledays /app/littledays
+COPY --from=server /chagokmoa /app/chagokmoa
 COPY --from=web /src/web/dist /app/web
 COPY --chmod=755 docker/entrypoint.sh /app/entrypoint.sh
 ENV DATA_DIR=/data \

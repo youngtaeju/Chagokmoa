@@ -1,13 +1,13 @@
 mod common;
 
-use chrono::{DateTime, Datelike, NaiveDate, Utc};
-use common::{AssetSeed, insert_asset, server_as};
-use littledays::{
+use chagokmoa::{
     babies::{self, BabyInput},
     memories::{MemoryKind, pick},
     settings,
     users::Role,
 };
+use chrono::{DateTime, Datelike, NaiveDate, Utc};
+use common::{AssetSeed, insert_asset, server_as};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use uuid::Uuid;

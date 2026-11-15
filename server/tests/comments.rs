@@ -2,9 +2,9 @@ mod common;
 
 use axum::http::StatusCode;
 use axum_test::{TestResponse, TestServer};
+use chagokmoa::{app::build_router, users::Role};
 use chrono::{Duration, Utc};
 use common::{AssetSeed, XRW, XRW_VALUE, assert_error, insert_asset, media_app};
-use littledays::{app::build_router, users::Role};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use uuid::Uuid;

@@ -1,8 +1,8 @@
 mod common;
 
+use chagokmoa::users::Role;
+use chagokmoa::{auth::session, maintenance};
 use common::media_app;
-use littledays::users::Role;
-use littledays::{auth::session, maintenance};
 use sqlx::PgPool;
 
 #[sqlx::test]

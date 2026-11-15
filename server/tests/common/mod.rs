@@ -5,8 +5,7 @@ use axum::http::{HeaderName, HeaderValue, StatusCode, header};
 use axum_extra::extract::cookie::Cookie;
 use axum_test::{TestResponse, TestServer};
 use base64::{Engine, engine::general_purpose::STANDARD};
-use chrono::{DateTime, Utc};
-use littledays::{
+use chagokmoa::{
     app::build_router,
     auth::{password, session},
     config::Config,
@@ -14,6 +13,7 @@ use littledays::{
     state::AppState,
     users::{self, NewUser, Role, User},
 };
+use chrono::{DateTime, Utc};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use std::path::PathBuf;

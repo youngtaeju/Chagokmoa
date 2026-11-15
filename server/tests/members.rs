@@ -2,8 +2,8 @@ mod common;
 
 use axum::http::StatusCode;
 use axum_test::{TestResponse, TestServer};
+use chagokmoa::users::{Role, User};
 use common::{PASSWORD, XRW, XRW_VALUE, assert_error, server_as};
-use littledays::users::{Role, User};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use uuid::Uuid;

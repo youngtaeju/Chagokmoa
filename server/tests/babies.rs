@@ -2,9 +2,9 @@ mod common;
 
 use axum::http::StatusCode;
 use axum_test::{TestResponse, TestServer};
+use chagokmoa::users::Role;
 use chrono::Utc;
 use common::{AssetSeed, XRW, XRW_VALUE, assert_error, insert_asset, media_app};
-use littledays::users::Role;
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -255,7 +255,7 @@ async fn tagged(pool: &PgPool, by: Uuid, baby: Uuid, date: &str, kind: &'static 
     s.kind = kind;
     s.taken_at = format!("{date}T12:00:00Z").parse().unwrap();
     let id = insert_asset(pool, s).await;
-    littledays::assets::queries::add_babies(pool, id, &[baby], by)
+    chagokmoa::assets::queries::add_babies(pool, id, &[baby], by)
         .await
         .unwrap();
     id
@@ -268,7 +268,7 @@ async fn stats(app: &common::MediaApp, baby: Uuid) -> Value {
 }
 
 async fn utc(pool: &PgPool) {
-    littledays::settings::queries::set(pool, "timezone", json!("UTC"))
+    chagokmoa::settings::queries::set(pool, "timezone", json!("UTC"))
         .await
         .unwrap();
 }
@@ -307,7 +307,7 @@ async fn stats_counts(pool: PgPool) {
     s.taken_at = "2025-10-04T12:00:00Z".parse().unwrap();
     s.deleted_at = Some(Utc::now());
     let trashed = insert_asset(&pool, s).await;
-    littledays::assets::queries::add_babies(&pool, trashed, &[b], app.user.id)
+    chagokmoa::assets::queries::add_babies(&pool, trashed, &[b], app.user.id)
         .await
         .unwrap();
 
@@ -393,7 +393,7 @@ async fn month_end_birthday_buckets(pool: PgPool) {
 #[sqlx::test(migrations = "./migrations")]
 async fn age_month_uses_local_date(pool: PgPool) {
     let app = media_app(&pool, Role::Guardian).await;
-    littledays::settings::queries::set(&pool, "timezone", json!("Asia/Seoul"))
+    chagokmoa::settings::queries::set(&pool, "timezone", json!("Asia/Seoul"))
         .await
         .unwrap();
     let b = baby_born(&pool, "2025-09-26").await;
@@ -401,7 +401,7 @@ async fn age_month_uses_local_date(pool: PgPool) {
     let mut s = AssetSeed::photo(app.user.id);
     s.taken_at = "2025-10-25T16:00:00Z".parse().unwrap();
     let id = insert_asset(&pool, s).await;
-    littledays::assets::queries::add_babies(&pool, id, &[b], app.user.id)
+    chagokmoa::assets::queries::add_babies(&pool, id, &[b], app.user.id)
         .await
         .unwrap();
     assert_eq!(ages(&stats(&app, b).await), [1]);
@@ -533,7 +533,7 @@ async fn crop_nan_rejected(pool: PgPool) {
 }
 
 fn crate_fits_rejects_nan() -> bool {
-    use littledays::babies::AvatarCrop;
+    use chagokmoa::babies::AvatarCrop;
     !AvatarCrop {
         x: f64::NAN,
         y: 0.0,
@@ -620,7 +620,7 @@ async fn cover_prefers_ready(pool: PgPool) {
         s.status = status;
         s.taken_at = format!("{date}T12:00:00Z").parse().unwrap();
         let id = insert_asset(&pool, s).await;
-        littledays::assets::queries::add_babies(&pool, id, &[b], app.user.id)
+        chagokmoa::assets::queries::add_babies(&pool, id, &[b], app.user.id)
             .await
             .unwrap();
         ids.push(id);
@@ -630,7 +630,7 @@ async fn cover_prefers_ready(pool: PgPool) {
 
     let only = baby_born(&pool, "2025-09-26").await;
     for id in [ids[1], ids[2]] {
-        littledays::assets::queries::add_babies(&pool, id, &[only], app.user.id)
+        chagokmoa::assets::queries::add_babies(&pool, id, &[only], app.user.id)
             .await
             .unwrap();
     }
@@ -645,7 +645,7 @@ async fn primary_baby_id(server: &TestServer) -> Value {
 }
 
 async fn set_primary(pool: &PgPool, id: Uuid) {
-    littledays::settings::queries::set(pool, "primary_baby_id", json!(id))
+    chagokmoa::settings::queries::set(pool, "primary_baby_id", json!(id))
         .await
         .unwrap();
 }

@@ -3,12 +3,12 @@ mod common;
 use axum::http::{HeaderValue, StatusCode};
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use axum_test::TestResponse;
-use chrono::Utc;
-use common::{XRW, XRW_VALUE, assert_error, login, login_body, signup, signup_body};
-use littledays::{
+use chagokmoa::{
     auth::{session, token},
     users::{self, NewUser, Role},
 };
+use chrono::Utc;
+use common::{XRW, XRW_VALUE, assert_error, login, login_body, signup, signup_body};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use uuid::Uuid;

@@ -2,7 +2,7 @@ mod common;
 
 use axum::http::StatusCode;
 use axum_test::TestServer;
-use littledays::{
+use chagokmoa::{
     error::AppError,
     users::{self, NewUser, Role},
 };

@@ -14,7 +14,7 @@ import {
 // 이메일 발송이 없으므로 관리자 요청 안내와 서버 명령 표시.
 export function ForgotPasswordSheet() {
   const { t } = useTranslation()
-  const resetCommand = `docker compose exec app /app/littledays reset-password ${t('auth.login.resetPlaceholder')}`
+  const resetCommand = `docker compose exec app /app/chagokmoa reset-password ${t('auth.login.resetPlaceholder')}`
   const [open, setOpen] = useState(false)
 
   async function copy() {

@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "LittleDays API",
+    "title": "Chagokmoa API",
     "description": "Self-hosted family baby photo journal",
     "license": {
       "name": "AGPL-3.0-only",

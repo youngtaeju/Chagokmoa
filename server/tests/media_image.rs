@@ -1,12 +1,12 @@
 use std::path::{Path, PathBuf};
 
-use chrono::{NaiveDate, TimeZone, Utc};
-use image::{Rgb, RgbImage};
-use littledays::media::{
+use chagokmoa::media::{
     exif::{ExifTime, read_meta},
     image::{decode, render},
     sniff::MediaType,
 };
+use chrono::{NaiveDate, TimeZone, Utc};
+use image::{Rgb, RgbImage};
 use tempfile::TempDir;
 
 fn fixture(name: &str) -> PathBuf {
