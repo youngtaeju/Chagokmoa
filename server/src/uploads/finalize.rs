@@ -30,7 +30,7 @@ use crate::{
         sniff::{MediaType, sniff},
         storage,
     },
-    milestones,
+    milestones, notifications,
     request::{Json, Path},
     state::AppState,
     stories,
@@ -212,6 +212,7 @@ async fn store_asset(
     if let Some(target) = &req.attach {
         attach(&mut tx, &current, target, asset_id).await?;
     }
+    notifications::record::record_upload(&mut tx, user_id, asset_id).await?;
     jobs::enqueue(&mut *tx, &Job::ProcessAsset { asset_id }).await?;
     queries::delete(&mut *tx, id).await?;
     let asset = assets::queries::get(&mut *tx, asset_id, user_id)

@@ -23,6 +23,49 @@ struct Target {
     story_comment_id: Option<Uuid>,
 }
 
+/// 사진 알림 묶음 창. SQL interval 문자열.
+const UPLOAD_GROUP_WINDOW: &str = "30 minutes";
+
+/// 사진 업로드. 받는 사람마다 같은 행동자의 창 안 최신 줄이 있으면 count 증가와 대표 사진 교체, 없으면 새 줄.
+/// 묶음 대상이 휴지통 사진이어도 갱신(대표가 새 사진으로 교체).
+pub async fn record_upload(conn: &mut PgConnection, actor: Uuid, asset_id: Uuid) -> AppResult<()> {
+    // 같은 행동자의 동시 finalize 직렬화. 줄 갈라짐 방지.
+    sqlx::query!(
+        "SELECT pg_advisory_xact_lock(hashtextextended('notifications.upload:' || $1::uuid::text, 0))",
+        actor
+    )
+    .execute(&mut *conn)
+    .await?;
+    let recipients = active_recipients(conn, actor).await?;
+    let grouped = sqlx::query_scalar!(
+        "WITH latest AS (
+           SELECT DISTINCT ON (user_id) id FROM notifications
+           WHERE user_id = ANY($1) AND actor_id = $2 AND kind = 'upload'
+             AND updated_at > now() - $4::text::interval
+           ORDER BY user_id, updated_at DESC, id DESC
+         )
+         UPDATE notifications n
+         SET count = n.count + 1, asset_id = $3, updated_at = now()
+         FROM latest WHERE n.id = latest.id
+         RETURNING n.user_id",
+        &recipients,
+        actor,
+        asset_id,
+        UPLOAD_GROUP_WINDOW
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    let fresh: Vec<Uuid> = recipients
+        .into_iter()
+        .filter(|u| !grouped.contains(u))
+        .collect();
+    let target = Target {
+        asset_id: Some(asset_id),
+        ..Target::default()
+    };
+    insert(conn, &fresh, NotificationKind::Upload, actor, target).await
+}
+
 /// 이야기 작성. 본문 멘션 대상은 `mention`, 나머지는 `story`.
 pub async fn record_story(
     conn: &mut PgConnection,
