@@ -166,6 +166,20 @@ describe('BabyProfilePage', () => {
     ])
   })
 
+  // 나 화면과 같은 규칙: 구역 사이 실선.
+  it('sections_divided_by_line', async () => {
+    renderBabies(`/babies/${SKY.id}`, [SKY])
+    for (const name of ['개월별 앨범', '성장', '마일스톤']) {
+      const section = (
+        await screen.findByRole('heading', { level: 2, name })
+      ).closest('section')
+      if (!section) throw new Error('구역 없음')
+      expect(section.parentElement).toHaveClass('border-t', 'border-border')
+    }
+    const numbers = await screen.findByRole('list', { name: '기록' })
+    expect(numbers.parentElement).not.toHaveClass('border-t')
+  })
+
   it('month_card_labels', async () => {
     renderBabies(`/babies/${SKY.id}`, [SKY])
     const albums = await screen.findByRole('region', { name: '개월별 앨범' })
