@@ -3,13 +3,16 @@ use std::time::Duration;
 use tokio::{sync::watch, task::JoinHandle};
 
 use crate::{
-    assets::trash, auth::session, error::AppResult, media::orphans, state::AppState, uploads,
+    assets::trash, auth::session, error::AppResult, media::orphans, notifications, state::AppState,
+    uploads,
 };
 
 // 하루 1회. 데이터 디스크(HDD) 순회 빈도 최소화. 만료 판정은 조회 시점에도 적용.
 const INTERVAL: Duration = Duration::from_secs(24 * 3600);
 /// 고아 파일 판정 유예. 진행 중 업로드·finalize 와의 경합 방지.
 const ORPHAN_GRACE: Duration = Duration::from_secs(24 * 3600);
+/// 알림 보관 기간. `updated_at` 기준.
+const NOTIFICATION_RETENTION_DAYS: i32 = 90;
 
 /// 정리 작업 1회 실행. 단계별 독립(에러는 단계마다 기록 후 다음 단계 진행). 반환은 첫 에러.
 pub async fn run_once(state: &AppState) -> AppResult<()> {
@@ -23,6 +26,11 @@ pub async fn run_once(state: &AppState) -> AppResult<()> {
             uploads::queries::delete_expired(state).await,
         ),
         ("expired trash", trash::purge_expired(state).await),
+        (
+            "old notifications",
+            notifications::queries::delete_older_than(&state.pool, NOTIFICATION_RETENTION_DAYS)
+                .await,
+        ),
         (
             "orphan files",
             orphans::sweep(state, ORPHAN_GRACE).await.map(|report| {

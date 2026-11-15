@@ -11,8 +11,8 @@ use chagokmoa::{
     users::{Role, User},
 };
 use common::{
-    AssetSeed, MediaApp, OFFSET_STREAM, TUS_RESUMABLE, TUS_VERSION, XRW, XRW_VALUE, insert_asset,
-    media_app, server_as,
+    AssetSeed, MediaApp, OFFSET_STREAM, TUS_RESUMABLE, TUS_VERSION, XRW, XRW_VALUE, assert_error,
+    insert_asset, media_app, server_as,
 };
 use serde_json::{Value, json};
 use sqlx::PgPool;
@@ -493,4 +493,348 @@ async fn upload_concurrent_same_actor_one_row(pool: PgPool) {
     for user in [&f.dad.1, &f.grandma.1] {
         assert_eq!(upload_rows(&pool, user).await, [(mom, b, 2)]);
     }
+}
+
+/// 받는 사람에게 `upload` 줄 `n` 개 직접 삽입. `updated_at` 은 지금부터 1초씩 과거로.
+async fn insert_uploads(pool: &PgPool, user: &User, actor: Uuid, asset: Uuid, n: i32) {
+    sqlx::query!(
+        "INSERT INTO notifications (id, user_id, kind, actor_id, asset_id, created_at, updated_at)
+         SELECT gen_random_uuid(), $1, 'upload', $2, $3, t, t
+         FROM generate_series(1, $4) g, LATERAL (SELECT now() - make_interval(secs => g)) s(t)",
+        user.id,
+        actor,
+        asset,
+        n
+    )
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
+async fn list(server: &TestServer, query: &str) -> Value {
+    let res = server.get(&format!("/api/notifications{query}")).await;
+    res.assert_status_ok();
+    res.json()
+}
+
+fn item_ids(page: &Value) -> Vec<Uuid> {
+    page["items"].as_array().unwrap().iter().map(id).collect()
+}
+
+async fn unread(server: &TestServer) -> i64 {
+    let res = server.get("/api/notifications/unread-count").await;
+    res.assert_status_ok();
+    res.json::<Value>()["count"].as_i64().unwrap()
+}
+
+async fn mark_seen(server: &TestServer) {
+    server
+        .post("/api/notifications/seen")
+        .add_header(XRW, XRW_VALUE)
+        .await
+        .assert_status(StatusCode::NO_CONTENT);
+}
+
+/// 받는 사람의 알림 줄 id. 최신순.
+async fn row_ids(pool: &PgPool, user: &User) -> Vec<Uuid> {
+    sqlx::query_scalar!(
+        "SELECT id FROM notifications WHERE user_id = $1 ORDER BY updated_at DESC, id DESC",
+        user.id
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap()
+}
+
+#[sqlx::test]
+async fn list_newest_first_with_targets(pool: PgPool) {
+    let f = family(&pool).await;
+    let story_photo = insert_asset(&pool, AssetSeed::photo(f.mom.1.id)).await;
+    let story = post_created(
+        &f.mom.0,
+        "/api/stories",
+        json!({ "entry_date": "2024-06-01", "body": "오늘의 이야기",
+                "baby_ids": [], "asset_ids": [story_photo] }),
+    )
+    .await;
+    let story = id(&story);
+    let photo = insert_asset(&pool, AssetSeed::photo(f.grandma.1.id)).await;
+    comment_asset(&f.mom.0, photo, "예쁘다").await;
+    let baby = babies::queries::create(
+        &pool,
+        BabyInput {
+            name: "하나".to_string(),
+            birth_date: "2024-01-01".parse().unwrap(),
+            sex: None,
+        },
+    )
+    .await
+    .unwrap()
+    .id;
+    let milestone_photo = insert_asset(&pool, AssetSeed::photo(f.dad.1.id)).await;
+    let milestone = post_created(
+        &f.dad.0,
+        &format!("/api/babies/{baby}/milestones"),
+        json!({ "custom_label": "첫 눈", "achieved_on": "2024-02-01",
+                "asset_ids": [milestone_photo] }),
+    )
+    .await;
+    let milestone = id(&milestone);
+
+    let page = list(&f.grandma.0, "").await;
+    assert_eq!(item_ids(&page), row_ids(&pool, &f.grandma.1).await);
+    assert_eq!(page["next_cursor"], Value::Null);
+    let items = page["items"].as_array().unwrap();
+    assert_eq!(items.len(), 3);
+
+    let m = &items[0];
+    assert_eq!(m["kind"], "milestone");
+    assert_eq!(m["count"], 1);
+    assert_eq!(m["actor"]["id"], f.dad.1.id.to_string());
+    assert_eq!(m["actor"]["display_name"], "dad");
+    assert_eq!(m["milestone"]["id"], milestone.to_string());
+    assert_eq!(m["milestone"]["custom_label"], "첫 눈");
+    assert_eq!(m["milestone"]["preset_key"], Value::Null);
+    assert_eq!(m["milestone"]["cover"]["id"], milestone_photo.to_string());
+    assert_eq!(m["asset"], Value::Null);
+    assert_eq!(m["story"], Value::Null);
+    assert_eq!(m["comment"], Value::Null);
+
+    let c = &items[1];
+    assert_eq!(c["kind"], "comment");
+    assert_eq!(c["actor"]["display_name"], "mom");
+    assert_eq!(c["asset"]["id"], photo.to_string());
+    assert!(c["asset"]["local_date"].is_string());
+    assert_eq!(c["comment"]["excerpt"], "예쁘다");
+    assert_eq!(c["story"], Value::Null);
+    assert_eq!(c["milestone"], Value::Null);
+
+    let s = &items[2];
+    assert_eq!(s["kind"], "story");
+    assert_eq!(s["actor"]["display_name"], "mom");
+    assert_eq!(s["story"]["id"], story.to_string());
+    assert_eq!(s["story"]["excerpt"], "오늘의 이야기");
+    assert_eq!(s["story"]["cover"]["id"], story_photo.to_string());
+    assert_eq!(s["asset"], Value::Null);
+    assert_eq!(s["comment"], Value::Null);
+
+    let updated: Vec<&str> = items
+        .iter()
+        .map(|i| i["updated_at"].as_str().unwrap())
+        .collect();
+    let mut sorted = updated.clone();
+    sorted.sort_unstable_by(|a, b| b.cmp(a));
+    assert_eq!(updated, sorted);
+}
+
+#[sqlx::test]
+async fn story_comment_and_body_mention_targets(pool: PgPool) {
+    let f = family(&pool).await;
+    let body = format!("{} 보세요", mention(&f.grandma.1));
+    let story = create_story(&f.mom.0, &body).await;
+    comment_story(&f.dad.0, story, "좋네요").await;
+
+    let page = list(&f.mom.0, "").await;
+    let c = &page["items"][0];
+    assert_eq!(c["kind"], "comment");
+    assert_eq!(c["story"]["id"], story.to_string());
+    assert_eq!(c["story"]["cover"], Value::Null);
+    assert_eq!(c["comment"]["excerpt"], "좋네요");
+    assert_eq!(c["asset"], Value::Null);
+
+    let page = list(&f.grandma.0, "").await;
+    let items = page["items"].as_array().unwrap();
+    let m = items.iter().find(|i| i["kind"] == "mention").unwrap();
+    assert_eq!(m["story"]["id"], story.to_string());
+    assert_eq!(m["story"]["excerpt"], body);
+    assert_eq!(m["comment"], Value::Null);
+}
+
+#[sqlx::test]
+async fn list_cursor_pages(pool: PgPool) {
+    let f = family(&pool).await;
+    let asset = insert_asset(&pool, AssetSeed::photo(f.mom.1.id)).await;
+    insert_uploads(&pool, &f.grandma.1, f.mom.1.id, asset, 35).await;
+    let all = row_ids(&pool, &f.grandma.1).await;
+
+    let first = list(&f.grandma.0, "").await;
+    assert_eq!(item_ids(&first), all[..30]);
+    let cursor = first["next_cursor"].as_str().unwrap();
+    let second = list(&f.grandma.0, &format!("?cursor={cursor}")).await;
+    assert_eq!(item_ids(&second), all[30..]);
+    assert_eq!(second["next_cursor"], Value::Null);
+
+    let small = list(&f.grandma.0, "?limit=10").await;
+    assert_eq!(item_ids(&small), all[..10]);
+    assert!(small["next_cursor"].is_string());
+}
+
+#[sqlx::test]
+async fn list_only_own(pool: PgPool) {
+    let f = family(&pool).await;
+    create_story(&f.mom.0, "오늘의 이야기").await;
+    let photo = insert_asset(&pool, AssetSeed::photo(f.grandma.1.id)).await;
+    comment_asset(&f.mom.0, photo, "예쁘다").await;
+    let page = list(&f.dad.0, "").await;
+    let dad_rows = row_ids(&pool, &f.dad.1).await;
+    assert_eq!(dad_rows.len(), 1);
+    assert_eq!(item_ids(&page), dad_rows);
+    assert_eq!(unread(&f.dad.0).await, 1);
+}
+
+#[sqlx::test]
+async fn excerpt_truncated_100_chars(pool: PgPool) {
+    let f = family(&pool).await;
+    let photo = insert_asset(&pool, AssetSeed::photo(f.grandma.1.id)).await;
+    comment_asset(&f.mom.0, photo, &"가".repeat(150)).await;
+    let page = list(&f.grandma.0, "").await;
+    assert_eq!(page["items"][0]["comment"]["excerpt"], "가".repeat(100));
+}
+
+#[sqlx::test]
+async fn trashed_asset_hidden_from_list_and_count(pool: PgPool) {
+    let f = family(&pool).await;
+    create_story(&f.mom.0, "오늘의 이야기").await;
+    let photo = insert_asset(&pool, AssetSeed::photo(f.grandma.1.id)).await;
+    comment_asset(&f.mom.0, photo, "예쁘다").await;
+    assert_eq!(item_ids(&list(&f.grandma.0, "").await).len(), 2);
+    assert_eq!(unread(&f.grandma.0).await, 2);
+
+    f.mom
+        .0
+        .delete(&format!("/api/assets/{photo}"))
+        .add_header(XRW, XRW_VALUE)
+        .await
+        .assert_status(StatusCode::NO_CONTENT);
+    let page = list(&f.grandma.0, "").await;
+    assert_eq!(page["items"].as_array().unwrap().len(), 1);
+    assert_eq!(page["items"][0]["kind"], "story");
+    assert_eq!(unread(&f.grandma.0).await, 1);
+
+    f.mom
+        .0
+        .post(&format!("/api/assets/{photo}/restore"))
+        .add_header(XRW, XRW_VALUE)
+        .await
+        .assert_status_ok();
+    assert_eq!(item_ids(&list(&f.grandma.0, "").await).len(), 2);
+    assert_eq!(unread(&f.grandma.0).await, 2);
+}
+
+#[sqlx::test]
+async fn seen_resets_unread_count(pool: PgPool) {
+    let f = family(&pool).await;
+    create_story(&f.mom.0, "하나").await;
+    create_story(&f.dad.0, "둘").await;
+    assert_eq!(unread(&f.grandma.0).await, 2);
+
+    mark_seen(&f.grandma.0).await;
+    assert_eq!(unread(&f.grandma.0).await, 0);
+    let seen = sqlx::query_scalar!(
+        r#"SELECT notifications_seen_at AS "t!" FROM users WHERE id = $1"#,
+        f.grandma.1.id
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let page = list(&f.grandma.0, "").await;
+    let seen_at: chrono::DateTime<chrono::Utc> = page["seen_at"].as_str().unwrap().parse().unwrap();
+    assert_eq!(seen_at, seen);
+    assert_eq!(page["items"].as_array().unwrap().len(), 2);
+
+    create_story(&f.mom.0, "셋").await;
+    assert_eq!(unread(&f.grandma.0).await, 1);
+}
+
+#[sqlx::test]
+async fn seen_requires_csrf_header(pool: PgPool) {
+    let f = family(&pool).await;
+    f.grandma
+        .0
+        .post("/api/notifications/seen")
+        .await
+        .assert_status(StatusCode::FORBIDDEN);
+}
+
+#[sqlx::test]
+async fn unread_defaults_to_signup_time(pool: PgPool) {
+    let f = family(&pool).await;
+    let asset = insert_asset(&pool, AssetSeed::photo(f.mom.1.id)).await;
+    sqlx::query!(
+        "INSERT INTO notifications (id, user_id, kind, actor_id, asset_id, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, 'upload', $2, $3,
+                 $4::timestamptz - interval '1 hour', $4::timestamptz - interval '1 hour')",
+        f.grandma.1.id,
+        f.mom.1.id,
+        asset,
+        f.grandma.1.created_at
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert_eq!(unread(&f.grandma.0).await, 0);
+    let page = list(&f.grandma.0, "").await;
+    let seen_at: chrono::DateTime<chrono::Utc> = page["seen_at"].as_str().unwrap().parse().unwrap();
+    assert_eq!(seen_at, f.grandma.1.created_at);
+    assert_eq!(page["items"].as_array().unwrap().len(), 1);
+
+    create_story(&f.mom.0, "오늘의 이야기").await;
+    assert_eq!(unread(&f.grandma.0).await, 1);
+}
+
+#[sqlx::test]
+async fn unread_count_caps_at_100(pool: PgPool) {
+    let f = family(&pool).await;
+    let asset = insert_asset(&pool, AssetSeed::photo(f.mom.1.id)).await;
+    // 가입 시각보다 뒤로 보이도록 seen_at 을 과거로.
+    sqlx::query!(
+        "UPDATE users SET notifications_seen_at = now() - interval '1 day' WHERE id = $1",
+        f.grandma.1.id
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    insert_uploads(&pool, &f.grandma.1, f.mom.1.id, asset, 120).await;
+    assert_eq!(unread(&f.grandma.0).await, 100);
+}
+
+#[sqlx::test]
+async fn invalid_limit_400(pool: PgPool) {
+    let f = family(&pool).await;
+    for limit in ["0", "101"] {
+        let res = f
+            .grandma
+            .0
+            .get(&format!("/api/notifications?limit={limit}"))
+            .await;
+        assert_error(&res, StatusCode::BAD_REQUEST, "request.invalidQuery");
+    }
+    let res = f.grandma.0.get("/api/notifications?cursor=zzz").await;
+    assert_error(&res, StatusCode::BAD_REQUEST, "asset.invalidCursor");
+}
+
+#[sqlx::test]
+async fn deleted_targets_cascade(pool: PgPool) {
+    let f = family(&pool).await;
+    let story = create_story(&f.mom.0, "오늘의 이야기").await;
+    let photo = insert_asset(&pool, AssetSeed::photo(f.grandma.1.id)).await;
+    let comment = comment_asset(&f.mom.0, photo, "예쁘다").await;
+    assert_eq!(total(&pool).await, 3);
+
+    f.mom
+        .0
+        .delete(&format!("/api/stories/{story}"))
+        .add_header(XRW, XRW_VALUE)
+        .await
+        .assert_status(StatusCode::NO_CONTENT);
+    assert_eq!(total(&pool).await, 1);
+
+    f.mom
+        .0
+        .delete(&format!("/api/comments/{comment}"))
+        .add_header(XRW, XRW_VALUE)
+        .await
+        .assert_status(StatusCode::NO_CONTENT);
+    assert_eq!(total(&pool).await, 0);
+    assert!(item_ids(&list(&f.grandma.0, "").await).is_empty());
 }

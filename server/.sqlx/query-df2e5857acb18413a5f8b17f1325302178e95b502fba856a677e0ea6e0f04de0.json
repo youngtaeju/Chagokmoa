@@ -1,0 +1,198 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT n.id, n.kind AS \"kind: NotificationKind\", n.count, n.created_at, n.updated_at,\n                  u.id AS actor_id, u.display_name AS actor_name,\n                  a.id AS \"asset_id?\", a.kind AS \"asset_kind?: AssetKind\",\n                  a.status AS \"asset_status?: AssetStatus\", a.taken_at AS \"asset_taken_at?\",\n                  (a.taken_at AT TIME ZONE $2)::date AS \"asset_local_date?\",\n                  a.width AS \"asset_width?\", a.height AS \"asset_height?\",\n                  a.duration_ms AS \"asset_duration_ms?\", a.blurhash AS \"asset_blurhash?\",\n                  a.dominant_color AS \"asset_dominant_color?\",\n                  a.uploaded_by AS \"asset_uploaded_by?\",\n                  CASE WHEN a.id IS NOT NULL THEN\n                    COALESCE((SELECT array_agg(b.id ORDER BY b.sort_order, b.created_at, b.id)\n                              FROM asset_babies ab JOIN babies b ON b.id = ab.baby_id\n                              WHERE ab.asset_id = a.id), '{}')\n                  END AS \"asset_baby_ids?: Vec<Uuid>\",\n                  a.derivatives AS \"asset_derivatives?\",\n                  s.id AS \"story_id?\", left(s.body, $3) AS \"story_excerpt?\",\n                  m.id AS \"milestone_id?\", m.preset_key AS \"preset_key?\",\n                  m.custom_label AS \"custom_label?\",\n                  left(COALESCE(ac.body, sc.body), $3) AS \"comment_excerpt?\"\n           FROM notifications n\n           JOIN users u ON u.id = n.actor_id\n           LEFT JOIN assets a ON a.id = n.asset_id\n           LEFT JOIN stories s ON s.id = n.story_id\n           LEFT JOIN milestones m ON m.id = n.milestone_id\n           LEFT JOIN asset_comments ac ON ac.id = n.asset_comment_id\n           LEFT JOIN story_comments sc ON sc.id = n.story_comment_id\n           WHERE n.user_id = $1\n             AND (n.asset_id IS NULL OR a.deleted_at IS NULL)\n             AND ($4::timestamptz IS NULL OR (n.updated_at, n.id) < ($4, $5::uuid))\n           ORDER BY n.updated_at DESC, n.id DESC\n           LIMIT $6",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "kind: NotificationKind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "actor_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "actor_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "asset_id?",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "asset_kind?: AssetKind",
+        "type_info": {
+          "Custom": {
+            "name": "asset_kind",
+            "kind": {
+              "Enum": [
+                "photo",
+                "video"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "asset_status?: AssetStatus",
+        "type_info": {
+          "Custom": {
+            "name": "asset_status",
+            "kind": {
+              "Enum": [
+                "processing",
+                "ready",
+                "failed"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "asset_taken_at?",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "asset_local_date?",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 12,
+        "name": "asset_width?",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "asset_height?",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 14,
+        "name": "asset_duration_ms?",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 15,
+        "name": "asset_blurhash?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "asset_dominant_color?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 17,
+        "name": "asset_uploaded_by?",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 18,
+        "name": "asset_baby_ids?: Vec<Uuid>",
+        "type_info": "UuidArray"
+      },
+      {
+        "ordinal": 19,
+        "name": "asset_derivatives?",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 20,
+        "name": "story_id?",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 21,
+        "name": "story_excerpt?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 22,
+        "name": "milestone_id?",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 23,
+        "name": "preset_key?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 24,
+        "name": "custom_label?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 25,
+        "name": "comment_excerpt?",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int4",
+        "Timestamptz",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      null,
+      false,
+      false,
+      null,
+      false,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "df2e5857acb18413a5f8b17f1325302178e95b502fba856a677e0ea6e0f04de0"
+}

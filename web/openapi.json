@@ -3866,6 +3866,121 @@
         }
       }
     },
+    "/api/notifications": {
+      "get": {
+        "operationId": "list_notifications",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "이전 응답의 `next_cursor`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1~100, 기본 30.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "내 알림 최신순. 대상 사진이 휴지통이면 제외",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "쿼리 오류 (`request.invalidQuery`, `asset.invalidCursor`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/seen": {
+      "post": {
+        "operationId": "mark_seen",
+        "responses": {
+          "204": {
+            "description": "지금까지의 알림을 읽음으로"
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/unread-count": {
+      "get": {
+        "operationId": "unread_count",
+        "responses": {
+          "200": {
+            "description": "본 시각 이후 알림 수. 100 에서 멈춤",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCount"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/settings": {
       "get": {
         "operationId": "get_settings",
@@ -7102,6 +7217,225 @@
           }
         }
       },
+      "Notification": {
+        "type": "object",
+        "description": "알림 한 줄. 대상 요약은 종류별로 채움.\n사진 댓글은 `asset` + `comment`, 이야기 댓글은 `story` + `comment`, 이야기 본문 멘션은 `story` 만.",
+        "required": [
+          "id",
+          "kind",
+          "count",
+          "created_at",
+          "updated_at",
+          "actor",
+          "asset",
+          "story",
+          "milestone",
+          "comment"
+        ],
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/NotificationActor"
+          },
+          "asset": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssetSummary",
+                "description": "대상 사진. 사진 묶음은 가장 최근 사진."
+              }
+            ]
+          },
+          "comment": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NotificationComment"
+              }
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "묶인 사진 수. 사진 외 종류는 1."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NotificationKind"
+          },
+          "milestone": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NotificationMilestone"
+              }
+            ]
+          },
+          "story": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NotificationStory"
+              }
+            ]
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "NotificationActor": {
+        "type": "object",
+        "description": "알림을 만든 사용자.",
+        "required": [
+          "id",
+          "display_name"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "NotificationComment": {
+        "type": "object",
+        "required": [
+          "excerpt"
+        ],
+        "properties": {
+          "excerpt": {
+            "type": "string",
+            "description": "본문 앞 100자(문자 수). 멘션 토큰 그대로."
+          }
+        }
+      },
+      "NotificationKind": {
+        "type": "string",
+        "description": "알림 종류. DB 는 `text` 소문자.",
+        "enum": [
+          "upload",
+          "comment",
+          "mention",
+          "story",
+          "milestone"
+        ]
+      },
+      "NotificationMilestone": {
+        "type": "object",
+        "required": [
+          "id",
+          "preset_key",
+          "custom_label",
+          "cover"
+        ],
+        "properties": {
+          "cover": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssetSummary",
+                "description": "첫 사진. 휴지통 제외."
+              }
+            ]
+          },
+          "custom_label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "preset_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`preset_key` 와 `custom_label` 중 하나만 값."
+          }
+        }
+      },
+      "NotificationPage": {
+        "type": "object",
+        "description": "알림 목록 페이지.",
+        "required": [
+          "items",
+          "next_cursor",
+          "seen_at"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notification"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "다음 페이지가 없으면 `null`."
+          },
+          "seen_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "마지막으로 알림을 본 시각. 본 적 없으면 가입 시각."
+          }
+        }
+      },
+      "NotificationStory": {
+        "type": "object",
+        "required": [
+          "id",
+          "excerpt",
+          "cover"
+        ],
+        "properties": {
+          "cover": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AssetSummary",
+                "description": "첫 사진. 휴지통 제외."
+              }
+            ]
+          },
+          "excerpt": {
+            "type": "string",
+            "description": "본문 앞 100자(문자 수). 멘션 토큰 그대로."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "Page_AssetSummary": {
         "type": "object",
         "description": "커서 페이지.",
@@ -7974,6 +8308,19 @@
           }
         ],
         "description": "휴지통 목록 항목."
+      },
+      "UnreadCount": {
+        "type": "object",
+        "description": "안 읽은 알림 수. 100 에서 멈춤.",
+        "required": [
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "UpdateAlbumRequest": {
         "type": "object",
