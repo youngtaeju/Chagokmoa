@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # 빌드한 이미지로 compose 기동 후 기본 동작 확인.
-# 사용: docker/smoke.sh [이미지 태그]   (기본 littledays:dev, 호스트 포트 SMOKE_PORT 기본 18090)
+# 사용: docker/smoke.sh [이미지 태그]   (기본 chagokmoa:dev, 호스트 포트 SMOKE_PORT 기본 18090)
 set -euo pipefail
 
-IMAGE="${1:-littledays:dev}"
+IMAGE="${1:-chagokmoa:dev}"
 PORT="${SMOKE_PORT:-18090}"
-PROJECT=littledays-smoke
+PROJECT=chagokmoa-smoke
 PUID=1234
 WORK="$(mktemp -d)"
 BASE="http://localhost:$PORT"

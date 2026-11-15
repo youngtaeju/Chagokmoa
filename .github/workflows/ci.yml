@@ -23,18 +23,18 @@ jobs:
       run:
         working-directory: server
     env:
-      DATABASE_URL: postgres://littledays:littledays@localhost:5432/littledays
+      DATABASE_URL: postgres://chagokmoa:chagokmoa@localhost:5432/chagokmoa
     services:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: littledays
-          POSTGRES_PASSWORD: littledays
-          POSTGRES_DB: littledays
+          POSTGRES_USER: chagokmoa
+          POSTGRES_PASSWORD: chagokmoa
+          POSTGRES_DB: chagokmoa
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U littledays"
+          --health-cmd "pg_isready -U chagokmoa"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -107,15 +107,15 @@ jobs:
           context: .
           file: docker/Dockerfile
           platforms: linux/amd64
-          tags: littledays:ci
+          tags: chagokmoa:ci
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: 이미지 크기 기록
         run: |
-          { echo '```'; docker image ls littledays:ci; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
+          { echo '```'; docker image ls chagokmoa:ci; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: 스모크
-        run: bash docker/smoke.sh littledays:ci
+        run: bash docker/smoke.sh chagokmoa:ci
 
   e2e:
     # docker job 이 채운 GHA 빌드 캐시 재사용. 같은 이미지 이중 빌드 방지.
@@ -132,11 +132,11 @@ jobs:
           context: .
           file: docker/Dockerfile
           platforms: linux/amd64
-          tags: littledays:ci
+          tags: chagokmoa:ci
           load: true
           cache-from: type=gha
       - name: 스택 기동(빈 DB)
-        run: bash docker/stack.sh up littledays:ci
+        run: bash docker/stack.sh up chagokmoa:ci
       - uses: pnpm/action-setup@v4
         with:
           package_json_file: web/package.json
@@ -167,7 +167,7 @@ jobs:
           retention-days: 7
       - name: 서버 로그
         if: failure()
-        run: bash docker/stack.sh logs littledays:ci
+        run: bash docker/stack.sh logs chagokmoa:ci
       - name: 스택 정리
         if: always()
-        run: bash docker/stack.sh down littledays:ci
+        run: bash docker/stack.sh down chagokmoa:ci

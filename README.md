@@ -1,4 +1,4 @@
-# LittleDays
+# 차곡모아 (Chagokmoa)
 
 셀프호스팅 가족용 아기 포토 저널입니다. 서버 하나가 가족 하나를 담당하며, 사진과 영상의 원본은 업로드한 바이트 그대로 보존합니다. 외부 클라우드, 광고, 추적 없이 직접 운영하는 서버에서만 동작합니다.
 
@@ -8,7 +8,7 @@
 
 ## 설치
 
-Docker 와 Docker Compose 가 있는 서버(홈서버, NAS 등)에서 실행합니다. 이미지는 `ghcr.io/youngtaeju/littledays` 이며 `linux/amd64` 를 지원합니다. 내려받는 크기는 약 211 MB 입니다. 외부 의존은 PostgreSQL 하나이고 compose 에 포함되어 있습니다.
+Docker 와 Docker Compose 가 있는 서버(홈서버, NAS 등)에서 실행합니다. 이미지는 `ghcr.io/youngtaeju/chagokmoa` 이며 `linux/amd64` 를 지원합니다. 내려받는 크기는 약 211 MB 입니다. 외부 의존은 PostgreSQL 하나이고 compose 에 포함되어 있습니다.
 
 1. `compose/` 디렉터리의 `docker-compose.yml` 과 `.env.example` 을 서버의 작업 디렉터리에 복사하고, `.env.example` 을 `.env` 로 바꿔 값을 채웁니다.
 
@@ -38,7 +38,7 @@ compose 의 `ports` 는 호스트의 모든 인터페이스에 포트를 엽니�
 
 ### 업그레이드
 
-`.env` 의 `LITTLEDAYS_VERSION` 을 새 버전으로 바꾼 뒤 다음을 실행합니다. 기본값 `latest` 를 쓰는 경우 값 변경 없이 실행합니다.
+`.env` 의 `CHAGOKMOA_VERSION` 을 새 버전으로 바꾼 뒤 다음을 실행합니다. 기본값 `latest` 를 쓰는 경우 값 변경 없이 실행합니다.
 
 ```bash
 docker compose pull && docker compose up -d

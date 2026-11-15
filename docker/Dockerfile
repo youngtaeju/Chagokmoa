@@ -7,7 +7,7 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
 WORKDIR /src/web
 COPY web/package.json web/pnpm-lock.yaml ./
-RUN --mount=type=cache,id=littledays-pnpm,target=/pnpm-store \
+RUN --mount=type=cache,id=chagokmoa-pnpm,target=/pnpm-store \
     pnpm install --frozen-lockfile --store-dir /pnpm-store
 COPY web/ ./
 RUN pnpm build
@@ -21,8 +21,8 @@ COPY server/ ./
 # sqlx 매크로는 커밋된 .sqlx/ 로 검사. 빌드에 DB 불필요.
 ENV SQLX_OFFLINE=true
 # target 은 캐시 마운트라 결과물을 레이어로 복사.
-RUN --mount=type=cache,id=littledays-cargo-registry,target=/usr/local/cargo/registry \
-    --mount=type=cache,id=littledays-target,target=/src/server/target \
+RUN --mount=type=cache,id=chagokmoa-cargo-registry,target=/usr/local/cargo/registry \
+    --mount=type=cache,id=chagokmoa-target,target=/src/server/target \
     cargo build --release --locked \
     && cp target/release/chagokmoa /chagokmoa
 
