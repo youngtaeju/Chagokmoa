@@ -76,8 +76,6 @@ export function Sidebar({
         <ul className="grid gap-1">
           <li>
             <Link
-              // 알림 라우트는 알림 화면 추가 때 생성. 그때 이 주석과 함께 제거.
-              // @ts-expect-error 알림 라우트 아직 없음
               to="/notifications"
               aria-current={inNotifications ? 'page' : undefined}
               className={cn(LINK, inNotifications && LINK_ACTIVE)}

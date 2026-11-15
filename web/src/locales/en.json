@@ -866,6 +866,19 @@
   },
   "notifications": {
     "title": "Notifications",
-    "bellNew": "Notifications, {{count}} new"
+    "bellNew": "Notifications, {{count}} new",
+    "today": "Today",
+    "week": "This week",
+    "earlier": "Earlier",
+    "empty": "No notifications yet",
+    "new": "New",
+    "uploadOne": "{{name}} added a photo",
+    "uploadMany": "{{name}} added {{count}} photos",
+    "commentMyPhoto": "{{name}} commented on your photo: \"{{text}}\"",
+    "commentPhoto": "{{name}} commented: \"{{text}}\"",
+    "commentStory": "{{name}} commented on a story: \"{{text}}\"",
+    "mention": "{{name}} mentioned you: \"{{text}}\"",
+    "story": "{{name}} shared a story: \"{{text}}\"",
+    "milestone": "{{name}} added a milestone: {{label}}"
   }
 }

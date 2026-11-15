@@ -183,7 +183,7 @@ function PanelTab({
 export function ViewerPage() {
   const { t, i18n } = useTranslation()
   const { id } = route.useParams()
-  const { baby, from, of } = route.useSearch()
+  const { baby, from, of, panel: entryPanel } = route.useSearch()
   const fromFavorites = from === 'favorites'
   // 영상 화면 출처. 이웃은 영상 목록(아기 필터 없음).
   const fromVideos = from === 'videos'
@@ -288,8 +288,9 @@ export function ViewerPage() {
   })
 
   // 정보/댓글 패널은 넘겨도 같은 탭 유지(데스크톱 옆 패널). 확대, 편집, 휴지통 확인은 항목마다 초기화.
+  // 첫 패널은 주소의 panel(알림에서 댓글로 진입).
   const [shownId, setShownId] = useState(id)
-  const [panel, setPanel] = useState<Panel | null>(null)
+  const [panel, setPanel] = useState<Panel | null>(entryPanel ?? null)
   const [editing, setEditing] = useState<Editing | null>(null)
   const [trashOpen, setTrashOpen] = useState(false)
   const [likersOpen, setLikersOpen] = useState(false)

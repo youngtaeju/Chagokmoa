@@ -865,6 +865,19 @@
   },
   "notifications": {
     "title": "알림",
-    "bellNew": "알림, 새 알림 {{count}}개"
+    "bellNew": "알림, 새 알림 {{count}}개",
+    "today": "오늘",
+    "week": "이번 주",
+    "earlier": "이전",
+    "empty": "아직 알림이 없어요",
+    "new": "새 알림",
+    "uploadOne": "{{name}}님이 사진을 올렸어요",
+    "uploadMany": "{{name}}님이 사진 {{count}}장을 올렸어요",
+    "commentMyPhoto": "{{name}}님이 회원님 사진에 댓글을 남겼어요: \"{{text}}\"",
+    "commentPhoto": "{{name}}님이 댓글을 남겼어요: \"{{text}}\"",
+    "commentStory": "{{name}}님이 이야기에 댓글을 남겼어요: \"{{text}}\"",
+    "mention": "{{name}}님이 회원님을 언급했어요: \"{{text}}\"",
+    "story": "{{name}}님이 이야기를 남겼어요: \"{{text}}\"",
+    "milestone": "{{name}}님이 마일스톤을 남겼어요: {{label}}"
   }
 }

@@ -123,6 +123,10 @@ const MilestonePage = lazyRouteComponent(
   () => import('@/milestones/MilestonePage'),
   'MilestonePage',
 )
+const NotificationsPage = lazyRouteComponent(
+  () => import('@/notifications/NotificationsPage'),
+  'NotificationsPage',
+)
 const ViewerPage = lazyRouteComponent(
   () => import('@/viewer/ViewerPage'),
   'ViewerPage',
@@ -177,12 +181,13 @@ function calendarSearch(s: Record<string, unknown>): {
   }
 }
 
-// 뷰어 전용. from = 이전/다음 목록(없으면 타임라인), of = 이야기, 마일스톤, 앨범 id.
-// 그 밖의 값, of 없는 story/milestone/album 은 버림. of 는 story/milestone/album 일 때만.
+// 뷰어 전용. from = 이전/다음 목록(없으면 타임라인), of = 이야기, 마일스톤, 앨범 id, panel = 진입 시 열 패널.
+// 그 밖의 값, of 없는 story/milestone/album 은 버림. of 는 story/milestone/album 일 때만. panel 은 comments 만.
 function viewerSearch(s: Record<string, unknown>): {
   baby?: string
   from?: 'favorites' | 'videos' | 'story' | 'milestone' | 'album'
   of?: string
+  panel?: 'comments'
 } {
   const of = typeof s.of === 'string' && s.of !== '' ? s.of : undefined
   const from =
@@ -199,6 +204,7 @@ function viewerSearch(s: Record<string, unknown>): {
       from === 'story' || from === 'milestone' || from === 'album'
         ? of
         : undefined,
+    panel: s.panel === 'comments' ? 'comments' : undefined,
   }
 }
 
@@ -488,6 +494,13 @@ const albumRoute = createRoute({
   component: AlbumPage,
 })
 
+// 모든 멤버.
+const notificationsRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/notifications',
+  component: NotificationsPage,
+})
+
 const trashRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: '/me/trash',
@@ -572,6 +585,7 @@ const routeTree = rootRoute.addChildren([
       videosRoute,
       albumRoute,
       trashRoute,
+      notificationsRoute,
     ]),
     photoRoute,
   ]),
