@@ -224,4 +224,5 @@ export const emptyFeedRoutes = {
   'GET /api/days': () => json(200, { items: [], next_cursor: null }),
   'GET /api/memories': () => json(200, null),
   'GET /api/users': () => json(200, { users: [] }),
+  'GET /api/notifications/unread-count': () => json(200, { count: 0 }),
 }

@@ -862,5 +862,9 @@
       "noteTooLong": "메모는 100자까지 쓸 수 있어요.",
       "dateRange": "생일부터 오늘까지의 날짜를 골라 주세요."
     }
+  },
+  "notifications": {
+    "title": "알림",
+    "bellNew": "알림, 새 알림 {{count}}개"
   }
 }

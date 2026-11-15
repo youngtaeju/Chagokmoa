@@ -66,6 +66,7 @@ function renderFeed(opts: {
 }) {
   const requests: URL[] = []
   mockFetch({
+    'GET /api/notifications/unread-count': () => json(200, { count: 0 }),
     'GET /api/auth/me': () =>
       json(200, { user: userFixture(opts.role ?? 'guardian') }),
     'GET /api/settings': () => json(200, settingsFixture),

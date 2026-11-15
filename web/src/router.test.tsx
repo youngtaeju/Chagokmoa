@@ -117,6 +117,7 @@ describe('router', () => {
       sort_order: 1,
     })
     mockFetch({
+      'GET /api/notifications/unread-count': () => json(200, { count: 0 }),
       'GET /api/auth/me': () => json(200, { user: userFixture('family') }),
       'GET /api/settings': () =>
         json(200, { ...settingsFixture, primary_baby_id: SEA.id }),

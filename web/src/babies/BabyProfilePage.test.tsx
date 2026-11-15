@@ -78,6 +78,7 @@ function renderBabies(
 ) {
   const statsRequests: string[] = []
   mockFetch({
+    'GET /api/notifications/unread-count': () => json(200, { count: 0 }),
     'GET /api/auth/me': () =>
       json(200, { user: userFixture(opts.role ?? 'guardian') }),
     'GET /api/settings': () => json(200, settingsFixture),
@@ -264,6 +265,7 @@ describe('BabyProfilePage', () => {
     let settingsCalls = 0
     let resolveSettings: (r: Response) => void = () => undefined
     mockFetch({
+      'GET /api/notifications/unread-count': () => json(200, { count: 0 }),
       'GET /api/auth/me': () => json(200, { user: userFixture('guardian') }),
       'GET /api/settings': () => {
         settingsCalls += 1

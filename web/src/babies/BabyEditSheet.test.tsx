@@ -67,6 +67,7 @@ function renderBabies(
   const list = { current: babies }
   const puts: unknown[] = []
   mockFetch({
+    'GET /api/notifications/unread-count': () => json(200, { count: 0 }),
     'GET /api/auth/me': () => json(200, { user: userFixture(role) }),
     'GET /api/settings': () => json(200, settingsFixture),
     'GET /api/babies': () => json(200, list.current),

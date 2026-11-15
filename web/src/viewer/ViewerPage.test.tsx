@@ -57,6 +57,7 @@ function renderViewer(opts: {
       json(200, opts.assets?.[id] ?? assetFixture(id))
   }
   mockFetch({
+    'GET /api/notifications/unread-count': () => json(200, { count: 0 }),
     'GET /api/auth/me': () =>
       json(200, { user: userFixture(opts.role ?? 'guardian') }),
     'GET /api/settings': () => json(200, settingsFixture),

@@ -37,6 +37,7 @@ function renderHome(
     json(200, { ...settingsFixture, primary_baby_id: primary }),
 ) {
   mockFetch({
+    'GET /api/notifications/unread-count': () => json(200, { count: 0 }),
     'GET /api/auth/me': () => json(200, { user: userFixture('family') }),
     'GET /api/settings': settings,
     'GET /api/babies': () => json(200, babies),
@@ -143,7 +144,9 @@ describe('HomeHeader', () => {
     await waitFor(() => {
       expect(resolve).toBeDefined()
     })
-    expect(banner.queryByRole('link')).toBeNull()
+    expect(
+      banner.queryAllByRole('link').map((l) => l.getAttribute('href')),
+    ).toEqual(['/notifications'])
     expect(banner.queryByText(/^D[+-]/)).toBeNull()
 
     resolve?.(json(200, { ...settingsFixture, primary_baby_id: SEA.id }))
@@ -172,7 +175,9 @@ describe('HomeHeader', () => {
     await waitFor(() => {
       expect(queryClient.getQueryData(['babies'])).toEqual([])
     })
-    expect(banner.queryByRole('link')).toBeNull()
+    expect(
+      banner.queryAllByRole('link').map((l) => l.getAttribute('href')),
+    ).toEqual(['/notifications'])
     expect(banner.queryByText(/^D[+-]/)).toBeNull()
     expect(banner.queryByRole('group')).toBeNull()
   })
