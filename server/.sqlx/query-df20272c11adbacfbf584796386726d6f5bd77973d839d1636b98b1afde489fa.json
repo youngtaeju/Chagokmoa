@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT uploaded_by AS \"id!\" FROM assets WHERE id = $1\n                   UNION\n                   SELECT author_id FROM asset_comments WHERE asset_id = $1 AND id <> $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "df20272c11adbacfbf584796386726d6f5bd77973d839d1636b98b1afde489fa"
+}

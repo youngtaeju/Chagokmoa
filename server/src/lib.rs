@@ -16,6 +16,7 @@ pub mod maintenance;
 pub mod media;
 pub mod memories;
 pub mod milestones;
+pub mod notifications;
 pub mod openapi;
 pub mod reactions;
 pub mod records;

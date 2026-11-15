@@ -17,6 +17,7 @@ use crate::{
     },
     error::{AppError, AppResult, ErrorBody},
     links::{self, LinkKind, dedup},
+    notifications::{self, record::CommentTarget},
     records,
     request::{Json as JsonBody, Path, Query},
     settings,
@@ -105,6 +106,7 @@ async fn create_story(
 
     let id = Uuid::now_v7();
     queries::insert(&mut *tx, id, current.user.id, req.entry_date, body).await?;
+    notifications::record::record_story(&mut tx, current.user.id, id, body).await?;
     queries::replace_babies(&mut tx, id, &baby_ids).await?;
     links::replace_assets(&mut tx, LinkKind::Story, id, &asset_ids).await?;
     let story = queries::get(&mut tx, &timezone, id, current.user.id)
@@ -330,6 +332,11 @@ async fn create_story_comment(
     queries::require_exists(&mut *tx, id).await?;
     let body = validate(&mut *tx, &req.body).await?;
     let comment = queries::insert_comment(&mut *tx, id, current.user.id, body).await?;
+    let target = CommentTarget::Story {
+        story_id: id,
+        comment_id: comment.id,
+    };
+    notifications::record::record_comment(&mut tx, current.user.id, target, body).await?;
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(comment)))
 }
