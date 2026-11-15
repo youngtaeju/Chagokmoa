@@ -96,6 +96,22 @@ describe('FamilyPage', () => {
     ).not.toBeInTheDocument()
   })
 
+  // 나 탭 하위 화면. 직접 진입이면 뒤로 = 나 화면, 초대 버튼은 머리글 오른쪽.
+  it('header_back_and_invite', async () => {
+    const { user, router } = renderMembers({}, { users: [OWNER, DAD] })
+    const header = (
+      await screen.findByRole('heading', { level: 1, name: '가족' })
+    ).closest('header')
+    if (!header) throw new Error('머리글 없음')
+    expect(
+      within(header).getByRole('button', { name: '가족 초대하기' }),
+    ).toBeInTheDocument()
+    await user.click(within(header).getByRole('button', { name: '뒤로' }))
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/me')
+    })
+  })
+
   it('role_labels_ko_en', async () => {
     expect(i18n.t('roles.owner')).toBe('관리자')
     expect(i18n.t('roles.guardian')).toBe('보호자')

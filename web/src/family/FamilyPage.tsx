@@ -7,6 +7,7 @@ import type { User } from '@/api/types'
 import { hasRole, useMe } from '@/auth/session'
 import { FormError } from '@/components/Field'
 import { Button } from '@/components/ui/button'
+import { MeSubPage } from '@/me/MeSubPage'
 import { useUsers } from '@/members/useUsers'
 import { useSettings } from '@/settings/useSettings'
 import { formatInZone } from '@/viewer/zoned'
@@ -169,67 +170,69 @@ export function FamilyPage() {
   // 목록 갱신을 따라가도록 id 로 보관.
   const editUser = users.data?.users.find((u) => u.id === editing)
 
+  const invite = manage && (
+    <Button
+      variant="ghost"
+      className="text-accent-ink"
+      onClick={() => {
+        setInviting(true)
+      }}
+    >
+      {t('members.inviteMember')}
+    </Button>
+  )
+
   return (
-    <div className="mx-auto grid max-w-xl gap-6">
-      <section aria-labelledby="family-members" className="grid gap-2">
-        <div className="flex items-center justify-between gap-3">
-          <h1 id="family-members" className="text-xl font-bold">
-            {t('members.usersTitle')}
-          </h1>
-          {manage && (
-            <Button
-              onClick={() => {
-                setInviting(true)
-              }}
-            >
-              {t('members.inviteMember')}
-            </Button>
-          )}
-        </div>
-        <FormError error={users.error} />
-        <ul>
-          {users.data?.users.map((u) => (
-            <MemberRow
-              key={u.id}
-              user={u}
-              self={u.id === me?.id}
-              manage={manage}
-              onOpen={() => {
-                setEditing(u.id)
-              }}
-            />
-          ))}
-        </ul>
-      </section>
-      {manage && <PendingInvites />}
-      <section aria-labelledby="family-roles" className="grid gap-2">
-        <h2 id="family-roles" className="text-[17px] font-semibold">
-          {t('members.rolesTitle')}
-        </h2>
-        <dl className="grid gap-2 text-sm">
-          {ROLES.map((r) => (
-            <div key={r} className="flex gap-2">
-              <dt className="w-16 shrink-0 font-semibold">{t(`roles.${r}`)}</dt>
-              <dd className="text-muted-foreground">{t(`roles.${r}Desc`)}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-      {inviting && (
-        <InviteSheet
-          onClose={() => {
-            setInviting(false)
-          }}
-        />
-      )}
-      {editUser && (
-        <MemberSheet
-          user={editUser}
-          onClose={() => {
-            setEditing(null)
-          }}
-        />
-      )}
-    </div>
+    <MeSubPage title={t('me.family')} actions={invite}>
+      <div className="mx-auto grid w-full max-w-xl gap-6">
+        <section aria-label={t('members.usersTitle')} className="grid gap-2">
+          <FormError error={users.error} />
+          <ul>
+            {users.data?.users.map((u) => (
+              <MemberRow
+                key={u.id}
+                user={u}
+                self={u.id === me?.id}
+                manage={manage}
+                onOpen={() => {
+                  setEditing(u.id)
+                }}
+              />
+            ))}
+          </ul>
+        </section>
+        {manage && <PendingInvites />}
+        <section aria-labelledby="family-roles" className="grid gap-2">
+          <h2 id="family-roles" className="text-[17px] font-semibold">
+            {t('members.rolesTitle')}
+          </h2>
+          <dl className="grid gap-2 text-sm">
+            {ROLES.map((r) => (
+              <div key={r} className="flex gap-2">
+                <dt className="w-16 shrink-0 font-semibold">
+                  {t(`roles.${r}`)}
+                </dt>
+                <dd className="text-muted-foreground">{t(`roles.${r}Desc`)}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+        {inviting && (
+          <InviteSheet
+            onClose={() => {
+              setInviting(false)
+            }}
+          />
+        )}
+        {editUser && (
+          <MemberSheet
+            user={editUser}
+            onClose={() => {
+              setEditing(null)
+            }}
+          />
+        )}
+      </div>
+    </MeSubPage>
   )
 }

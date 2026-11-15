@@ -1,7 +1,7 @@
 import { getRouteApi, Link, Navigate } from '@tanstack/react-router'
 import IconProgress from '~icons/material-symbols/progress-activity-rounded'
 import IconWarning from '~icons/material-symbols/warning-outline-rounded'
-import { useEffect } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AgeMonth, Baby } from '@/api/types'
 import { hasRole, useMe } from '@/auth/session'
@@ -185,6 +185,15 @@ function MonthAlbums({ id }: { id: string }) {
   )
 }
 
+// 구역 위 실선(나 화면 규칙). 휴대폰은 화면 끝까지, 넓은 화면은 가운데 열 폭.
+function Divided({ children }: { children: ReactNode }) {
+  return (
+    <div className="-mx-4 border-t border-border px-4 py-4 sm:mx-0 sm:px-0">
+      {children}
+    </div>
+  )
+}
+
 // 아기 탭. 머리글(이름, 나이), 숫자 상자, 개월별 앨범, 성장, 마일스톤.
 export function BabyProfilePage() {
   const { t } = useTranslation()
@@ -218,20 +227,28 @@ export function BabyProfilePage() {
   if (!baby) return <Navigate to="/babies" replace />
 
   return (
-    <div className="mx-auto grid max-w-[640px] grid-cols-1 gap-6">
-      {babies.data.length > 1 && <BabySwitcher babies={babies.data} />}
-      <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1">
-          <ProfileHeader baby={baby} />
+    <div className="mx-auto grid max-w-[640px] grid-cols-1">
+      <div className="grid grid-cols-1 gap-6 pb-6">
+        {babies.data.length > 1 && <BabySwitcher babies={babies.data} />}
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <ProfileHeader baby={baby} />
+          </div>
+          {hasRole(user, 'guardian') && (
+            <BabyMenu baby={baby} count={babies.data.length} />
+          )}
         </div>
-        {hasRole(user, 'guardian') && (
-          <BabyMenu baby={baby} count={babies.data.length} />
-        )}
+        <Numbers id={baby.id} />
       </div>
-      <Numbers id={baby.id} />
-      <MonthAlbums id={baby.id} />
-      <GrowthSection baby={baby} />
-      <MilestoneSection baby={baby} />
+      <Divided>
+        <MonthAlbums id={baby.id} />
+      </Divided>
+      <Divided>
+        <GrowthSection baby={baby} />
+      </Divided>
+      <Divided>
+        <MilestoneSection baby={baby} />
+      </Divided>
     </div>
   )
 }

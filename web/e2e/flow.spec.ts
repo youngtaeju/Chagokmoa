@@ -1064,20 +1064,17 @@ test('security_headers_and_no_csp_violations', async ({ ownerPage: page }) => {
     await expect(page).toHaveURL(url)
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible()
   }
-  // 아기, 가족은 나 탭 우리 집에서.
-  for (const [name, heading] of [
-    ['아기', '아기'],
-    ['가족', '가족'],
-  ] as const) {
-    await nav.getByRole('link', { name: '나' }).click()
-    await page
-      .getByRole('main')
-      .getByRole('link', { name, exact: true })
-      .click()
-    await expect(
-      page.getByRole('heading', { name: heading }).first(),
-    ).toBeVisible()
-  }
+  // 가족은 나 탭 우리 집에서. 뒤로 가기로 나 화면 복귀.
+  await nav.getByRole('link', { name: '나' }).click()
+  await page
+    .getByRole('main')
+    .getByRole('link', { name: '가족', exact: true })
+    .click()
+  await expect(
+    page.getByRole('heading', { name: '가족', level: 1 }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: '뒤로' }).click()
+  await expect(page).toHaveURL(/\/me$/)
   await nav.getByRole('link', { name: '나' }).click()
   await expect(
     page.getByRole('heading', { name: OWNER.displayName }),

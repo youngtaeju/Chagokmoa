@@ -26,23 +26,23 @@ function renderMe(role: Role, path = '/me') {
 }
 
 describe('MePage', () => {
-  // 스펙 표: 내 사진(휴지통), 우리 집(아기, 가족, 설정), 계정, 앱. 즐겨찾기는 앨범 탭으로만.
+  // 내 사진(휴지통), 우리 집(가족, 설정), 계정, 앱. 즐겨찾기는 앨범 탭, 아기는 아기 탭으로만.
   it('groups_by_role', async () => {
     const expected = {
       family: [
-        [ko.me.home, [ko.me.babies, ko.me.family]],
+        [ko.me.home, [ko.me.family]],
         [ko.me.account, [ko.me.profile, ko.me.password, ko.me.devices]],
         [ko.me.app, [ko.me.appearance]],
       ],
       guardian: [
         [ko.me.photos, [ko.me.trash]],
-        [ko.me.home, [ko.me.babies, ko.me.family]],
+        [ko.me.home, [ko.me.family]],
         [ko.me.account, [ko.me.profile, ko.me.password, ko.me.devices]],
         [ko.me.app, [ko.me.appearance]],
       ],
       owner: [
         [ko.me.photos, [ko.me.trash]],
-        [ko.me.home, [ko.me.babies, ko.me.family, ko.me.instance]],
+        [ko.me.home, [ko.me.family, ko.me.instance]],
         [ko.me.account, [ko.me.profile, ko.me.password, ko.me.devices]],
         [ko.me.app, [ko.me.appearance]],
       ],
@@ -73,14 +73,10 @@ describe('MePage', () => {
     ).closest('section')
     if (!home) throw new Error('우리 집 그룹 없음')
     expect(
-      within(home).getByRole('link', { name: ko.me.babies }),
-    ).toHaveAttribute('href', '/babies')
-    expect(
       within(home).getByRole('link', { name: ko.me.family }),
     ).toHaveAttribute('href', '/family')
   })
 
-  // 시안 M1: 옅은 바탕 위 둥근 카드, 라벨은 카드 바깥 위.
   it('me_groups_divided_by_line', async () => {
     renderMe('owner')
     const heading = await screen.findByRole('heading', { name: ko.me.home })
