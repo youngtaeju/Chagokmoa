@@ -612,7 +612,7 @@
     "changePassword": "비밀번호 바꾸기",
     "passwordChanged": "비밀번호를 바꿨어요. 다른 기기는 로그아웃했어요",
     "theme": "테마",
-    "themeSystem": "시스템 설정 따르기",
+    "themeSystem": "시스템",
     "themeLight": "밝게",
     "themeDark": "어둡게",
     "unknownDevice": "알 수 없는 기기",

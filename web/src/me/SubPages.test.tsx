@@ -114,7 +114,9 @@ describe('me sub pages', () => {
       },
       { path: '/me/appearance' },
     )
-    await user.selectOptions(await screen.findByLabelText('언어'), 'en')
+    const group = await screen.findByRole('radiogroup', { name: '언어' })
+    expect(within(group).getByRole('radio', { name: '한국어' })).toBeChecked()
+    await user.click(within(group).getByRole('radio', { name: 'English' }))
     expect(
       await screen.findByRole('heading', { name: 'Display & language' }),
     ).toBeInTheDocument()
@@ -123,8 +125,19 @@ describe('me sub pages', () => {
 
   it('theme_change_applies', async () => {
     const { user } = renderPage({}, { path: '/me/appearance' })
-    await user.selectOptions(await screen.findByLabelText('테마'), 'dark')
+    const group = await screen.findByRole('radiogroup', { name: '테마' })
+    expect(
+      within(group)
+        .getAllByRole('radio')
+        .map((r) => r.closest('label')?.textContent),
+    ).toEqual(['시스템', '밝게', '어둡게'])
+    await user.click(within(group).getByRole('radio', { name: '어둡게' }))
+    expect(within(group).getByRole('radio', { name: '어둡게' })).toBeChecked()
     expect(document.documentElement.classList.contains('dark')).toBe(true)
+    // 같은 이름 라디오. 화살표 키로 이동.
+    await user.keyboard('{ArrowLeft}')
+    expect(within(group).getByRole('radio', { name: '밝게' })).toBeChecked()
+    expect(document.documentElement.classList.contains('dark')).toBe(false)
   })
 
   it('profile_save_refreshes_member_names', async () => {
