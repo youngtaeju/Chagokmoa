@@ -83,6 +83,7 @@ async fn main() -> anyhow::Result<()> {
             storage::ensure_dirs(&config.data_dir)
                 .with_context(|| format!("DATA_DIR {} 준비 실패", config.data_dir.display()))?;
             let state = AppState::new(pool, config);
+            state.vapid().await?;
             let listener = tokio::net::TcpListener::bind(addr).await?;
             tracing::info!(%addr, "listening");
             let (stop, force) = shutdown_signal()?;
