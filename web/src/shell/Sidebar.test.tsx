@@ -37,6 +37,14 @@ async function sidebar() {
 }
 
 describe('Sidebar', () => {
+  it('sidebar_shows_app_brand', async () => {
+    renderShell('guardian')
+    const { root } = await sidebar()
+    const brand = root.getByText(ko.app.name)
+    expect(brand.querySelector('img')).toHaveAttribute('src', '/icon.svg')
+    expect(root.queryByText(settingsFixture.instance_name)).toBeNull()
+  })
+
   // 주 메뉴는 역할 무관 다섯. 보조 메뉴, 추가하기는 보호자 이상.
   it.each([
     ['owner', true],

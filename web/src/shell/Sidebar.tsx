@@ -25,15 +25,9 @@ const LINK =
   'flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-muted-foreground hover:bg-muted'
 const LINK_ACTIVE = 'font-semibold text-accent-ink'
 
-// 1024px 이상 왼쪽 220px. 우리 집 이름, 탭과 같은 메뉴, 보조 메뉴(휴지통), 맨 아래 추가하기.
+// 1024px 이상 왼쪽 220px. 앱 로고와 이름, 탭과 같은 메뉴, 보조 메뉴(휴지통), 맨 아래 추가하기.
 // onAdd: 휴대폰 떠 있는 (+) 와 같은 셸의 추가 시트 열기.
-export function Sidebar({
-  instanceName,
-  onAdd,
-}: {
-  instanceName?: string
-  onAdd: () => void
-}) {
+export function Sidebar({ onAdd }: { onAdd: () => void }) {
   const { t } = useTranslation()
   const { user } = useMe()
   const items = useNavItems()
@@ -49,7 +43,16 @@ export function Sidebar({
   const badge = formatBadge(useUnreadCount() ?? 0)
   return (
     <div className="sticky top-0 hidden h-dvh w-[220px] shrink-0 flex-col gap-4 border-r border-border px-3 py-4 lg:flex">
-      <p className="truncate px-3 text-base font-bold">{instanceName}</p>
+      <p className="flex items-center gap-2 px-3 text-base font-bold text-auth-brand">
+        <img
+          src="/icon.svg"
+          alt=""
+          width={26}
+          height={26}
+          className="size-[26px] shrink-0 rounded-md"
+        />
+        {t('app.name')}
+      </p>
       <nav aria-label={t('nav.main')}>
         <ul className="grid gap-1">
           {items.map((item) => {
