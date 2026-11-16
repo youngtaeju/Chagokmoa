@@ -278,9 +278,9 @@
     "back": "Back",
     "empty": "No photos on this day",
     "home": "Go home",
-    "prev": "Previous day",
-    "next": "Next day",
-    "nav": "Previous and next day"
+    "nav": "Dates",
+    "stripEarlier": "Earlier dates",
+    "stripLater": "Later dates"
   },
   "memory": {
     "years_one": "{{count}} year ago today",

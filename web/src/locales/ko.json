@@ -278,9 +278,9 @@
     "back": "뒤로",
     "empty": "이날은 사진이 없어요",
     "home": "홈으로",
-    "prev": "이전 날",
-    "next": "다음 날",
-    "nav": "이전·다음 날"
+    "nav": "날짜 이동",
+    "stripEarlier": "이전 날짜",
+    "stripLater": "이후 날짜"
   },
   "memory": {
     "years_one": "{{count}}년 전 오늘",

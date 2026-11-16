@@ -89,7 +89,7 @@ export function DayPage() {
     )
   }
 
-  const { prev_date, next_date, stories } = day.data
+  const { stories } = day.data
   const uploader = uploaderText(t, uploaderNames(users, day.data.uploader_ids))
   return (
     <div>
@@ -139,35 +139,6 @@ export function DayPage() {
         </div>
       ) : (
         !hasMedia && <MilestoneLine day={day.data} users={users} />
-      )}
-      {(prev_date || next_date) && (
-        <nav
-          aria-label={t('day.nav')}
-          className="flex items-center justify-between gap-3 pt-6"
-        >
-          {prev_date && (
-            <Button variant="outline" asChild>
-              <Link
-                to="/days/$date"
-                params={{ date: prev_date }}
-                search={{ baby }}
-              >
-                {t('day.prev')}
-              </Link>
-            </Button>
-          )}
-          {next_date && (
-            <Button variant="outline" asChild className="ml-auto">
-              <Link
-                to="/days/$date"
-                params={{ date: next_date }}
-                search={{ baby }}
-              >
-                {t('day.next')}
-              </Link>
-            </Button>
-          )}
-        </nav>
       )}
     </div>
   )

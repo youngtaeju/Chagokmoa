@@ -28,6 +28,10 @@ URL.revokeObjectURL = () => undefined
 
 // jsdom 은 scrollTo 미구현. 라우터가 이동마다 호출(맨 위 이동 또는 저장 위치 복원). 테스트는 spy 로 확인.
 window.scrollTo = () => undefined
+// 요소 scrollTo 도 미구현. 그날 화면 날짜 띠가 사용.
+Element.prototype.scrollTo = () => undefined
+// scrollIntoView 도 미구현. 띠 화살표 포커스 이동이 사용.
+Element.prototype.scrollIntoView = () => undefined
 
 installIntersectionObserver()
 
