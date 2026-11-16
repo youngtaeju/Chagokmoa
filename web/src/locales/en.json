@@ -43,19 +43,19 @@
   "auth": {
     "username": "Username",
     "password": "Password",
+    "passwordConfirm": "Confirm password",
+    "passwordMismatch": "Passwords don't match",
     "displayName": "Display name",
     "toLogin": "Go to sign in",
     "login": {
       "title": "Sign in",
       "submit": "Sign in",
-      "subtitle": "Sign in with your family account",
+      "tagline": "Where your little one's days<br/>add up, <em>one by one</em>",
       "firstRun": "Just installed?",
       "toSignup": "Create the first account",
       "forgot": "I forgot my password",
       "forgotTitle": "I forgot my password",
-      "forgotAskAdmin": "Ask an administrator to reset your password.",
-      "forgotAdmin": "If you are the administrator, run this command on the server.",
-      "resetPlaceholder": "<username>"
+      "forgotAskAdmin": "Ask an administrator to reset your password."
     },
     "invite": {
       "title": "{{inviter}} invited you to {{instance}}",
@@ -109,7 +109,13 @@
       "goHome": "Go home",
       "toLogin": "Go to sign in"
     },
-    "language": "Language"
+    "language": "Language",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "showPasswordConfirm": "Show password confirmation",
+    "hidePasswordConfirm": "Hide password confirmation",
+    "themeToDark": "Switch to dark mode",
+    "themeToLight": "Switch to light mode"
   },
   "babies": {
     "name": "Name",

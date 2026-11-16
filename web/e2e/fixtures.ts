@@ -108,7 +108,12 @@ export async function createFamilyPage(
   await guest.getByLabel('표시 이름').fill(options.displayName)
   await guest.getByRole('button', { name: '다음' }).click()
   await guest.getByLabel('아이디').fill(options.username)
-  await guest.getByLabel('비밀번호').fill('e2e-family-password')
+  await guest
+    .getByLabel('비밀번호', { exact: true })
+    .fill('e2e-family-password')
+  await guest
+    .getByLabel('비밀번호 확인', { exact: true })
+    .fill('e2e-family-password')
   await guest.getByRole('button', { name: '계정 만들기' }).click()
   await expect(guest).toHaveURL(/\/$/)
   return { guest, close: () => context.close() }

@@ -12,6 +12,7 @@ import { api, call } from '@/api/client'
 import { ApiError } from '@/api/errors'
 import { setSignedIn } from '@/auth/session'
 import { Field, FormError } from '@/components/Field'
+import { PasswordField } from '@/components/PasswordField'
 import { Button } from '@/components/ui/button'
 import { errorMessage } from '@/i18n'
 import { AuthLayout } from './AuthLayout'
@@ -38,6 +39,7 @@ export function SignupWizard() {
     display_name: '',
     username: '',
     password: '',
+    password_confirm: '',
     babyName: '',
     babyBirth: '',
   })
@@ -45,6 +47,8 @@ export function SignupWizard() {
     field: FieldName
     error: unknown
   } | null>(null)
+  // 확인 칸 blur 또는 제출 시도 뒤부터 불일치 표시.
+  const [confirmTouched, setConfirmTouched] = useState(false)
   const body = useRef<HTMLDivElement>(null)
 
   // 서버 오류가 가리키는 입력칸으로 포커스. 단계 전환 렌더 뒤에 실행.
@@ -117,6 +121,18 @@ export function SignupWizard() {
     }
   }
 
+  const mismatch = confirmTouched && values.password_confirm !== values.password
+
+  // 다르면 요청 없이 확인 칸으로 포커스. 같으면 true.
+  function confirmMatches(): boolean {
+    if (values.password_confirm === values.password) return true
+    setConfirmTouched(true)
+    body.current
+      ?.querySelector<HTMLInputElement>('[name="password_confirm"]')
+      ?.focus()
+    return false
+  }
+
   function errorOf(field: FieldName): string | null {
     return fieldError?.field === field
       ? errorMessage(t, fieldError.error)
@@ -178,7 +194,7 @@ export function SignupWizard() {
               className="grid gap-4"
               onSubmit={(e) => {
                 submit(e, () => {
-                  signup.mutate()
+                  if (confirmMatches()) signup.mutate()
                 })
               }}
             >
@@ -205,13 +221,23 @@ export function SignupWizard() {
                 error={errorOf('username')}
                 {...set('username')}
               />
-              <Field
+              <PasswordField
                 label={t('auth.password')}
-                type="password"
                 autoComplete="new-password"
                 required
                 error={errorOf('password')}
                 {...set('password')}
+              />
+              <PasswordField
+                confirm
+                label={t('auth.passwordConfirm')}
+                autoComplete="new-password"
+                required
+                error={mismatch ? t('auth.passwordMismatch') : null}
+                onBlur={() => {
+                  setConfirmTouched(true)
+                }}
+                {...set('password_confirm')}
               />
               <PasswordRules password={values.password} />
               {fieldError === null && <FormError error={signup.error} />}

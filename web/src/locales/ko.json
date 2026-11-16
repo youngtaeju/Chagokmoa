@@ -43,19 +43,19 @@
   "auth": {
     "username": "아이디",
     "password": "비밀번호",
+    "passwordConfirm": "비밀번호 확인",
+    "passwordMismatch": "비밀번호가 서로 달라요",
     "displayName": "표시 이름",
     "toLogin": "로그인 화면으로 가기",
     "login": {
       "title": "로그인",
       "submit": "로그인",
-      "subtitle": "가족 계정으로 로그인해 주세요",
+      "tagline": "우리 아이의 하루하루를<br/><em>차곡차곡</em> 모아 두는 곳",
       "firstRun": "처음 설치했나요?",
       "toSignup": "첫 계정 만들기",
       "forgot": "비밀번호를 잊었어요",
       "forgotTitle": "비밀번호를 잊었어요",
-      "forgotAskAdmin": "관리자에게 비밀번호 재설정을 요청해 주세요.",
-      "forgotAdmin": "관리자 본인이라면 서버에서 아래 명령을 실행해 주세요.",
-      "resetPlaceholder": "<아이디>"
+      "forgotAskAdmin": "관리자에게 비밀번호 재설정을 요청해 주세요."
     },
     "invite": {
       "title": "{{inviter}}님이 {{instance}}에 초대했어요",
@@ -109,7 +109,13 @@
       "goHome": "홈으로 가기",
       "toLogin": "로그인하러 가기"
     },
-    "language": "언어"
+    "language": "언어",
+    "showPassword": "비밀번호 보기",
+    "hidePassword": "비밀번호 숨기기",
+    "showPasswordConfirm": "비밀번호 확인 보기",
+    "hidePasswordConfirm": "비밀번호 확인 숨기기",
+    "themeToDark": "다크 모드로 바꾸기",
+    "themeToLight": "라이트 모드로 바꾸기"
   },
   "babies": {
     "name": "이름",
