@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { api, call } from '@/api/client'
 import { json, mockFetch } from '@/test/fetch'
 import { userFixture } from '@/test/fixtures'
+import { fakeSub, installPush } from '@/test/push'
 import {
   createQueryClient,
   loadMe,
@@ -187,5 +188,25 @@ describe('session', () => {
     expect(await loadMe(qc)).toBeNull()
     expect(del).toHaveBeenCalledWith('cgm-api')
     expect(del).toHaveBeenCalledWith('cgm-derivatives')
+  })
+
+  it('logout_unsubscribes_browser_push_before_server_call', async () => {
+    const order: string[] = []
+    const sub = fakeSub('https://fcm.googleapis.com/a')
+    sub.unsubscribe.mockImplementation(() => {
+      order.push('unsubscribe')
+      return true
+    })
+    installPush({ current: sub })
+    mockFetch({
+      'POST /api/auth/logout': () => {
+        order.push('logout')
+        return new Response(null, { status: 204 })
+      },
+    })
+    const { wrapper } = setup()
+    const { result } = renderHook(() => useLogout(), { wrapper })
+    await result.current()
+    expect(order).toEqual(['unsubscribe', 'logout'])
   })
 })

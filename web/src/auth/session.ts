@@ -11,6 +11,7 @@ import { api, call } from '@/api/client'
 import { ApiError, isLogoutError } from '@/api/errors'
 import type { Role, User } from '@/api/types'
 import { applyUserLocale } from '@/i18n'
+import { unsubscribeBrowserOnly } from '@/push/device'
 // Uppy 없는 store 모듈만. 업로더 지연 청크 경계 유지.
 import { clearUploads } from '@/upload/useUploadStore'
 
@@ -134,7 +135,11 @@ export function createQueryClient(onLogout: () => void): QueryClient {
 export function useLogout(): () => Promise<void> {
   const qc = useQueryClient()
   const { mutateAsync } = useMutation({
-    mutationFn: () => call(api.POST('/api/auth/logout')),
+    mutationFn: async () => {
+      // 세션이 있는 동안 해지. 실패하거나 늦어도 로그아웃 진행.
+      await unsubscribeBrowserOnly()
+      return call(api.POST('/api/auth/logout'))
+    },
     onSuccess: () => {
       setSignedOut(qc)
     },
