@@ -514,21 +514,18 @@ describe('forgot_password', () => {
     )
     const dialog = await screen.findByRole('dialog')
     expect(dialog).toHaveTextContent(ko.auth.login.forgotAskAdmin)
-    expect(dialog).toHaveTextContent(
-      'docker compose exec app /app/chagokmoa reset-password <아이디>',
-    )
-    expect(
-      screen.getByRole('button', { name: ko.common.copy }),
-    ).toBeInTheDocument()
+    expect(dialog).not.toHaveTextContent('reset-password')
+    expect(screen.queryByRole('button', { name: ko.common.copy })).toBeNull()
   })
 
-  it('login_title_uses_remembered_instance_name', async () => {
+  it('login_pill_from_remembered_name', async () => {
     localStorage.setItem('cgm.instance.name', '하늘이네')
     mockFetch(authRoutes({ me: null }))
     renderApp('/login')
     expect(
-      await screen.findByRole('heading', { name: '하늘이네' }),
+      await screen.findByRole('heading', { name: '차곡모아' }),
     ).toBeInTheDocument()
+    expect(screen.getByText('하늘이네')).toBeInTheDocument()
     localStorage.clear()
   })
 
@@ -556,25 +553,30 @@ describe('forgot_password', () => {
     localStorage.clear()
   })
 
-  it('forgot_command_placeholder_is_localized', async () => {
+  it('login_shows_brand_and_tagline', async () => {
     mockFetch(authRoutes({ me: null }))
     const { user } = renderApp('/login')
-    await user.click(await screen.findByRole('button', { name: 'English' }))
-    await user.click(
-      await screen.findByRole('button', { name: en.auth.login.forgot }),
-    )
-    expect(await screen.findByRole('dialog')).toHaveTextContent(
-      'reset-password <username>',
-    )
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '차곡모아' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('차곡차곡').tagName).toBe('EM')
+    await user.click(screen.getByRole('button', { name: 'English' }))
+    expect(await screen.findByText('one by one')).toBeInTheDocument()
   })
 
-  it('login_shows_title_and_subtitle', async () => {
+  it('password_toggle_keeps_value', async () => {
     mockFetch(authRoutes({ me: null }))
-    renderApp('/login')
-    expect(
-      await screen.findByRole('heading', { name: '차곡모아' }),
-    ).toBeInTheDocument()
-    expect(screen.getByText(ko.auth.login.subtitle)).toBeInTheDocument()
+    const { user } = renderApp('/login')
+    const input = await screen.findByLabelText(ko.auth.password)
+    await user.type(input, 'secret-pw')
+    await user.click(screen.getByRole('button', { name: ko.auth.showPassword }))
+    expect(input).toHaveAttribute('type', 'text')
+    expect(input).toHaveValue('secret-pw')
+    expect(input).toHaveAttribute('autocomplete', 'current-password')
+    const hide = screen.getByRole('button', { name: ko.auth.hidePassword })
+    expect(hide).toHaveAttribute('aria-pressed', 'true')
+    await user.click(hide)
+    expect(input).toHaveAttribute('type', 'password')
   })
 })
 
