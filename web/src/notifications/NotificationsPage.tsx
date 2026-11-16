@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { errorMessage } from '@/i18n'
 import { MeSubPage } from '@/me/MeSubPage'
 import { useUsers } from '@/members/useUsers'
+import { PushBanner } from '@/push/PushBanner'
 import { useSettings, useToday } from '@/settings/useSettings'
 import { sectionOf, type Section } from './links'
 import { NotificationRow } from './NotificationRow'
@@ -71,6 +72,7 @@ export function NotificationsPage() {
 
   return (
     <MeSubPage title={t('notifications.title')} backTo="/">
+      <PushBanner />
       {status === 'pending' && (
         <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
       )}

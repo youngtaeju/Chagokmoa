@@ -62,6 +62,10 @@ const AppearancePage = lazyRouteComponent(
   () => import('@/me/subPages'),
   'AppearancePage',
 )
+const NotificationSettingsPage = lazyRouteComponent(
+  () => import('@/push/NotificationSettingsPage'),
+  'NotificationSettingsPage',
+)
 const InstancePage = lazyRouteComponent(
   () => import('@/me/subPages'),
   'InstancePage',
@@ -461,6 +465,12 @@ const meAppearanceRoute = createRoute({
   component: AppearancePage,
 })
 
+const meNotificationsRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/me/notifications',
+  component: NotificationSettingsPage,
+})
+
 const meInstanceRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: '/me/instance',
@@ -578,6 +588,7 @@ const routeTree = rootRoute.addChildren([
       meProfileRoute,
       mePasswordRoute,
       meDevicesRoute,
+      meNotificationsRoute,
       meAppearanceRoute,
       meInstanceRoute,
       albumsRoute,
