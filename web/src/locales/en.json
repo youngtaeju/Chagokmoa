@@ -662,6 +662,7 @@
     "profile": "Profile",
     "password": "Change password",
     "devices": "Signed-in devices",
+    "notifications": "Notifications",
     "appearance": "Display & language",
     "trash": "Trash",
     "instance": "Home settings",
@@ -884,5 +885,26 @@
     "mention": "{{name}} mentioned you: \"{{text}}\"",
     "story": "{{name}} shared a story: \"{{text}}\"",
     "milestone": "{{name}} added a milestone: {{label}}"
+  },
+  "push": {
+    "title": "Notifications",
+    "device": "This device",
+    "deviceToggle": "Push notifications",
+    "iosInstall": "Add to Home Screen to turn this on",
+    "denied": "Allow notifications in your browser settings",
+    "unsupported": "This browser doesn't support push notifications",
+    "permissionDenied": "Notification permission was not granted",
+    "kinds": "Notify me about",
+    "kind": {
+      "upload": "Photos and videos",
+      "comment": "Comments",
+      "mention": "Mentions",
+      "story": "Stories",
+      "milestone": "Milestones"
+    },
+    "listNote": "All notifications still appear in your list",
+    "banner": "Get updates as phone notifications",
+    "bannerOn": "Turn on",
+    "bannerClose": "Dismiss"
   }
 }

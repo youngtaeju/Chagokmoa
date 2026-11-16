@@ -32,19 +32,19 @@ describe('MePage', () => {
       family: [
         [ko.me.home, [ko.me.family]],
         [ko.me.account, [ko.me.profile, ko.me.password, ko.me.devices]],
-        [ko.me.app, [ko.me.appearance]],
+        [ko.me.app, [ko.me.notifications, ko.me.appearance]],
       ],
       guardian: [
         [ko.me.photos, [ko.me.trash]],
         [ko.me.home, [ko.me.family]],
         [ko.me.account, [ko.me.profile, ko.me.password, ko.me.devices]],
-        [ko.me.app, [ko.me.appearance]],
+        [ko.me.app, [ko.me.notifications, ko.me.appearance]],
       ],
       owner: [
         [ko.me.photos, [ko.me.trash]],
         [ko.me.home, [ko.me.family, ko.me.instance]],
         [ko.me.account, [ko.me.profile, ko.me.password, ko.me.devices]],
-        [ko.me.app, [ko.me.appearance]],
+        [ko.me.app, [ko.me.notifications, ko.me.appearance]],
       ],
     } as const
     for (const role of ['family', 'guardian', 'owner'] as const) {

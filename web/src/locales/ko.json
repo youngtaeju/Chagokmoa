@@ -661,6 +661,7 @@
     "profile": "프로필",
     "password": "비밀번호 바꾸기",
     "devices": "로그인한 기기",
+    "notifications": "알림 설정",
     "appearance": "화면과 언어",
     "trash": "휴지통",
     "instance": "우리 집 설정",
@@ -883,5 +884,26 @@
     "mention": "{{name}}님이 회원님을 언급했어요: \"{{text}}\"",
     "story": "{{name}}님이 이야기를 남겼어요: \"{{text}}\"",
     "milestone": "{{name}}님이 마일스톤을 남겼어요: {{label}}"
+  },
+  "push": {
+    "title": "알림 설정",
+    "device": "이 기기",
+    "deviceToggle": "푸시 알림 받기",
+    "iosInstall": "홈 화면에 추가한 뒤 켤 수 있어요",
+    "denied": "브라우저 설정에서 알림을 허용해 주세요",
+    "unsupported": "이 브라우저는 푸시 알림을 지원하지 않아요",
+    "permissionDenied": "알림 권한이 허용되지 않았어요",
+    "kinds": "받을 알림",
+    "kind": {
+      "upload": "사진과 영상",
+      "comment": "댓글",
+      "mention": "멘션",
+      "story": "이야기",
+      "milestone": "마일스톤"
+    },
+    "listNote": "알림 목록에는 설정과 관계없이 모두 보여요",
+    "banner": "새 소식을 휴대폰 알림으로 받아 보세요",
+    "bannerOn": "켜기",
+    "bannerClose": "닫기"
   }
 }

@@ -10,6 +10,7 @@ type RowPath =
   | '/me/profile'
   | '/me/password'
   | '/me/devices'
+  | '/me/notifications'
   | '/me/appearance'
   | '/me/trash'
   | '/me/instance'
@@ -87,6 +88,7 @@ export function MePage() {
         <NavRow to="/me/devices" label={t('me.devices')} />
       </Group>
       <Group title={t('me.app')}>
+        <NavRow to="/me/notifications" label={t('me.notifications')} />
         <NavRow to="/me/appearance" label={t('me.appearance')} />
       </Group>
       <section className="grid gap-3 border-t border-border pt-2">

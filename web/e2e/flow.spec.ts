@@ -1173,3 +1173,55 @@ test('notifications_flow', async ({
     await close()
   }
 })
+
+test('push_settings_flow', async ({ ownerPage: page }) => {
+  await page.goto('/me')
+  await page.getByRole('link', { name: '알림 설정' }).click()
+  await expect(page).toHaveURL(/\/me\/notifications$/)
+
+  const mention = page.getByRole('switch', { name: '멘션' })
+  await expect(mention).toHaveAttribute('aria-checked', 'true')
+  try {
+    await mention.click()
+    await expect(mention).toHaveAttribute('aria-checked', 'false')
+    await page.reload()
+    await expect(page.getByRole('switch', { name: '멘션' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    )
+  } finally {
+    // 사용자별 DB 설정이라 다른 테스트를 위해 원복.
+    const restored = page.getByRole('switch', { name: '멘션' })
+    if ((await restored.getAttribute('aria-checked')) === 'false') {
+      await restored.click()
+    }
+    await expect(restored).toHaveAttribute('aria-checked', 'true')
+  }
+})
+
+test('push_banner_dismiss', async ({ ownerPage: page }) => {
+  // 헤드리스 Chromium 은 grantPermissions 와 무관하게 permission 이 denied. 기본 상태로 고정.
+  await page.addInitScript(() => {
+    Object.defineProperty(Notification, 'permission', {
+      get: () => 'default',
+    })
+  })
+  await page.goto('/notifications')
+  try {
+    const banner = page.getByText('새 소식을 휴대폰 알림으로 받아 보세요')
+    await expect(banner).toBeVisible()
+    await page.getByRole('button', { name: '닫기' }).click()
+    await expect(banner).toBeHidden()
+
+    await page.reload()
+    await expect(
+      page.getByRole('heading', { name: '알림', exact: true }).first(),
+    ).toBeVisible()
+    await expect(banner).toBeHidden()
+  } finally {
+    // 실패해도 다른 테스트에 영향 없게 닫힘 표시 제거.
+    await page.evaluate(() => {
+      localStorage.removeItem('cgm.push.banner.dismissed')
+    })
+  }
+})

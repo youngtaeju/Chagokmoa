@@ -80,6 +80,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // 푸시 이벤트 처리(public/push-sw.js).
+        importScripts: ['push-sw.js'],
         // 앱 셸: 기본 globPatterns(js·css·html) + includeAssets + 매니페스트 아이콘.
         // 글꼴 서브셋(약 90개, 3 MB)은 precache 제외. 쓰는 글자 범위만 cgm-fonts 런타임 캐시.
         globIgnores: ['**/*.woff2'],
