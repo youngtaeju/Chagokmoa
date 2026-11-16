@@ -35,7 +35,8 @@ test('first_signup_and_baby', async ({ page }) => {
 
   await page.getByLabel('표시 이름').fill(OWNER.displayName)
   await page.getByLabel('아이디').fill(OWNER.username)
-  await page.getByLabel('비밀번호').fill(OWNER.password)
+  await page.getByLabel('비밀번호', { exact: true }).fill(OWNER.password)
+  await page.getByLabel('비밀번호 확인', { exact: true }).fill(OWNER.password)
   await page.getByRole('button', { name: '계정 만들기' }).click()
 
   await page.getByLabel('아기 이름').fill(BABY_NAME)

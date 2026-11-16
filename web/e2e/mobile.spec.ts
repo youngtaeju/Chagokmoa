@@ -170,6 +170,10 @@ test('browse_screens_fit_width', async ({ ownerPage: page }) => {
 // 비로그인 화면. ownerPage 와 별개의 새 컨텍스트(쿠키 없음).
 test('auth_screens_fit_width', async ({ page, request }) => {
   await page.goto('/login')
+  await expect(page.getByRole('heading', { name: '차곡모아' })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: /(다크|라이트) 모드로 바꾸기/ }),
+  ).toBeVisible()
   await expect(
     page.getByRole('button', { name: '비밀번호를 잊었어요' }),
   ).toBeVisible()
@@ -184,6 +188,13 @@ test('auth_screens_fit_width', async ({ page, request }) => {
     page.getByRole('heading', { name: '아이디와 비밀번호를 정해 주세요' }),
   ).toBeVisible()
   await expectNoHorizontalOverflow(page)
+  // 마지막 제출 버튼이 장식 언덕 시작 위치보다 위.
+  const submit = await page
+    .getByRole('button', { name: '계정 만들기' })
+    .boundingBox()
+  const hills = await page.locator('[data-auth-hills]').boundingBox()
+  if (!submit || !hills) throw new Error('버튼 또는 언덕 위치 없음')
+  expect(submit.y + submit.height).toBeLessThanOrEqual(hills.y)
 
   await page.goto('/invite/not-a-real-link')
   await expect(
@@ -198,7 +209,10 @@ test('family_tab_bar_fits_width', async ({ page, request }) => {
   await page.getByLabel('표시 이름').fill('삼촌')
   await page.getByRole('button', { name: '다음' }).click()
   await page.getByLabel('아이디').fill(`mfamily${String(test.info().retry)}`)
-  await page.getByLabel('비밀번호').fill('e2e-family-password')
+  await page.getByLabel('비밀번호', { exact: true }).fill('e2e-family-password')
+  await page
+    .getByLabel('비밀번호 확인', { exact: true })
+    .fill('e2e-family-password')
   await page.getByRole('button', { name: '계정 만들기' }).click()
   await expect(page).toHaveURL(/\/$/)
 
