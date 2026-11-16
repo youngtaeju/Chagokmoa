@@ -2,6 +2,9 @@
 
 use crate::notifications::NotificationKind;
 
+pub mod queries;
+pub mod routes;
+pub mod send;
 pub mod text;
 pub mod vapid;
 
@@ -13,5 +16,3 @@ pub const PUSH_KINDS: [NotificationKind; 5] = [
     NotificationKind::Story,
     NotificationKind::Milestone,
 ];
-pub mod queries;
-pub mod routes;

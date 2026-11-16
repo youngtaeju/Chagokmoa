@@ -93,7 +93,7 @@ fn endpoint_allowed(endpoint: &str) -> bool {
 }
 
 /// base64url(패딩 허용) 디코드.
-fn decode_key(value: &str) -> Option<Vec<u8>> {
+pub(super) fn decode_key(value: &str) -> Option<Vec<u8>> {
     B64.decode(value.trim_end_matches('=')).ok()
 }
 

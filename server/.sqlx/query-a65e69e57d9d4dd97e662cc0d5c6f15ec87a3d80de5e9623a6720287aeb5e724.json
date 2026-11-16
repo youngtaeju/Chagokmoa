@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT n.id, n.kind AS \"kind: NotificationKind\", n.count, n.created_at, n.updated_at,\n                  u.id AS actor_id, u.display_name AS actor_name,\n                  a.id AS \"asset_id?\", a.kind AS \"asset_kind?: AssetKind\",\n                  a.status AS \"asset_status?: AssetStatus\", a.taken_at AS \"asset_taken_at?\",\n                  (a.taken_at AT TIME ZONE $2)::date AS \"asset_local_date?\",\n                  a.width AS \"asset_width?\", a.height AS \"asset_height?\",\n                  a.duration_ms AS \"asset_duration_ms?\", a.blurhash AS \"asset_blurhash?\",\n                  a.dominant_color AS \"asset_dominant_color?\",\n                  a.uploaded_by AS \"asset_uploaded_by?\",\n                  CASE WHEN a.id IS NOT NULL THEN\n                    COALESCE((SELECT array_agg(b.id ORDER BY b.sort_order, b.created_at, b.id)\n                              FROM asset_babies ab JOIN babies b ON b.id = ab.baby_id\n                              WHERE ab.asset_id = a.id), '{}')\n                  END AS \"asset_baby_ids?: Vec<Uuid>\",\n                  a.derivatives AS \"asset_derivatives?\",\n                  s.id AS \"story_id?\", left(s.body, $3) AS \"story_excerpt?\",\n                  m.id AS \"milestone_id?\", m.preset_key AS \"preset_key?\",\n                  m.custom_label AS \"custom_label?\",\n                  left(COALESCE(ac.body, sc.body), $3) AS \"comment_excerpt?\"\n           FROM notifications n\n           JOIN users u ON u.id = n.actor_id\n           LEFT JOIN assets a ON a.id = n.asset_id\n           LEFT JOIN stories s ON s.id = n.story_id\n           LEFT JOIN milestones m ON m.id = n.milestone_id\n           LEFT JOIN asset_comments ac ON ac.id = n.asset_comment_id\n           LEFT JOIN story_comments sc ON sc.id = n.story_comment_id\n           WHERE n.user_id = $1\n             AND (n.asset_id IS NULL OR a.deleted_at IS NULL)\n             AND ($4::timestamptz IS NULL OR (n.updated_at, n.id) < ($4, $5::uuid))\n           ORDER BY n.updated_at DESC, n.id DESC\n           LIMIT $6",
+  "query": "SELECT n.id, n.kind AS \"kind: NotificationKind\", n.count, n.created_at, n.updated_at,\n                  u.id AS actor_id, u.display_name AS actor_name,\n                  a.id AS \"asset_id?\", a.kind AS \"asset_kind?: AssetKind\",\n                  a.status AS \"asset_status?: AssetStatus\", a.taken_at AS \"asset_taken_at?\",\n                  (a.taken_at AT TIME ZONE $2)::date AS \"asset_local_date?\",\n                  a.width AS \"asset_width?\", a.height AS \"asset_height?\",\n                  a.duration_ms AS \"asset_duration_ms?\", a.blurhash AS \"asset_blurhash?\",\n                  a.dominant_color AS \"asset_dominant_color?\",\n                  a.uploaded_by AS \"asset_uploaded_by?\",\n                  CASE WHEN a.id IS NOT NULL THEN\n                    COALESCE((SELECT array_agg(b.id ORDER BY b.sort_order, b.created_at, b.id)\n                              FROM asset_babies ab JOIN babies b ON b.id = ab.baby_id\n                              WHERE ab.asset_id = a.id), '{}')\n                  END AS \"asset_baby_ids?: Vec<Uuid>\",\n                  a.derivatives AS \"asset_derivatives?\",\n                  s.id AS \"story_id?\", left(s.body, $3) AS \"story_excerpt?\",\n                  m.id AS \"milestone_id?\", m.preset_key AS \"preset_key?\",\n                  m.custom_label AS \"custom_label?\",\n                  left(COALESCE(ac.body, sc.body), $3) AS \"comment_excerpt?\"\n           FROM notifications n\n           JOIN users u ON u.id = n.actor_id\n           LEFT JOIN assets a ON a.id = n.asset_id\n           LEFT JOIN stories s ON s.id = n.story_id\n           LEFT JOIN milestones m ON m.id = n.milestone_id\n           LEFT JOIN asset_comments ac ON ac.id = n.asset_comment_id\n           LEFT JOIN story_comments sc ON sc.id = n.story_comment_id\n           WHERE n.user_id = $1\n             AND (n.asset_id IS NULL OR a.deleted_at IS NULL)\n             AND ($4::timestamptz IS NULL OR (n.updated_at, n.id) < ($4, $5::uuid))\n             AND ($7::uuid IS NULL OR n.id = $7)\n           ORDER BY n.updated_at DESC, n.id DESC\n           LIMIT $6",
   "describe": {
     "columns": [
       {
@@ -162,7 +162,8 @@
         "Int4",
         "Timestamptz",
         "Uuid",
-        "Int8"
+        "Int8",
+        "Uuid"
       ]
     },
     "nullable": [
@@ -194,5 +195,5 @@
       null
     ]
   },
-  "hash": "df2e5857acb18413a5f8b17f1325302178e95b502fba856a677e0ea6e0f04de0"
+  "hash": "a65e69e57d9d4dd97e662cc0d5c6f15ec87a3d80de5e9623a6720287aeb5e724"
 }

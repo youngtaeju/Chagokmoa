@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT n.user_id, n.kind AS \"kind: NotificationKind\", n.count, n.pushed_count,\n                  u.locale, u.disabled_at IS NOT NULL AS \"disabled!\"\n           FROM notifications n JOIN users u ON u.id = n.user_id\n           WHERE n.id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "kind: NotificationKind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "pushed_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "locale",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "disabled!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "53026cbe3da85fa273c056c23cd49445af50f32c9ffed15c516d03f88f4e46b6"
+}

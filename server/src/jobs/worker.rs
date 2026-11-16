@@ -23,7 +23,9 @@ const ERROR_MAX_CHARS: usize = 500;
 /// 작업 1개 처리. 큐가 비었으면 `false`.
 /// 작업 자체 실패·패닉은 자산·작업 행에 기록하고 `Ok(true)`. `Err` 는 큐·DB 오류.
 pub async fn run_next(state: &AppState) -> AppResult<bool> {
-    let Some(ClaimedJob { id, job, attempts }) = super::claim(&state.pool).await? else {
+    let Some(ClaimedJob { id, job, attempts }) =
+        super::claim(&state.pool, &["process_asset"]).await?
+    else {
         return Ok(false);
     };
     match job {
@@ -40,12 +42,16 @@ pub async fn run_next(state: &AppState) -> AppResult<bool> {
                 Err(err) => record_failure(state, id, asset_id, attempts, &err).await?,
             }
         }
+        // `claim` 종류 필터로 도달 불가. 방어용.
+        Job::SendPush { .. } => super::fail(&state.pool, id, "unexpected job kind").await?,
     }
     Ok(true)
 }
 
 /// 패닉을 일반 에러로. 워커 태스크 유지용.
-async fn catch_panic<T>(fut: impl Future<Output = anyhow::Result<T>>) -> anyhow::Result<T> {
+pub(crate) async fn catch_panic<T>(
+    fut: impl Future<Output = anyhow::Result<T>>,
+) -> anyhow::Result<T> {
     AssertUnwindSafe(fut)
         .catch_unwind()
         .await

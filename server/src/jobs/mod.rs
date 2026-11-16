@@ -12,6 +12,7 @@ pub mod worker;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Job {
     ProcessAsset { asset_id: Uuid },
+    SendPush { notification_id: Uuid },
 }
 
 #[derive(Deserialize)]
@@ -19,11 +20,17 @@ struct AssetPayload {
     asset_id: Uuid,
 }
 
+#[derive(Deserialize)]
+struct NotificationPayload {
+    notification_id: Uuid,
+}
+
 impl Job {
     /// `jobs.kind` 값.
     pub fn kind(&self) -> &'static str {
         match self {
             Job::ProcessAsset { .. } => "process_asset",
+            Job::SendPush { .. } => "send_push",
         }
     }
 
@@ -31,6 +38,7 @@ impl Job {
     pub fn payload(&self) -> Value {
         match self {
             Job::ProcessAsset { asset_id } => json!({ "asset_id": asset_id }),
+            Job::SendPush { notification_id } => json!({ "notification_id": notification_id }),
         }
     }
 
@@ -40,6 +48,12 @@ impl Job {
                 let p: AssetPayload = serde_json::from_value(payload)?;
                 Ok(Job::ProcessAsset {
                     asset_id: p.asset_id,
+                })
+            }
+            "send_push" => {
+                let p: NotificationPayload = serde_json::from_value(payload)?;
+                Ok(Job::SendPush {
+                    notification_id: p.notification_id,
                 })
             }
             other => anyhow::bail!("unknown job kind: {other}"),
@@ -80,14 +94,16 @@ pub struct ClaimedJob {
     pub attempts: i32,
 }
 
-/// 실행 시각이 된 `queued` 작업 1개를 `running` 으로. 동시 워커끼리 행 잠금 건너뜀.
+/// 실행 시각이 된 `kinds` 종류의 `queued` 작업 1개를 `running` 으로. 동시 워커끼리 행 잠금 건너뜀.
 /// 해석 불가 작업은 `failed` 로 돌리고 에러.
-pub async fn claim(pool: &PgPool) -> AppResult<Option<ClaimedJob>> {
+pub async fn claim(pool: &PgPool, kinds: &[&str]) -> AppResult<Option<ClaimedJob>> {
     let Some(row) = sqlx::query!(
         "UPDATE jobs SET status = 'running', locked_at = now(), attempts = attempts + 1
-         WHERE id = (SELECT id FROM jobs WHERE status = 'queued' AND run_after <= now()
+         WHERE id = (SELECT id FROM jobs
+                     WHERE status = 'queued' AND run_after <= now() AND kind = ANY($1)
                      ORDER BY run_after LIMIT 1 FOR UPDATE SKIP LOCKED)
-         RETURNING id, kind, payload, attempts"
+         RETURNING id, kind, payload, attempts",
+        kinds as &[&str]
     )
     .fetch_optional(pool)
     .await?
@@ -149,5 +165,12 @@ mod tests {
         assert_eq!(Job::parse(job.kind(), job.payload()).unwrap(), job);
         assert!(Job::parse("unknown", job.payload()).is_err());
         assert!(Job::parse("process_asset", json!({})).is_err());
+
+        let push = Job::SendPush {
+            notification_id: Uuid::now_v7(),
+        };
+        assert_eq!(push.kind(), "send_push");
+        assert_eq!(Job::parse(push.kind(), push.payload()).unwrap(), push);
+        assert!(Job::parse("send_push", json!({})).is_err());
     }
 }

@@ -30,6 +30,30 @@ pub async fn list(
     cursor: Option<(DateTime<Utc>, Uuid)>,
     limit: i64,
 ) -> AppResult<Vec<Notification>> {
+    fetch(conn, timezone, user_id, None, cursor, limit).await
+}
+
+/// 한 줄. 대상 사진이 휴지통이면 `None`(목록과 같은 규칙).
+pub async fn get(
+    conn: &mut PgConnection,
+    timezone: &str,
+    user_id: Uuid,
+    id: Uuid,
+) -> AppResult<Option<Notification>> {
+    Ok(fetch(conn, timezone, user_id, Some(id), None, 1)
+        .await?
+        .pop())
+}
+
+/// 목록/한 줄 공용. `id` 가 있으면 그 줄만.
+async fn fetch(
+    conn: &mut PgConnection,
+    timezone: &str,
+    user_id: Uuid,
+    id: Option<Uuid>,
+    cursor: Option<(DateTime<Utc>, Uuid)>,
+    limit: i64,
+) -> AppResult<Vec<Notification>> {
     let (cursor_ts, cursor_id) = cursor.unzip();
     let rows = sqlx::query!(
         r#"SELECT n.id, n.kind AS "kind: NotificationKind", n.count, n.created_at, n.updated_at,
@@ -61,6 +85,7 @@ pub async fn list(
            WHERE n.user_id = $1
              AND (n.asset_id IS NULL OR a.deleted_at IS NULL)
              AND ($4::timestamptz IS NULL OR (n.updated_at, n.id) < ($4, $5::uuid))
+             AND ($7::uuid IS NULL OR n.id = $7)
            ORDER BY n.updated_at DESC, n.id DESC
            LIMIT $6"#,
         user_id,
@@ -69,6 +94,7 @@ pub async fn list(
         cursor_ts,
         cursor_id,
         limit,
+        id,
     )
     .fetch_all(&mut *conn)
     .await?;
