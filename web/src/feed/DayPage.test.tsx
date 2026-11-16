@@ -41,6 +41,8 @@ function detail(over: Partial<DayDetail> = {}): DayDetail {
     comment_count: 0,
     prev_date: '2024-05-07',
     next_date: '2024-05-10',
+    first_date: '2024-05-01',
+    last_date: '2024-05-12',
     stories: [],
     milestones: [],
     ...over,
@@ -152,34 +154,19 @@ describe('DayPage', () => {
     expect(assetRequests[1]?.searchParams.get('cursor')).toBe('c1')
   })
 
-  it('prev_next_links', async () => {
-    const { router, user } = renderDay({ path: '/days/2024-05-09?baby=b' })
-    const nav = within(
-      await screen.findByRole('navigation', { name: ko.day.nav }),
-    )
+  it('no_bottom_prev_next', async () => {
+    renderDay({})
+    await screen.findAllByRole('link', { name: /^사진,/ })
 
-    // 이전 = 더 과거, 다음 = 더 최근. 필터 유지.
-    expect(nav.getByRole('link', { name: ko.day.prev })).toHaveAttribute(
-      'href',
-      '/days/2024-05-07?baby=b',
-    )
-    expect(nav.getByRole('link', { name: ko.day.next })).toHaveAttribute(
-      'href',
-      '/days/2024-05-10?baby=b',
-    )
-    await user.click(nav.getByRole('link', { name: ko.day.next }))
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/days/2024-05-10')
-    })
-    cleanup()
-
-    // 없으면 숨김.
-    renderDay({ day: () => json(200, detail({ prev_date: null })) })
-    const nav2 = within(
-      await screen.findByRole('navigation', { name: ko.day.nav }),
-    )
-    expect(nav2.queryByRole('link', { name: ko.day.prev })).toBeNull()
-    expect(nav2.getByRole('link', { name: ko.day.next })).toBeInTheDocument()
+    // 앞뒤 날 이동은 머리글 날짜 띠. 본문 맨 아래 이동 링크 없음.
+    expect(
+      within(screen.getByRole('main')).queryByRole('navigation'),
+    ).toBeNull()
+    expect(
+      within(screen.getByRole('banner')).getByRole('navigation', {
+        name: ko.day.nav,
+      }),
+    ).toBeInTheDocument()
   })
 
   it('baby_filter_kept', async () => {

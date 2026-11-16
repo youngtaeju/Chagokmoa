@@ -3,6 +3,9 @@ const dayYearFormats = new Map<string, Intl.DateTimeFormat>()
 const monthFormats = new Map<string, Intl.DateTimeFormat>()
 const dateFormats = new Map<string, Intl.DateTimeFormat>()
 const monthDayFormats = new Map<string, Intl.DateTimeFormat>()
+const monthShortFormats = new Map<string, Intl.DateTimeFormat>()
+const monthShortYearFormats = new Map<string, Intl.DateTimeFormat>()
+const weekdayFormats = new Map<string, Intl.DateTimeFormat>()
 
 function cached(
   cache: Map<string, Intl.DateTimeFormat>,
@@ -35,6 +38,37 @@ export function formatDayWithYear(date: string, lng: string): string {
     day: 'numeric',
     weekday: 'long',
   }).format(new Date(`${date}T00:00:00Z`))
+}
+
+// 올해면 "5월 2일 목요일", 아니면 연도까지. today 는 인스턴스 오늘.
+export function formatDayTitle(
+  date: string,
+  today: string,
+  lng: string,
+): string {
+  return date.slice(0, 4) === today.slice(0, 4)
+    ? formatDay(date, lng)
+    : formatDayWithYear(date, lng)
+}
+
+// "월" / "Mon".
+export function formatWeekday(date: string, lng: string): string {
+  return cached(weekdayFormats, lng, { weekday: 'short' }).format(
+    new Date(`${date}T00:00:00Z`),
+  )
+}
+
+// "11월" / "Nov". withYear 면 "2027년 1월" / "Jan 2027". month 는 YYYY-MM.
+export function formatMonthShort(
+  month: string,
+  lng: string,
+  withYear = false,
+): string {
+  return (
+    withYear
+      ? cached(monthShortYearFormats, lng, { year: 'numeric', month: 'short' })
+      : cached(monthShortFormats, lng, { month: 'short' })
+  ).format(new Date(`${month}-01T00:00:00Z`))
 }
 
 // "2024년 5월" / "May 2024". month 는 YYYY-MM.

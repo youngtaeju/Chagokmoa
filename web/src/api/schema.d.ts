@@ -1389,6 +1389,16 @@ export interface components {
              */
             date: string;
             /**
+             * Format: date
+             * @description 가장 과거의 사진, 이야기, 마일스톤 있는 날.
+             */
+            first_date: string | null;
+            /**
+             * Format: date
+             * @description 가장 최근의 사진, 이야기, 마일스톤 있는 날.
+             */
+            last_date: string | null;
+            /**
              * Format: int64
              * @description 그날 자산 하트 합계.
              */

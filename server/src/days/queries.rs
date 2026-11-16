@@ -176,7 +176,9 @@ pub async fn detail(
            n AS (
                SELECT COALESCE(bool_or(u.date = $2), false) AS found,
                       max(u.date) FILTER (WHERE u.date < $2) AS prev_date,
-                      min(u.date) FILTER (WHERE u.date > $2) AS next_date
+                      min(u.date) FILTER (WHERE u.date > $2) AS next_date,
+                      min(u.date) AS first_date,
+                      max(u.date) AS last_date
                FROM (
                    SELECT f.date FROM f
                    UNION ALL
@@ -214,7 +216,8 @@ pub async fn detail(
                     AS "like_count!",
                   (SELECT count(*) FROM asset_comments c WHERE c.asset_id = ANY(d.asset_ids))
                     AS "comment_count!",
-                  n.prev_date AS "prev_date?", n.next_date AS "next_date?"
+                  n.prev_date AS "prev_date?", n.next_date AS "next_date?",
+                  n.first_date AS "first_date?", n.last_date AS "last_date?"
            FROM d, n"#,
         timezone,
         date,
@@ -235,6 +238,8 @@ pub async fn detail(
         comment_count: r.comment_count,
         prev_date: r.prev_date,
         next_date: r.next_date,
+        first_date: r.first_date,
+        last_date: r.last_date,
         stories: Vec::new(),
         milestones: Vec::new(),
     }))

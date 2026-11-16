@@ -151,7 +151,7 @@ export function AppShell() {
   return (
     <UploadPickerProvider>
       <div className="min-h-dvh lg:flex">
-        <Sidebar instanceName={settings?.instance_name} onAdd={openAdd} />
+        <Sidebar onAdd={openAdd} />
         <div className="min-w-0 flex-1">
           <header
             className={cn('bg-background', !ownHeader && 'sticky top-0 z-10')}
@@ -161,7 +161,8 @@ export function AppShell() {
                 ownHeader && 'hidden',
                 'border-b',
                 scrolled ? 'border-border' : 'border-transparent',
-                // 데스크톱은 사이드바가 우리 집 이름 표시. 홈·그날·개월 앨범은 자체 머리글이라 유지.
+                // 데스크톱은 기본 머리글(가족 이름) 숨김. 맨 위는 사이드바의 앱 로고와 이름.
+                // 홈, 그날, 개월 앨범은 자체 머리글이라 유지.
                 !home && !day && !album && 'lg:hidden',
               )}
             >

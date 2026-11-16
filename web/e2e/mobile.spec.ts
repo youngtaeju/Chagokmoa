@@ -117,6 +117,41 @@ test('screens_fit_width', async ({ ownerPage: page }) => {
   await expectNoHorizontalOverflow(page)
 })
 
+// 그날 화면 날짜 띠. 다른 기록 날 칸을 눌러 이동.
+test('day_strip_tap', async ({ ownerPage: page }) => {
+  await page.goto('/')
+  await page
+    .getByRole('main')
+    .getByRole('article')
+    .filter({ has: page.getByRole('link', { name: /^사진,/ }) })
+    .getByRole('heading')
+    .getByRole('link')
+    .click()
+  await expect(page).toHaveURL(/\/days\/\d{4}-\d{2}-\d{2}$/)
+
+  const strip = page.getByRole('navigation', { name: '날짜 이동' })
+  await expect(strip).toBeVisible()
+  const current = strip.locator('a[aria-current="date"]')
+  await expect(current).toHaveCount(1)
+  const fromHref = (await current.getAttribute('href')) ?? ''
+  const other = strip.locator('a:not([aria-current])').first()
+  const toHref = (await other.getAttribute('href')) ?? ''
+  expect(toHref).toMatch(/\/days\/\d{4}-\d{2}-\d{2}$/)
+  expect(toHref).not.toBe(fromHref)
+
+  await other.tap()
+  await expect(page).toHaveURL(new RegExp(`${toHref}$`))
+  await expect(strip.locator(`a[href="${toHref}"]`)).toHaveAttribute(
+    'aria-current',
+    'date',
+  )
+  await expect(strip.locator(`a[href="${fromHref}"]`)).not.toHaveAttribute(
+    'aria-current',
+    'date',
+  )
+  await expectNoHorizontalOverflow(page)
+})
+
 test('browse_screens_fit_width', async ({ ownerPage: page }) => {
   // 사진이 있는 달(2024년 5월)의 달력. 칸 라벨이 사진 수를 포함.
   await page.goto('/calendar?month=2024-05')

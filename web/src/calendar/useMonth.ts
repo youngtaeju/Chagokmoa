@@ -6,7 +6,8 @@ import { addMonths, monthRange } from './month'
 
 // ['days'] 접두라 자산, 이야기, 마일스톤 변경 무효화가 그대로 적용.
 // 응답은 무한 목록 모양이 아니라 useTimeline 의 setQueriesData 는 무시.
-function monthQuery(month: string, baby: string | undefined) {
+// 그날 화면 날짜 띠도 같은 키로 공유.
+export function monthQuery(month: string, baby: string | undefined) {
   return queryOptions({
     queryKey: ['days', { month, baby }],
     queryFn: () =>

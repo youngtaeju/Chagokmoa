@@ -74,6 +74,17 @@ describe('HomeHeader', () => {
     expect(banner.queryByRole('group')).toBeNull()
   })
 
+  it('home_header_logo_before_name', async () => {
+    renderHome([SKY])
+    const banner = await header()
+    const name = await banner.findByText(settingsFixture.instance_name)
+    const logo = name.parentElement?.querySelector('img')
+    expect(logo).toHaveAttribute('src', '/icon.svg')
+    expect(logo).toHaveAttribute('alt', '')
+    expect(logo).toHaveClass('lg:hidden')
+    expect(logo?.nextElementSibling).toBe(name)
+  })
+
   it('pill_primary_on_all', async () => {
     // 전체: 대표 아기(둘째로 설정).
     renderHome([SKY, SEA], SEA.id)

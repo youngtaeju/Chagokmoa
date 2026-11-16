@@ -71,9 +71,16 @@ export function HomeHeader({ instanceName }: { instanceName?: string }) {
   return (
     <div className="px-4">
       <div className="flex h-14 items-center justify-between gap-1">
-        <p className="min-w-0 flex-1 truncate text-base font-bold">
-          {instanceName}
-        </p>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <img
+            src="/icon.svg"
+            alt=""
+            width={26}
+            height={26}
+            className="size-[26px] shrink-0 rounded-md lg:hidden"
+          />
+          <p className="min-w-0 truncate text-base font-bold">{instanceName}</p>
+        </div>
         {target && <BabyPill baby={target} today={today} />}
         <NotificationBell />
       </div>

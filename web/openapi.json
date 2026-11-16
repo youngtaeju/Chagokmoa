@@ -6788,6 +6788,8 @@
           "comment_count",
           "prev_date",
           "next_date",
+          "first_date",
+          "last_date",
           "stories",
           "milestones"
         ],
@@ -6809,6 +6811,22 @@
             "type": "string",
             "format": "date",
             "description": "사진 촬영일(인스턴스 시간대), 이야기 날짜, 마일스톤 달성일 중 하나."
+          },
+          "first_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "가장 과거의 사진, 이야기, 마일스톤 있는 날."
+          },
+          "last_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "가장 최근의 사진, 이야기, 마일스톤 있는 날."
           },
           "like_count": {
             "type": "integer",

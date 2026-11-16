@@ -1128,7 +1128,9 @@ const PERF_DETAIL_SQL: &str = r#"WITH f AS (
 n AS (
     SELECT COALESCE(bool_or(u.date = $2), false) AS found,
            max(u.date) FILTER (WHERE u.date < $2) AS prev_date,
-           min(u.date) FILTER (WHERE u.date > $2) AS next_date
+           min(u.date) FILTER (WHERE u.date > $2) AS next_date,
+           min(u.date) AS first_date,
+           max(u.date) AS last_date
     FROM (
         SELECT f.date FROM f
         UNION ALL
@@ -1166,5 +1168,68 @@ SELECT n.found AS found, d.photo_count AS photo_count,
          AS like_count,
        (SELECT count(*) FROM asset_comments c WHERE c.asset_id = ANY(d.asset_ids))
          AS comment_count,
-       n.prev_date AS prev_date, n.next_date AS next_date
+       n.prev_date AS prev_date, n.next_date AS next_date,
+       n.first_date AS first_date, n.last_date AS last_date
 FROM d, n"#;
+
+#[sqlx::test]
+async fn first_last_dates(pool: PgPool) {
+    let app = media_app(&pool, Role::Family).await;
+    set_timezone(&pool, "UTC").await;
+    let a = baby(&pool, "a").await;
+    photo(&pool, app.user.id, at(1, 12)).await;
+    photo(&pool, app.user.id, at(2, 12)).await;
+    milestone(&pool, a, app.user.id, "2024-05-05", at(9, 11)).await;
+
+    for date in ["2024-05-01", "2024-05-02", "2024-05-05"] {
+        let detail: Value = app.server.get(&format!("/api/days/{date}")).await.json();
+        assert_eq!(detail["first_date"], "2024-05-01", "{date}");
+        assert_eq!(detail["last_date"], "2024-05-05", "{date}");
+    }
+}
+
+#[sqlx::test]
+async fn first_last_respect_baby_filter(pool: PgPool) {
+    let app = media_app(&pool, Role::Family).await;
+    set_timezone(&pool, "UTC").await;
+    let a = baby(&pool, "a").await;
+    let b = baby(&pool, "b").await;
+    let p1 = photo(&pool, app.user.id, at(1, 12)).await;
+    let p2 = photo(&pool, app.user.id, at(2, 12)).await;
+    let p3 = photo(&pool, app.user.id, at(3, 12)).await;
+    photo(&pool, app.user.id, at(4, 12)).await;
+    for (id, baby_id) in [(p1, b), (p2, a), (p3, a)] {
+        assets::queries::add_babies(&pool, id, &[baby_id], app.user.id)
+            .await
+            .unwrap();
+    }
+    story(&pool, app.user.id, "2024-05-06", &[b], at(9, 10)).await;
+
+    let detail: Value = app
+        .server
+        .get("/api/days/2024-05-02")
+        .add_query_param("baby_id", a)
+        .await
+        .json();
+    assert_eq!(detail["first_date"], "2024-05-02");
+    assert_eq!(detail["last_date"], "2024-05-03");
+    let detail: Value = app.server.get("/api/days/2024-05-02").await.json();
+    assert_eq!(detail["first_date"], "2024-05-01");
+    assert_eq!(detail["last_date"], "2024-05-06");
+}
+
+#[sqlx::test]
+async fn first_last_skip_trashed(pool: PgPool) {
+    let app = media_app(&pool, Role::Family).await;
+    set_timezone(&pool, "UTC").await;
+    let mut s = AssetSeed::photo(app.user.id);
+    s.taken_at = at(1, 12);
+    s.deleted_at = Some(Utc::now());
+    insert_asset(&pool, s).await;
+    photo(&pool, app.user.id, at(2, 12)).await;
+    photo(&pool, app.user.id, at(3, 12)).await;
+
+    let detail: Value = app.server.get("/api/days/2024-05-02").await.json();
+    assert_eq!(detail["first_date"], "2024-05-02");
+    assert_eq!(detail["last_date"], "2024-05-03");
+}

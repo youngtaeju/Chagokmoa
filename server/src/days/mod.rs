@@ -57,6 +57,12 @@ pub struct DayDetail {
     /// 더 최근의 사진, 이야기, 마일스톤 있는 날.
     #[schema(required = true)]
     pub next_date: Option<NaiveDate>,
+    /// 가장 과거의 사진, 이야기, 마일스톤 있는 날.
+    #[schema(required = true)]
+    pub first_date: Option<NaiveDate>,
+    /// 가장 최근의 사진, 이야기, 마일스톤 있는 날.
+    #[schema(required = true)]
+    pub last_date: Option<NaiveDate>,
     /// 그날 이야기. 쓴 시각 오래된 순.
     pub stories: Vec<StorySummary>,
     /// 그날 마일스톤. 기록 순.
