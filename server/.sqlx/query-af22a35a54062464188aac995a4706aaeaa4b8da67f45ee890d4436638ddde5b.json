@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM jobs WHERE kind = 'send_push'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "af22a35a54062464188aac995a4706aaeaa4b8da67f45ee890d4436638ddde5b"
+}

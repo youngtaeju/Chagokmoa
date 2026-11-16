@@ -758,15 +758,8 @@ async fn worker_sends_queued_push(pool: PgPool) {
     let fake = Fake::default();
     let base = spawn_fake(&fake).await;
     subscribe(&pool, &h.dad, &format!("{base}/push/dad")).await;
-    let (_, note) = story_note(&pool, &h, "이야기").await;
-    jobs::enqueue(
-        &pool,
-        &Job::SendPush {
-            notification_id: note,
-        },
-    )
-    .await
-    .unwrap();
+    // 이야기 작성이 받는 사람별 send_push 잡을 직접 넣음.
+    story_note(&pool, &h, "이야기").await;
 
     let (stop, shutdown) = watch::channel(false);
     let worker = send::spawn_worker(h.state.clone(), shutdown);

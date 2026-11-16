@@ -155,6 +155,7 @@ async fn create_milestone(
         .await?
         .ok_or(AppError::NotFound("milestone.notFound"))?;
     tx.commit().await?;
+    state.push_wake.notify_one();
     Ok((StatusCode::CREATED, Json(milestone)))
 }
 

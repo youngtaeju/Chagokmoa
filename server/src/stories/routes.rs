@@ -113,6 +113,7 @@ async fn create_story(
         .await?
         .ok_or(AppError::NotFound("story.notFound"))?;
     tx.commit().await?;
+    state.push_wake.notify_one();
     Ok((StatusCode::CREATED, Json(story)))
 }
 
@@ -338,6 +339,7 @@ async fn create_story_comment(
     };
     notifications::record::record_comment(&mut tx, current.user.id, target, body).await?;
     tx.commit().await?;
+    state.push_wake.notify_one();
     Ok((StatusCode::CREATED, Json(comment)))
 }
 

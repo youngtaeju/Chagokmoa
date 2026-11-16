@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH latest AS (\n           SELECT DISTINCT ON (user_id) id FROM notifications\n           WHERE user_id = ANY($1) AND actor_id = $2 AND kind = 'upload'\n             AND updated_at > now() - $4::text::interval\n           ORDER BY user_id, updated_at DESC, id DESC\n         )\n         UPDATE notifications n\n         SET count = n.count + 1, asset_id = $3, updated_at = now()\n         FROM latest WHERE n.id = latest.id\n         RETURNING n.id, n.user_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "028784048a9b19e6854100075b7e3cce64f5e1871c4cd720d008026abe929fc7"
+}

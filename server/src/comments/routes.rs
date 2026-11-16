@@ -75,6 +75,7 @@ async fn create_comment(
     };
     notifications::record::record_comment(&mut tx, current.user.id, target, body).await?;
     tx.commit().await?;
+    state.push_wake.notify_one();
     Ok((StatusCode::CREATED, Json(comment)))
 }
 

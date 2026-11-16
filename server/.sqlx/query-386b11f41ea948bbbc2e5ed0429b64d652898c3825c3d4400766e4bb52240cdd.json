@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE jobs SET run_after = now() - interval '1 minute'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "386b11f41ea948bbbc2e5ed0429b64d652898c3825c3d4400766e4bb52240cdd"
+}

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE jobs SET run_after = now() + $2::text::interval\n           WHERE kind = 'send_push' AND status = 'queued'\n             AND payload->>'notification_id' = ANY($1)\n           RETURNING payload->>'notification_id' AS \"note!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "note!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "c57ed2282357ca1911971f8d6dfea32fc8f83637203d58a9409e572123570990"
+}

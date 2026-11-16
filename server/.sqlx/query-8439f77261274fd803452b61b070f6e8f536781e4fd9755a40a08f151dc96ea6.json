@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (payload->>'notification_id')::uuid AS \"note!\",\n                  EXTRACT(EPOCH FROM run_after - now())::float8 AS \"secs!\"\n           FROM jobs WHERE kind = 'send_push' AND status = 'queued' ORDER BY 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "note!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "secs!",
+        "type_info": "Float8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "8439f77261274fd803452b61b070f6e8f536781e4fd9755a40a08f151dc96ea6"
+}
