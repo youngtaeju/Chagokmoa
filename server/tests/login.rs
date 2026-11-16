@@ -51,7 +51,7 @@ async fn login_sets_cookie_and_me_works(pool: PgPool) {
     assert_eq!(cookie.path(), Some("/"));
     assert_eq!(
         cookie.max_age().map(|d| d.whole_seconds()),
-        Some(30 * 24 * 3600)
+        Some(400 * 24 * 3600)
     );
     assert_ne!(cookie.secure(), Some(true));
 
@@ -509,4 +509,42 @@ async fn media_token_verifies(pool: PgPool) {
     let remaining = expires_at - now;
     assert!(remaining > chrono::Duration::minutes(59) && remaining <= chrono::Duration::hours(1));
     assert_eq!(token::verify_media(&secret, token, expires_at), None);
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn session_expires_in_60_days(pool: PgPool) {
+    let server = common::test_server(pool.clone()).await;
+    signup(&server).await;
+
+    let ok: bool = sqlx::query_scalar!(
+        r#"SELECT expires_at > now() + interval '59 days 23 hours'
+                  AND expires_at <= now() + interval '60 days' AS "v!"
+           FROM sessions"#
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("expires_at");
+    assert!(ok);
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn touch_extends_to_60_days(pool: PgPool) {
+    let server = common::test_server(pool.clone()).await;
+    signup(&server).await;
+
+    sqlx::query!(
+        "UPDATE sessions SET last_seen_at = now() - interval '2 hours',
+                             expires_at = now() - interval '2 hours' + interval '10 days'"
+    )
+    .execute(&pool)
+    .await
+    .expect("age");
+    server.get("/api/auth/me").await.assert_status_ok();
+    let ok: bool = sqlx::query_scalar!(
+        r#"SELECT expires_at > now() + interval '59 days 23 hours' AS "v!" FROM sessions"#
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("expires_at");
+    assert!(ok);
 }

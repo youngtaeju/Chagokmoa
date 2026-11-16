@@ -14,8 +14,10 @@ use crate::{
 };
 
 pub const COOKIE_NAME: &str = "cgm_session";
-/// 쿠키 Max-Age. SQL 의 `interval '30 days'` 와 동일 값.
-const TTL_SECS: u64 = 30 * 24 * 3600;
+/// DB 슬라이딩 만료 기간(일).
+pub const SESSION_DAYS: i32 = 60;
+/// 쿠키 Max-Age. 브라우저 상한(400일). 실제 만료는 DB `expires_at`.
+pub const COOKIE_MAX_AGE_SECS: u64 = 400 * 24 * 3600;
 const USER_AGENT_MAX_CHARS: usize = 512;
 
 pub struct SessionWithUser {
@@ -53,11 +55,12 @@ pub async fn create(
         user_agent.map(|ua| ua.chars().take(USER_AGENT_MAX_CHARS).collect());
     sqlx::query!(
         "INSERT INTO sessions (id, user_id, token_hash, user_agent, expires_at)
-         VALUES ($1, $2, $3, $4, now() + interval '30 days')",
+         VALUES ($1, $2, $3, $4, now() + make_interval(days => $5))",
         id,
         user_id,
         token_hash,
         user_agent,
+        SESSION_DAYS,
     )
     .execute(exec)
     .await?;
@@ -96,9 +99,10 @@ pub async fn find_by_raw(
 /// 슬라이딩 만료. 쓰기 부하 억제 위해 1시간에 1회만 갱신.
 pub async fn touch(exec: impl PgExecutor<'_>, session_id: Uuid) -> AppResult<()> {
     sqlx::query!(
-        "UPDATE sessions SET last_seen_at = now(), expires_at = now() + interval '30 days'
+        "UPDATE sessions SET last_seen_at = now(), expires_at = now() + make_interval(days => $2)
          WHERE id = $1 AND last_seen_at < now() - interval '1 hour'",
         session_id,
+        SESSION_DAYS,
     )
     .execute(exec)
     .await?;
@@ -180,8 +184,8 @@ pub async fn list_for_user(
 }
 
 pub fn cookie(config: &Config, raw: String) -> Cookie<'static> {
-    // 30일은 time::Duration 범위 내. 변환 실패 불가.
-    let max_age = std::time::Duration::from_secs(TTL_SECS)
+    // 400일은 time::Duration 범위 내. 변환 실패 불가.
+    let max_age = std::time::Duration::from_secs(COOKIE_MAX_AGE_SECS)
         .try_into()
         .unwrap_or_else(|_| unreachable!());
     Cookie::build((COOKIE_NAME, raw))
@@ -239,7 +243,7 @@ mod tests {
         assert_eq!(c.path(), Some("/"));
         assert_eq!(
             c.max_age().map(|d| d.whole_seconds()),
-            Some(TTL_SECS as i64)
+            Some(COOKIE_MAX_AGE_SECS as i64)
         );
 
         let cleared = clear_cookie(&config("http://localhost"));
