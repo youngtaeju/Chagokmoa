@@ -2,6 +2,7 @@
 
 use crate::notifications::NotificationKind;
 
+pub mod text;
 pub mod vapid;
 
 /// 설정 화면 표시 순서.
