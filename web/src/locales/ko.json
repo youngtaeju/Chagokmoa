@@ -43,6 +43,8 @@
   "auth": {
     "username": "아이디",
     "password": "비밀번호",
+    "passwordConfirm": "비밀번호 확인",
+    "passwordMismatch": "비밀번호가 서로 달라요",
     "displayName": "표시 이름",
     "toLogin": "로그인 화면으로 가기",
     "login": {
@@ -110,6 +112,8 @@
     "language": "언어",
     "showPassword": "비밀번호 보기",
     "hidePassword": "비밀번호 숨기기",
+    "showPasswordConfirm": "비밀번호 확인 보기",
+    "hidePasswordConfirm": "비밀번호 확인 숨기기",
     "themeToDark": "다크 모드로 바꾸기",
     "themeToLight": "라이트 모드로 바꾸기"
   },

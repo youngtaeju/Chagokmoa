@@ -6,9 +6,11 @@ import { cn } from '@/lib/utils'
 import { Field } from './Field'
 
 // 보기 버튼이 있는 비밀번호 칸. 값은 유지하고 type 만 전환.
-export function PasswordField(
-  props: Omit<ComponentProps<typeof Field>, 'type'>,
-) {
+// confirm: 확인 칸이라 보기 버튼 이름을 칸마다 구분.
+export function PasswordField({
+  confirm,
+  ...props
+}: Omit<ComponentProps<typeof Field>, 'type'> & { confirm?: boolean }) {
   const { t } = useTranslation()
   const [shown, setShown] = useState(false)
   return (
@@ -19,7 +21,9 @@ export function PasswordField(
         <button
           type="button"
           aria-pressed={shown}
-          aria-label={shown ? t('auth.hidePassword') : t('auth.showPassword')}
+          aria-label={t(
+            `auth.${shown ? 'hide' : 'show'}Password${confirm ? 'Confirm' : ''}`,
+          )}
           onClick={() => {
             setShown((v) => !v)
           }}

@@ -43,6 +43,8 @@
   "auth": {
     "username": "Username",
     "password": "Password",
+    "passwordConfirm": "Confirm password",
+    "passwordMismatch": "Passwords don't match",
     "displayName": "Display name",
     "toLogin": "Go to sign in",
     "login": {
@@ -110,6 +112,8 @@
     "language": "Language",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
+    "showPasswordConfirm": "Show password confirmation",
+    "hidePasswordConfirm": "Hide password confirmation",
     "themeToDark": "Switch to dark mode",
     "themeToLight": "Switch to light mode"
   },

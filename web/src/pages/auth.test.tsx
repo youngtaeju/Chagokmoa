@@ -275,6 +275,10 @@ describe('signup', () => {
       await app.user.type(screen.getByLabelText(ko.auth.displayName), '엄마')
       await app.user.type(screen.getByLabelText(ko.auth.username), 'owner')
       await app.user.type(screen.getByLabelText(ko.auth.password), 'pw123456')
+      await app.user.type(
+        screen.getByLabelText(ko.auth.passwordConfirm),
+        'pw123456',
+      )
     }
 
     it('wizard_steps_and_back', async () => {
@@ -460,6 +464,141 @@ describe('signup', () => {
       )
     })
 
+    it('signup_password_mismatch_blocks', async () => {
+      browserLanguage('ko-KR')
+      const signups: unknown[] = []
+      mockFetch(wizardRoutes([], signups))
+      const app = renderApp('/signup')
+      await toStep2(app)
+      await app.user.type(screen.getByLabelText(ko.auth.displayName), '엄마')
+      await app.user.type(screen.getByLabelText(ko.auth.username), 'owner')
+      await app.user.type(
+        screen.getByLabelText(ko.auth.password),
+        'password123',
+      )
+      await app.user.type(
+        screen.getByLabelText(ko.auth.passwordConfirm),
+        'password124',
+      )
+      await app.user.click(
+        screen.getByRole('button', { name: w.createAccount }),
+      )
+
+      expect(await screen.findByText(ko.auth.passwordMismatch)).toBeVisible()
+      expect(signups).toEqual([])
+      expect(screen.getByLabelText(ko.auth.passwordConfirm)).toHaveFocus()
+    })
+
+    it('mismatch_then_fix_proceeds', async () => {
+      browserLanguage('ko-KR')
+      const signups: unknown[] = []
+      mockFetch(wizardRoutes([], signups))
+      const app = renderApp('/signup')
+      await toStep2(app)
+      await app.user.type(screen.getByLabelText(ko.auth.displayName), '엄마')
+      await app.user.type(screen.getByLabelText(ko.auth.username), 'owner')
+      await app.user.type(
+        screen.getByLabelText(ko.auth.password),
+        'password123',
+      )
+      const confirm = screen.getByLabelText(ko.auth.passwordConfirm)
+      await app.user.type(confirm, 'password124')
+      await app.user.click(
+        screen.getByRole('button', { name: w.createAccount }),
+      )
+      await screen.findByText(ko.auth.passwordMismatch)
+
+      await app.user.clear(confirm)
+      await app.user.type(confirm, 'password123')
+      await app.user.click(
+        screen.getByRole('button', { name: w.createAccount }),
+      )
+
+      await screen.findByLabelText(w.babyName)
+      expect(
+        screen.queryByText(ko.auth.passwordMismatch),
+      ).not.toBeInTheDocument()
+      expect(signups).toHaveLength(1)
+      expect(signups[0]).not.toHaveProperty('password_confirm')
+    })
+
+    it('mismatch_shown_on_blur_not_while_typing', async () => {
+      browserLanguage('ko-KR')
+      mockFetch(wizardRoutes([]))
+      const app = renderApp('/signup')
+      await toStep2(app)
+      await app.user.type(
+        screen.getByLabelText(ko.auth.password),
+        'password123',
+      )
+      await app.user.type(
+        screen.getByLabelText(ko.auth.passwordConfirm),
+        'pass',
+      )
+      expect(
+        screen.queryByText(ko.auth.passwordMismatch),
+      ).not.toBeInTheDocument()
+      await app.user.tab()
+      expect(await screen.findByText(ko.auth.passwordMismatch)).toBeVisible()
+    })
+
+    it('confirm_value_kept_when_going_back_and_forth', async () => {
+      browserLanguage('ko-KR')
+      mockFetch(wizardRoutes([]))
+      const app = renderApp('/signup')
+      await toStep2(app)
+      await app.user.type(
+        screen.getByLabelText(ko.auth.passwordConfirm),
+        'password123',
+      )
+      await app.user.click(screen.getByRole('button', { name: w.back }))
+      await screen.findByLabelText(w.instanceName)
+      await app.user.keyboard('{Enter}')
+      expect(await screen.findByLabelText(ko.auth.passwordConfirm)).toHaveValue(
+        'password123',
+      )
+    })
+
+    it('toggle_names_differ_between_password_and_confirm', async () => {
+      browserLanguage('ko-KR')
+      mockFetch(wizardRoutes([]))
+      const app = renderApp('/signup')
+      await toStep2(app)
+      expect(
+        screen.getByRole('button', { name: ko.auth.showPassword }),
+      ).toBeInTheDocument()
+      await app.user.click(
+        screen.getByRole('button', { name: ko.auth.showPasswordConfirm }),
+      )
+      expect(
+        screen.getByRole('button', { name: ko.auth.hidePasswordConfirm }),
+      ).toHaveAttribute('aria-pressed', 'true')
+    })
+
+    it('mismatch_text_in_english', async () => {
+      browserLanguage('ko-KR')
+      mockFetch(wizardRoutes([]))
+      const app = renderApp('/signup')
+      await app.user.click(
+        await screen.findByRole('button', { name: 'English' }),
+      )
+      await app.user.type(
+        await screen.findByLabelText(en.auth.wizard.instanceName),
+        'Home',
+      )
+      await app.user.keyboard('{Enter}')
+      await app.user.type(
+        await screen.findByLabelText(en.auth.password),
+        'password123',
+      )
+      await app.user.type(
+        screen.getByLabelText(en.auth.passwordConfirm),
+        'pass',
+      )
+      await app.user.tab()
+      expect(await screen.findByText("Passwords don't match")).toBeVisible()
+    })
+
     it('password_rules_live', async () => {
       browserLanguage('ko-KR')
       mockFetch(wizardRoutes([]))
@@ -495,6 +634,10 @@ describe('signup', () => {
       await user.type(await screen.findByLabelText(en.auth.displayName), 'Mom')
       await user.type(screen.getByLabelText(en.auth.username), 'owner')
       await user.type(screen.getByLabelText(en.auth.password), 'pw123456')
+      await user.type(
+        screen.getByLabelText(en.auth.passwordConfirm),
+        'pw123456',
+      )
       await user.click(
         screen.getByRole('button', { name: en.auth.wizard.createAccount }),
       )
@@ -649,6 +792,7 @@ describe('invite', () => {
 
     await user.type(screen.getByLabelText(ko.auth.username), 'dad')
     await user.type(screen.getByLabelText(ko.auth.password), 'pw123456')
+    await user.type(screen.getByLabelText(ko.auth.passwordConfirm), 'pw123456')
     await user.click(
       screen.getByRole('button', { name: ko.auth.invite.submit }),
     )
@@ -667,6 +811,52 @@ describe('invite', () => {
     await screen.findAllByText(settingsFixture.instance_name)
   })
 
+  it('invite_password_mismatch_blocks', async () => {
+    let accepted = 0
+    mockFetch({
+      ...authRoutes({ me: null }),
+      [`GET /api/invites/${raw}/preview`]: () => json(200, preview),
+      [`POST /api/invites/${raw}/accept`]: () => {
+        accepted += 1
+        return json(201, { user: userFixture('guardian') })
+      },
+    })
+    const { user } = renderApp(`/invite/${raw}`)
+    await user.type(await screen.findByLabelText(ko.auth.displayName), '아빠')
+    await user.click(screen.getByRole('button', { name: ko.auth.invite.next }))
+    await user.type(await screen.findByLabelText(ko.auth.username), 'dad')
+    await user.type(screen.getByLabelText(ko.auth.password), 'password123')
+    await user.type(
+      screen.getByLabelText(ko.auth.passwordConfirm),
+      'password124',
+    )
+    await user.click(
+      screen.getByRole('button', { name: ko.auth.invite.submit }),
+    )
+
+    expect(await screen.findByText(ko.auth.passwordMismatch)).toBeVisible()
+    expect(accepted).toBe(0)
+    expect(screen.getByLabelText(ko.auth.passwordConfirm)).toHaveFocus()
+  })
+
+  it('invite_mismatch_shown_on_blur_not_while_typing', async () => {
+    mockFetch({
+      ...authRoutes({ me: null }),
+      [`GET /api/invites/${raw}/preview`]: () => json(200, preview),
+    })
+    const { user } = renderApp(`/invite/${raw}`)
+    await user.type(await screen.findByLabelText(ko.auth.displayName), '아빠')
+    await user.click(screen.getByRole('button', { name: ko.auth.invite.next }))
+    await user.type(
+      await screen.findByLabelText(ko.auth.password),
+      'password123',
+    )
+    await user.type(screen.getByLabelText(ko.auth.passwordConfirm), 'pass')
+    expect(screen.queryByText(ko.auth.passwordMismatch)).not.toBeInTheDocument()
+    await user.tab()
+    expect(await screen.findByText(ko.auth.passwordMismatch)).toBeVisible()
+  })
+
   async function fillInvite(app: ReturnType<typeof renderApp>) {
     await app.user.type(
       await screen.findByLabelText(ko.auth.displayName),
@@ -677,6 +867,10 @@ describe('invite', () => {
     )
     await app.user.type(await screen.findByLabelText(ko.auth.username), 'dad')
     await app.user.type(screen.getByLabelText(ko.auth.password), 'pw123456')
+    await app.user.type(
+      screen.getByLabelText(ko.auth.passwordConfirm),
+      'pw123456',
+    )
     await app.user.click(
       screen.getByRole('button', { name: ko.auth.invite.submit }),
     )
@@ -705,6 +899,10 @@ describe('invite', () => {
     )
     await app.user.type(screen.getByLabelText(en.auth.username), 'dad')
     await app.user.type(screen.getByLabelText(en.auth.password), 'pw123456')
+    await app.user.type(
+      screen.getByLabelText(en.auth.passwordConfirm),
+      'pw123456',
+    )
     await app.user.click(
       screen.getByRole('button', { name: en.auth.invite.submit }),
     )
