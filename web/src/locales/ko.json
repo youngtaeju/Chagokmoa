@@ -109,7 +109,9 @@
       "goHome": "홈으로 가기",
       "toLogin": "로그인하러 가기"
     },
-    "language": "언어"
+    "language": "언어",
+    "themeToDark": "다크 모드로 바꾸기",
+    "themeToLight": "라이트 모드로 바꾸기"
   },
   "babies": {
     "name": "이름",

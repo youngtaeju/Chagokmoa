@@ -65,6 +65,46 @@
   color-scheme: dark;
 }
 
+/* 로그인 계열 화면 전용(장식, 카드, 브랜드 글자). 앱 토큰과 별개. */
+:root {
+  --auth-sky: #fff8f2;
+  --auth-sun: #ffe6d1;
+  --auth-star: #ffe9d1;
+  --auth-cloud: #ffffff;
+  --auth-hill-1: #ffe6d1;
+  --auth-hill-2: #ffd7b8;
+  --auth-hill-3: #ffc69c;
+  --auth-bush: #f8cfae;
+  --auth-plant: #f2a877;
+  --auth-stem: #e8925a;
+  --auth-card: #ffffff;
+  --auth-card-border: #f3decd;
+  --auth-card-shadow: 0 16px 48px rgba(166, 75, 8, 0.1);
+  --auth-brand: #3a1f07;
+  /* 하늘 대비 11:1, 카드 대비 11.6:1. */
+  --auth-intro: #4a3426;
+}
+
+.dark {
+  --auth-sky: #14171c;
+  /* 초승달. 같은 원에 하늘색 원을 겹쳐 깎음. */
+  --auth-sun: #f6e3c8;
+  --auth-star: #ffe9d1;
+  --auth-cloud: #2a2f38;
+  --auth-hill-1: #2a211d;
+  --auth-hill-2: #352721;
+  --auth-hill-3: #443026;
+  --auth-bush: #3d2e26;
+  --auth-plant: #6e4b37;
+  --auth-stem: #5a3d2c;
+  --auth-card: #1a1d21;
+  --auth-card-border: #2a2f33;
+  --auth-card-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  --auth-brand: #f3e6da;
+  /* 하늘 대비 9.7:1, 카드 대비 9.1:1. */
+  --auth-intro: #c9bcb1;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -87,6 +127,21 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-auth-sky: var(--auth-sky);
+  --color-auth-sun: var(--auth-sun);
+  --color-auth-star: var(--auth-star);
+  --color-auth-cloud: var(--auth-cloud);
+  --color-auth-hill-1: var(--auth-hill-1);
+  --color-auth-hill-2: var(--auth-hill-2);
+  --color-auth-hill-3: var(--auth-hill-3);
+  --color-auth-bush: var(--auth-bush);
+  --color-auth-plant: var(--auth-plant);
+  --color-auth-stem: var(--auth-stem);
+  --color-auth-card: var(--auth-card);
+  --color-auth-card-border: var(--auth-card-border);
+  --color-auth-brand: var(--auth-brand);
+  --color-auth-intro: var(--auth-intro);
+  --shadow-auth-card: var(--auth-card-shadow);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

@@ -17,8 +17,12 @@ export function getThemePref(): ThemePref {
   }
 }
 
+function resolveDark(p: ThemePref, systemDark: boolean): boolean {
+  return p === 'dark' || (p === 'system' && systemDark)
+}
+
 export function applyTheme(p: ThemePref, systemDark: boolean): void {
-  const dark = p === 'dark' || (p === 'system' && systemDark)
+  const dark = resolveDark(p, systemDark)
   document.documentElement.classList.toggle('dark', dark)
   setThemeColor(dark)
 }
@@ -90,4 +94,14 @@ function getSnapshot(): ThemePref {
 
 export function useTheme(): [ThemePref, (p: ThemePref) => void] {
   return [useSyncExternalStore(subscribe, getSnapshot), setThemePref]
+}
+
+function getDarkSnapshot(): boolean {
+  initTheme()
+  return resolveDark(pref, systemDark)
+}
+
+// 실제 적용 값. 시스템 모드면 기기 다크 여부, 둘 중 하나만 바뀌어도 다시 렌더.
+export function useIsDark(): boolean {
+  return useSyncExternalStore(subscribe, getDarkSnapshot)
 }
