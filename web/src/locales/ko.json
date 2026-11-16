@@ -414,6 +414,10 @@
       "roleNotAllowed": "이 역할로는 초대할 수 없어요.",
       "used": "이미 사용된 초대 링크예요."
     },
+    "push": {
+      "endpointNotAllowed": "이 브라우저의 푸시 서비스는 지원하지 않아요.",
+      "invalidSubscription": "푸시 구독 정보가 올바르지 않아요."
+    },
     "request": {
       "invalidBody": "요청 내용이 올바르지 않아요.",
       "invalidPath": "요청 경로가 올바르지 않아요.",

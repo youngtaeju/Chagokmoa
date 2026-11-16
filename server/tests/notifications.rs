@@ -838,3 +838,90 @@ async fn deleted_targets_cascade(pool: PgPool) {
     assert_eq!(total(&pool).await, 0);
     assert!(item_ids(&list(&f.grandma.0, "").await).is_empty());
 }
+
+/// 대기 중인 `send_push` 잡. (알림 id, 지금까지 남은 초), 알림 id 순.
+async fn push_jobs(pool: &PgPool) -> Vec<(Uuid, f64)> {
+    sqlx::query!(
+        r#"SELECT (payload->>'notification_id')::uuid AS "note!",
+                  EXTRACT(EPOCH FROM run_after - now())::float8 AS "secs!"
+           FROM jobs WHERE kind = 'send_push' AND status = 'queued' ORDER BY 1"#
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap()
+    .into_iter()
+    .map(|r| (r.note, r.secs))
+    .collect()
+}
+
+async fn note_ids(pool: &PgPool) -> Vec<Uuid> {
+    sqlx::query_scalar!("SELECT id FROM notifications ORDER BY id")
+        .fetch_all(pool)
+        .await
+        .unwrap()
+}
+
+#[sqlx::test]
+async fn story_enqueues_push_now(pool: PgPool) {
+    let f = family(&pool).await;
+    create_story(&f.mom.0, "오늘의 이야기").await;
+    let jobs = push_jobs(&pool).await;
+    assert_eq!(jobs.len(), 2);
+    assert_eq!(
+        jobs.iter().map(|j| j.0).collect::<Vec<_>>(),
+        note_ids(&pool).await
+    );
+    assert!(jobs.iter().all(|j| j.1 <= 0.0));
+}
+
+#[sqlx::test]
+async fn comment_enqueues_push_now(pool: PgPool) {
+    let f = family(&pool).await;
+    let asset = insert_asset(&pool, AssetSeed::photo(f.mom.1.id)).await;
+    comment_asset(&f.dad.0, asset, "예쁘다").await;
+    let jobs = push_jobs(&pool).await;
+    assert_eq!(jobs.len(), 1);
+    assert_eq!(jobs[0].0, note_ids(&pool).await[0]);
+    assert!(jobs[0].1 <= 0.0);
+}
+
+#[sqlx::test]
+async fn upload_enqueues_delayed_push(pool: PgPool) {
+    let f = upload_family(&pool).await;
+    upload_photo(&f.app.server).await;
+    let jobs = push_jobs(&pool).await;
+    assert_eq!(jobs.len(), 2);
+    assert_eq!(
+        jobs.iter().map(|j| j.0).collect::<Vec<_>>(),
+        note_ids(&pool).await
+    );
+    assert!(jobs.iter().all(|j| j.1 > 110.0));
+}
+
+#[sqlx::test]
+async fn upload_again_extends_delay(pool: PgPool) {
+    let f = upload_family(&pool).await;
+    upload_photo(&f.app.server).await;
+    sqlx::query!("UPDATE jobs SET run_after = now() - interval '1 minute'")
+        .execute(&pool)
+        .await
+        .unwrap();
+    upload_photo(&f.app.server).await;
+    let jobs = push_jobs(&pool).await;
+    assert_eq!(jobs.len(), 2);
+    assert!(jobs.iter().all(|j| j.1 > 110.0));
+}
+
+#[sqlx::test]
+async fn upload_after_sent_enqueues_new_job(pool: PgPool) {
+    let f = upload_family(&pool).await;
+    upload_photo(&f.app.server).await;
+    sqlx::query!("DELETE FROM jobs WHERE kind = 'send_push'")
+        .execute(&pool)
+        .await
+        .unwrap();
+    upload_photo(&f.app.server).await;
+    let jobs = push_jobs(&pool).await;
+    assert_eq!(jobs.len(), 2);
+    assert!(jobs.iter().all(|j| j.1 > 110.0));
+}

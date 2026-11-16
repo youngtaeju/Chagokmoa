@@ -26,6 +26,12 @@ struct Target {
 /// 사진 알림 묶음 창. SQL interval 문자열.
 const UPLOAD_GROUP_WINDOW: &str = "30 minutes";
 
+/// 사진 푸시 발송 지연. 업로드마다 다시 시작. SQL interval 문자열.
+pub const PUSH_UPLOAD_DELAY: &str = "2 minutes";
+
+/// 지연 없는 푸시.
+const PUSH_NOW: &str = "0 seconds";
+
 /// 사진 업로드. 받는 사람마다 같은 행동자의 창 안 최신 줄이 있으면 count 증가와 대표 사진 교체, 없으면 새 줄.
 /// 묶음 대상이 휴지통 사진이어도 갱신(대표가 새 사진으로 교체).
 pub async fn record_upload(conn: &mut PgConnection, actor: Uuid, asset_id: Uuid) -> AppResult<()> {
@@ -37,7 +43,7 @@ pub async fn record_upload(conn: &mut PgConnection, actor: Uuid, asset_id: Uuid)
     .execute(&mut *conn)
     .await?;
     let recipients = active_recipients(conn, actor).await?;
-    let grouped = sqlx::query_scalar!(
+    let grouped = sqlx::query!(
         "WITH latest AS (
            SELECT DISTINCT ON (user_id) id FROM notifications
            WHERE user_id = ANY($1) AND actor_id = $2 AND kind = 'upload'
@@ -47,7 +53,7 @@ pub async fn record_upload(conn: &mut PgConnection, actor: Uuid, asset_id: Uuid)
          UPDATE notifications n
          SET count = n.count + 1, asset_id = $3, updated_at = now()
          FROM latest WHERE n.id = latest.id
-         RETURNING n.user_id",
+         RETURNING n.id, n.user_id",
         &recipients,
         actor,
         asset_id,
@@ -55,15 +61,41 @@ pub async fn record_upload(conn: &mut PgConnection, actor: Uuid, asset_id: Uuid)
     )
     .fetch_all(&mut *conn)
     .await?;
+    let grouped_users: Vec<Uuid> = grouped.iter().map(|g| g.user_id).collect();
+    let grouped_ids: Vec<Uuid> = grouped.iter().map(|g| g.id).collect();
+    // 묶음 줄의 대기 중 잡은 2분 연장. 이미 나갔거나 실행 중이면 새 잡.
+    let extended = sqlx::query_scalar!(
+        r#"UPDATE jobs SET run_after = now() + $2::text::interval
+           WHERE kind = 'send_push' AND status = 'queued'
+             AND payload->>'notification_id' = ANY($1)
+           RETURNING payload->>'notification_id' AS "note!""#,
+        &grouped_ids.iter().map(Uuid::to_string).collect::<Vec<_>>(),
+        PUSH_UPLOAD_DELAY
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    let unextended: Vec<Uuid> = grouped_ids
+        .into_iter()
+        .filter(|id| !extended.contains(&id.to_string()))
+        .collect();
+    enqueue_pushes(conn, &unextended, PUSH_UPLOAD_DELAY).await?;
     let fresh: Vec<Uuid> = recipients
         .into_iter()
-        .filter(|u| !grouped.contains(u))
+        .filter(|u| !grouped_users.contains(u))
         .collect();
     let target = Target {
         asset_id: Some(asset_id),
         ..Target::default()
     };
-    insert(conn, &fresh, NotificationKind::Upload, actor, target).await
+    insert(
+        conn,
+        &fresh,
+        NotificationKind::Upload,
+        actor,
+        target,
+        PUSH_UPLOAD_DELAY,
+    )
+    .await
 }
 
 /// 이야기 작성. 본문 멘션 대상은 `mention`, 나머지는 `story`.
@@ -78,8 +110,24 @@ pub async fn record_story(
         story_id: Some(story_id),
         ..Target::default()
     };
-    insert(conn, &mentioned, NotificationKind::Mention, actor, target).await?;
-    insert(conn, &rest, NotificationKind::Story, actor, target).await
+    insert(
+        conn,
+        &mentioned,
+        NotificationKind::Mention,
+        actor,
+        target,
+        PUSH_NOW,
+    )
+    .await?;
+    insert(
+        conn,
+        &rest,
+        NotificationKind::Story,
+        actor,
+        target,
+        PUSH_NOW,
+    )
+    .await
 }
 
 /// 마일스톤 작성. 만든 사람 빼고 전원.
@@ -99,6 +147,7 @@ pub async fn record_milestone(
         NotificationKind::Milestone,
         actor,
         target,
+        PUSH_NOW,
     )
     .await
 }
@@ -154,8 +203,24 @@ pub async fn record_comment(
         }
     };
     let rest: Vec<Uuid> = rest.into_iter().filter(|u| followers.contains(u)).collect();
-    insert(conn, &mentioned, NotificationKind::Mention, actor, target).await?;
-    insert(conn, &rest, NotificationKind::Comment, actor, target).await
+    insert(
+        conn,
+        &mentioned,
+        NotificationKind::Mention,
+        actor,
+        target,
+        PUSH_NOW,
+    )
+    .await?;
+    insert(
+        conn,
+        &rest,
+        NotificationKind::Comment,
+        actor,
+        target,
+        PUSH_NOW,
+    )
+    .await
 }
 
 /// 정지되지 않은 사용자 중 행동자 제외. 모든 종류 공용.
@@ -178,13 +243,14 @@ fn split_mentions(recipients: Vec<Uuid>, body: &str) -> (Vec<Uuid>, Vec<Uuid>) {
         .partition(|u| mentions.binary_search(u).is_ok())
 }
 
-/// 받는 사람마다 한 줄.
+/// 받는 사람마다 한 줄과 푸시 잡 하나. `delay` 는 SQL interval 문자열.
 async fn insert(
     conn: &mut PgConnection,
     users: &[Uuid],
     kind: NotificationKind,
     actor: Uuid,
     t: Target,
+    delay: &str,
 ) -> AppResult<()> {
     if users.is_empty() {
         return Ok(());
@@ -205,6 +271,25 @@ async fn insert(
         t.milestone_id,
         t.asset_comment_id,
         t.story_comment_id
+    )
+    .execute(&mut *conn)
+    .await?;
+    enqueue_pushes(conn, &ids, delay).await
+}
+
+/// 알림 줄마다 `send_push` 잡 하나. 구독 유무는 발송 때 확인.
+async fn enqueue_pushes(conn: &mut PgConnection, notes: &[Uuid], delay: &str) -> AppResult<()> {
+    if notes.is_empty() {
+        return Ok(());
+    }
+    let job_ids: Vec<Uuid> = notes.iter().map(|_| Uuid::now_v7()).collect();
+    sqlx::query!(
+        "INSERT INTO jobs (id, kind, payload, run_after)
+         SELECT j.id, 'send_push', jsonb_build_object('notification_id', j.note), now() + $3::text::interval
+         FROM unnest($1::uuid[], $2::uuid[]) AS j(id, note)",
+        &job_ids,
+        notes,
+        delay
     )
     .execute(&mut *conn)
     .await?;

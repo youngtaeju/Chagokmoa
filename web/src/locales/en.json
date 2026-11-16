@@ -414,6 +414,10 @@
       "roleNotAllowed": "You can't invite someone with this role.",
       "used": "This invite link has already been used."
     },
+    "push": {
+      "endpointNotAllowed": "This browser's push service isn't supported.",
+      "invalidSubscription": "Invalid push subscription."
+    },
     "request": {
       "invalidBody": "The request content is not valid.",
       "invalidPath": "The request path is not valid.",

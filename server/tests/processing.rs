@@ -414,10 +414,18 @@ async fn requeue_running_resets(pool: PgPool) {
         .execute(&pool)
         .await
         .unwrap();
-    assert!(jobs::claim(&pool).await.unwrap().is_none());
+    assert!(
+        jobs::claim(&pool, &["process_asset"])
+            .await
+            .unwrap()
+            .is_none()
+    );
 
     assert_eq!(jobs::requeue_running(&pool).await.unwrap(), 1);
-    let claimed = jobs::claim(&pool).await.unwrap().unwrap();
+    let claimed = jobs::claim(&pool, &["process_asset"])
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(claimed.job, Job::ProcessAsset { asset_id: id });
     assert_eq!(claimed.attempts, 1);
     assert_eq!(job_rows(&pool).await[0].status, "running");

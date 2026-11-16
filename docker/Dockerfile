@@ -17,6 +17,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends pkg-config zlib1g-dev libheif-dev \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src/server
+COPY web/src/locales/ /src/web/src/locales/
 COPY server/ ./
 # sqlx 매크로는 커밋된 .sqlx/ 로 검사. 빌드에 DB 불필요.
 ENV SQLX_OFFLINE=true

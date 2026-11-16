@@ -756,6 +756,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/push/key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_key"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/push/prefs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_prefs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["patch_prefs"];
+        trace?: never;
+    };
+    "/api/push/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_subscription"];
+        put: operations["put_subscription"];
+        post?: never;
+        delete: operations["delete_subscription"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/settings": {
         parameters: {
             query?: never;
@@ -1781,6 +1829,35 @@ export interface components {
             /** @description `true` 면 비활성화와 전 세션 삭제, `false` 면 재활성화. */
             disabled?: boolean | null;
             role?: null | components["schemas"]["Role"];
+        };
+        PushKey: {
+            /** @description base64url(패딩 없음) 65바이트 VAPID 공개키. */
+            public_key: string;
+        };
+        PushPrefs: {
+            comment: boolean;
+            mention: boolean;
+            milestone: boolean;
+            story: boolean;
+            upload: boolean;
+        };
+        PushPrefsPatch: {
+            comment?: boolean | null;
+            mention?: boolean | null;
+            milestone?: boolean | null;
+            story?: boolean | null;
+            upload?: boolean | null;
+        };
+        PushSubscriptionBody: {
+            /** @description 16바이트 인증 비밀의 base64url. */
+            auth: string;
+            endpoint: string;
+            /** @description 브라우저 공개키(65바이트 P-256 점)의 base64url. */
+            p256dh: string;
+        };
+        PushSubscriptionState: {
+            /** @description 이 세션의 구독 주소. 없으면 `null`. */
+            endpoint: string | null;
         };
         ReorderBabiesRequest: {
             /** @description 전체 아기 ID 를 원하는 순서로. 누락·중복·모르는 ID 는 거부. */
@@ -5381,6 +5458,229 @@ export interface operations {
             };
             /** @description 인증 필요 */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description VAPID 공개키 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushKey"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_prefs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 종류별 푸시 켜짐 여부. 기본 전부 켜짐 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushPrefs"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    patch_prefs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushPrefsPatch"];
+            };
+        };
+        responses: {
+            /** @description 갱신 후 전체 설정 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushPrefs"];
+                };
+            };
+            /** @description 본문 형식 오류 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_subscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 이 세션의 구독 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushSubscriptionState"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    put_subscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushSubscriptionBody"];
+            };
+        };
+        responses: {
+            /** @description 이 세션의 구독으로 저장. 같은 주소의 다른 세션 구독은 이동 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 주소 미허용 (`push.endpointNotAllowed`) 또는 키 오류 (`push.invalidSubscription`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    delete_subscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 이 세션의 구독 삭제. 없어도 204 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description CSRF 헤더 누락 */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -37,6 +37,8 @@ fast_image_resize = "6"
 moxcms = "0.8"
 kamadak-exif = "0.6"
 blurhash = "0.2"
+web-push-native = "0.5"
+reqwest = { version = "0.13", default-features = false, features = ["rustls"] }
 
 [dev-dependencies]
 tempfile = "3"

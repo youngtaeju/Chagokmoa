@@ -6,6 +6,7 @@ use chagokmoa::{
     config::{self, Config},
     db, jobs, maintenance,
     media::{storage, video},
+    push,
     shutdown::{forced, shutdown_signal},
     state::AppState,
     users::reset,
@@ -83,6 +84,7 @@ async fn main() -> anyhow::Result<()> {
             storage::ensure_dirs(&config.data_dir)
                 .with_context(|| format!("DATA_DIR {} 준비 실패", config.data_dir.display()))?;
             let state = AppState::new(pool, config);
+            state.vapid().await?;
             let listener = tokio::net::TcpListener::bind(addr).await?;
             tracing::info!(%addr, "listening");
             let (stop, force) = shutdown_signal()?;
@@ -95,6 +97,7 @@ async fn main() -> anyhow::Result<()> {
             let concurrency = state.config.worker_concurrency;
             let workers = jobs::worker::spawn(state.clone(), concurrency, stop.clone());
             tracing::info!(concurrency, "workers started");
+            let push_worker = push::send::spawn_worker(state.clone(), stop.clone());
             let mut serve_stop = stop.clone();
             // 종료 대기 대상은 한 future 로 묶어 유예와 경쟁.
             let drain = async {
@@ -109,6 +112,9 @@ async fn main() -> anyhow::Result<()> {
                     if let Err(err) = worker.await {
                         tracing::error!(%err, "worker task failed");
                     }
+                }
+                if let Err(err) = push_worker.await {
+                    tracing::error!(%err, "push worker task failed");
                 }
                 anyhow::Ok(())
             };
