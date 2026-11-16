@@ -7,7 +7,7 @@ use utoipa_axum::router::OpenApiRouter;
 
 use crate::{
     albums, assets, auth, babies, comments, days, error::AppError, growth, invites, memories,
-    milestones, notifications, openapi::ApiDoc, reactions, routes, security, settings,
+    milestones, notifications, openapi::ApiDoc, push, reactions, routes, security, settings,
     state::AppState, stories, uploads, users, web,
 };
 
@@ -27,6 +27,7 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(memories::routes::router())
         .merge(milestones::routes::router())
         .merge(notifications::routes::router())
+        .merge(push::routes::router())
         .merge(reactions::routes::router())
         .merge(settings::routes::router())
         .merge(stories::routes::router())

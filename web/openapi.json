@@ -3981,6 +3981,218 @@
         }
       }
     },
+    "/api/push/key": {
+      "get": {
+        "operationId": "get_key",
+        "responses": {
+          "200": {
+            "description": "VAPID 공개키",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushKey"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/push/prefs": {
+      "get": {
+        "operationId": "get_prefs",
+        "responses": {
+          "200": {
+            "description": "종류별 푸시 켜짐 여부. 기본 전부 켜짐",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushPrefs"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patch_prefs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushPrefsPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "갱신 후 전체 설정",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushPrefs"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "본문 형식 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/push/subscription": {
+      "get": {
+        "operationId": "get_subscription",
+        "responses": {
+          "200": {
+            "description": "이 세션의 구독",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushSubscriptionState"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "put_subscription",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscriptionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "이 세션의 구독으로 저장. 같은 주소의 다른 세션 구독은 이동"
+          },
+          "400": {
+            "description": "주소 미허용 (`push.endpointNotAllowed`) 또는 키 오류 (`push.invalidSubscription`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_subscription",
+        "responses": {
+          "204": {
+            "description": "이 세션의 구독 삭제. 없어도 204"
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/settings": {
       "get": {
         "operationId": "get_settings",
@@ -7924,6 +8136,116 @@
                 "description": "`guardian` 또는 `family`."
               }
             ]
+          }
+        }
+      },
+      "PushKey": {
+        "type": "object",
+        "required": [
+          "public_key"
+        ],
+        "properties": {
+          "public_key": {
+            "type": "string",
+            "description": "base64url(패딩 없음) 65바이트 VAPID 공개키."
+          }
+        }
+      },
+      "PushPrefs": {
+        "type": "object",
+        "required": [
+          "upload",
+          "comment",
+          "mention",
+          "story",
+          "milestone"
+        ],
+        "properties": {
+          "comment": {
+            "type": "boolean"
+          },
+          "mention": {
+            "type": "boolean"
+          },
+          "milestone": {
+            "type": "boolean"
+          },
+          "story": {
+            "type": "boolean"
+          },
+          "upload": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PushPrefsPatch": {
+        "type": "object",
+        "properties": {
+          "comment": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "mention": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "milestone": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "story": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "upload": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "PushSubscriptionBody": {
+        "type": "object",
+        "required": [
+          "endpoint",
+          "p256dh",
+          "auth"
+        ],
+        "properties": {
+          "auth": {
+            "type": "string",
+            "description": "16바이트 인증 비밀의 base64url."
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "p256dh": {
+            "type": "string",
+            "description": "브라우저 공개키(65바이트 P-256 점)의 base64url."
+          }
+        }
+      },
+      "PushSubscriptionState": {
+        "type": "object",
+        "required": [
+          "endpoint"
+        ],
+        "properties": {
+          "endpoint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "이 세션의 구독 주소. 없으면 `null`."
           }
         }
       },
