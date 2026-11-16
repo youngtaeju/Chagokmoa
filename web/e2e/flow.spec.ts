@@ -112,10 +112,27 @@ test('day_page', async ({ ownerPage: page }) => {
   await expect(tiles(page)).toHaveCount(2)
   await expectThumbnailsLoaded(page, 2)
 
-  // 이전 날/다음 날 중 하나는 영상 날로 연결. 뒤로가기는 홈.
-  await expect(
-    page.getByRole('navigation', { name: '이전·다음 날' }),
-  ).toBeVisible()
+  // 날짜 띠: 지금 날 표시, 다른 기록 날 링크로 이동. 뒤로가기는 홈(replace 이동).
+  const strip = page.getByRole('navigation', { name: '날짜 이동' })
+  await expect(strip).toBeVisible()
+  const current = strip.locator('a[aria-current="date"]')
+  await expect(current).toHaveCount(1)
+  const fromHref = (await current.getAttribute('href')) ?? ''
+  const other = strip.locator('a:not([aria-current])').first()
+  const toHref = (await other.getAttribute('href')) ?? ''
+  expect(fromHref).toMatch(/\/days\/\d{4}-\d{2}-\d{2}$/)
+  expect(toHref).toMatch(/\/days\/\d{4}-\d{2}-\d{2}$/)
+  expect(toHref).not.toBe(fromHref)
+  await other.click()
+  await expect(page).toHaveURL(new RegExp(`${toHref}$`))
+  await expect(strip.locator(`a[href="${toHref}"]`)).toHaveAttribute(
+    'aria-current',
+    'date',
+  )
+  await expect(strip.locator(`a[href="${fromHref}"]`)).not.toHaveAttribute(
+    'aria-current',
+    'date',
+  )
   await page.getByRole('button', { name: '뒤로' }).click()
   await expect(page).toHaveURL(/\/$/)
 })
