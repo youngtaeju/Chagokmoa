@@ -3981,6 +3981,122 @@
         }
       }
     },
+    "/api/password-resets/{raw}/accept": {
+      "post": {
+        "operationId": "accept_password_reset",
+        "parameters": [
+          {
+            "name": "raw",
+            "in": "path",
+            "description": "재설정 원문 토큰",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptPasswordResetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "비밀번호 변경, 다른 세션 전부 삭제, 새 세션 쿠키 발급",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "비밀번호 검증 실패 (링크는 유지)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "링크 없음",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "만료, 사용됨, 회수됨 (대상 정지 포함)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/password-resets/{raw}/preview": {
+      "get": {
+        "operationId": "preview_password_reset",
+        "parameters": [
+          {
+            "name": "raw",
+            "in": "path",
+            "description": "재설정 원문 토큰",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "재설정 화면용 대상 정보",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordResetPreview"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "링크 없음",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "만료, 사용됨, 회수됨 (대상 정지 포함)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/push/key": {
       "get": {
         "operationId": "get_key",
@@ -5894,6 +6010,85 @@
           }
         }
       }
+    },
+    "/api/users/{id}/password-reset": {
+      "post": {
+        "operationId": "create_password_reset",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "대상 사용자 ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "재설정 링크 발급 (이전 링크는 회수)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePasswordResetResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "자기 자신 또는 잘못된 ID 형식",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "사용자 없음",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "정지된 사용자",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5913,6 +6108,17 @@
             "type": "string"
           },
           "username": {
+            "type": "string"
+          }
+        }
+      },
+      "AcceptPasswordResetRequest": {
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "properties": {
+          "password": {
             "type": "string"
           }
         }
@@ -6736,6 +6942,23 @@
               "null"
             ],
             "description": "미리 정한 항목 키. `custom_label` 과 정확히 하나. 아기당 한 번."
+          }
+        }
+      },
+      "CreatePasswordResetResponse": {
+        "type": "object",
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "properties": {
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "url": {
+            "type": "string",
+            "description": "`{PUBLIC_URL}/reset/{원문 토큰}`. 원문 토큰은 이 응답에서만 노출."
           }
         }
       },
@@ -8032,6 +8255,26 @@
               "null"
             ],
             "description": "다음 페이지가 없으면 `null`."
+          }
+        }
+      },
+      "PasswordResetPreview": {
+        "type": "object",
+        "required": [
+          "display_name",
+          "username",
+          "expires_at"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "username": {
+            "type": "string"
           }
         }
       },

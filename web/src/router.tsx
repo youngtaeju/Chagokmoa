@@ -37,6 +37,10 @@ const InvitePage = lazyRouteComponent(
   () => import('@/pages/InvitePage'),
   'InvitePage',
 )
+const PasswordResetPage = lazyRouteComponent(
+  () => import('@/pages/PasswordResetPage'),
+  'PasswordResetPage',
+)
 const SignupWizard = lazyRouteComponent(
   () => import('@/pages/SignupWizard'),
   'SignupWizard',
@@ -249,6 +253,13 @@ const inviteRoute = createRoute({
     if (await loadMe(context.queryClient)) throw redirect({ to: '/' })
   },
   component: InvitePage,
+})
+
+// 로그인 여부와 무관하게 열림(다른 계정으로 로그인한 상태에서도 사용 가능).
+const resetRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reset/$raw',
+  component: PasswordResetPage,
 })
 
 // 로그인 필요. me 확인 불가(오프라인 등)면 통과, 서버가 최종 검증.
@@ -564,6 +575,7 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   signupRoute,
   inviteRoute,
+  resetRoute,
   legacyPhotoRoute,
   legacyRoute('/members', '/family'),
   legacyRoute('/settings', '/me'),

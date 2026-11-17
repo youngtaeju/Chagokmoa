@@ -756,6 +756,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/password-resets/{raw}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["accept_password_reset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/password-resets/{raw}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["preview_password_reset"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/push/key": {
         parameters: {
             query?: never;
@@ -1060,6 +1092,22 @@ export interface paths {
         patch: operations["patch_user"];
         trace?: never;
     };
+    "/api/users/{id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["create_password_reset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1068,6 +1116,9 @@ export interface components {
             display_name: string;
             password: string;
             username: string;
+        };
+        AcceptPasswordResetRequest: {
+            password: string;
         };
         /** @description 생후 개월 묶음. 개월 경계는 월말 고정 기념일 규칙(웹 `ageAt` 과 동일). */
         AgeMonth: {
@@ -1360,6 +1411,12 @@ export interface components {
             note?: string | null;
             /** @description 미리 정한 항목 키. `custom_label` 과 정확히 하나. 아기당 한 번. */
             preset_key?: string | null;
+        };
+        CreatePasswordResetResponse: {
+            /** Format: date-time */
+            expires_at: string;
+            /** @description `{PUBLIC_URL}/reset/{원문 토큰}`. 원문 토큰은 이 응답에서만 노출. */
+            url: string;
         };
         CreateStoryRequest: {
             /** @description 붙일 순서. 휴지통 아닌 사진만, 중복은 한 번만. */
@@ -1795,6 +1852,12 @@ export interface components {
             })[];
             /** @description 다음 페이지가 없으면 `null`. */
             next_cursor: string | null;
+        };
+        PasswordResetPreview: {
+            display_name: string;
+            /** Format: date-time */
+            expires_at: string;
+            username: string;
         };
         PatchAsset: {
             /** @description 생략 시 변경 없음. `null` 또는 공백만 있는 문자열은 비움. 앞뒤 공백 제거, 최대 2000자. */
@@ -5477,6 +5540,101 @@ export interface operations {
             };
         };
     };
+    accept_password_reset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 재설정 원문 토큰 */
+                raw: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptPasswordResetRequest"];
+            };
+        };
+        responses: {
+            /** @description 비밀번호 변경, 다른 세션 전부 삭제, 새 세션 쿠키 발급 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description 비밀번호 검증 실패 (링크는 유지) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 링크 없음 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 만료, 사용됨, 회수됨 (대상 정지 포함) */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    preview_password_reset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 재설정 원문 토큰 */
+                raw: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 재설정 화면용 대상 정보 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordResetPreview"];
+                };
+            };
+            /** @description 링크 없음 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 만료, 사용됨, 회수됨 (대상 정지 포함) */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
     get_key: {
         parameters: {
             query?: never;
@@ -7108,6 +7266,74 @@ export interface operations {
             };
             /** @description 사용자 없음 */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    create_password_reset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 대상 사용자 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 재설정 링크 발급 (이전 링크는 회수) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatePasswordResetResponse"];
+                };
+            };
+            /** @description 자기 자신 또는 잘못된 ID 형식 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 사용자 없음 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 정지된 사용자 */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

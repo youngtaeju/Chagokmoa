@@ -1,13 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
 import { api, call } from '@/api/client'
 import type { Role } from '@/api/types'
 import { FormError } from '@/components/Field'
 import { SelectField } from '@/components/NativeSelect'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { LinkShareBox } from './LinkShareBox'
 import { useSettings } from '@/settings/useSettings'
 import { AdaptiveSheet } from '@/upload/AdaptiveSheet'
 
@@ -22,40 +21,8 @@ function isInviteRole(v: string): v is (typeof INVITE_ROLES)[number] {
 export function InviteSheet({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
-  const settings = useSettings()
-  const urlInput = useRef<HTMLInputElement>(null)
+  const instance = useSettings()?.instance_name
   const [url, setUrl] = useState<string | null>(null)
-  const [copyFailed, setCopyFailed] = useState(false)
-
-  async function copy(link: string, silent = false) {
-    try {
-      await navigator.clipboard.writeText(link)
-      setCopyFailed(false)
-      toast(silent ? t('members.linkCopied') : t('common.copied'))
-    } catch {
-      setCopyFailed(true)
-      urlInput.current?.select()
-    }
-  }
-
-  // 버튼 클릭 안에서만 호출(iOS 는 사용자 동작 직후여야 허용). 사용자 취소(AbortError)는 무시, 그 외 실패는 복사.
-  async function share(link: string) {
-    const instance = settings?.instance_name
-    try {
-      await navigator.share({
-        title: instance
-          ? t('members.shareTitle', { instance })
-          : t('members.shareTitleGeneric'),
-        text: instance
-          ? t('members.shareText', { instance })
-          : t('members.shareTextGeneric'),
-        url: link,
-      })
-    } catch (e) {
-      if (e instanceof DOMException && e.name === 'AbortError') return
-      await copy(link, true)
-    }
-  }
 
   const create = useMutation({
     mutationFn: (body: { role: Role; expires_in_hours: number }) =>
@@ -109,38 +76,21 @@ export function InviteSheet({ onClose }: { onClose: () => void }) {
         </form>
         <FormError error={create.error} />
         {url !== null && (
-          <div className="grid gap-2 rounded-xl bg-muted p-3">
-            <label htmlFor="invite-url" className="text-sm font-semibold">
-              {t('members.inviteUrl')}
-            </label>
-            <div className="flex gap-2">
-              <Input
-                id="invite-url"
-                ref={urlInput}
-                readOnly
-                value={url}
-                onFocus={(e) => {
-                  e.currentTarget.select()
-                }}
-              />
-              {typeof navigator.share === 'function' && (
-                <Button variant="outline" onClick={() => void share(url)}>
-                  {t('members.share')}
-                </Button>
-              )}
-              <Button variant="outline" onClick={() => void copy(url)}>
-                {t('common.copy')}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t('members.inviteUrlHint')}
-            </p>
-            {copyFailed && (
-              <p role="alert" className="text-sm text-destructive">
-                {t('members.copyFailed')}
-              </p>
-            )}
-          </div>
+          <LinkShareBox
+            url={url}
+            label={t('members.inviteUrl')}
+            shareTitle={
+              instance
+                ? t('members.shareTitle', { instance })
+                : t('members.shareTitleGeneric')
+            }
+            shareText={
+              instance
+                ? t('members.shareText', { instance })
+                : t('members.shareTextGeneric')
+            }
+            hint={t('members.inviteUrlHint')}
+          />
         )}
       </div>
     </AdaptiveSheet>

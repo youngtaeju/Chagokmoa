@@ -18,6 +18,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { AdaptiveSheet } from '@/upload/AdaptiveSheet'
 import { usersKey } from '@/members/useUsers'
+import { ResetLinkSheet } from './ResetLinkSheet'
 
 export const EDITABLE_ROLES = ['guardian', 'family'] as const
 
@@ -36,6 +37,7 @@ export function MemberSheet({
   const { t } = useTranslation()
   const qc = useQueryClient()
   const [confirming, setConfirming] = useState(false)
+  const [resetOpen, setResetOpen] = useState(false)
   const suspended = user.disabled_at !== null
 
   const patch = useMutation({
@@ -93,6 +95,16 @@ export function MemberSheet({
             {t(`roles.${user.role}Desc`)}
           </p>
         </div>
+        {!suspended && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              setResetOpen(true)
+            }}
+          >
+            {t('members.resetLink')}
+          </Button>
+        )}
         <FormError error={confirming ? null : patch.error} />
         {suspended ? (
           <Button
@@ -155,6 +167,14 @@ export function MemberSheet({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {resetOpen && (
+        <ResetLinkSheet
+          user={user}
+          onClose={() => {
+            setResetOpen(false)
+          }}
+        />
+      )}
     </AdaptiveSheet>
   )
 }

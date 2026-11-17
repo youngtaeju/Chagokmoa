@@ -115,7 +115,21 @@
     "showPasswordConfirm": "Show password confirmation",
     "hidePasswordConfirm": "Hide password confirmation",
     "themeToDark": "Switch to dark mode",
-    "themeToLight": "Switch to light mode"
+    "themeToLight": "Switch to light mode",
+    "reset": {
+      "title": "New password for {{name}}",
+      "username": "Username: {{username}}",
+      "hint": "You will use this password to sign in from now on.",
+      "submit": "Change password",
+      "welcome": "Signed in with your new password.",
+      "error": {
+        "expired": "This reset link has expired",
+        "used": "This reset link was already used",
+        "revoked": "This reset link can no longer be used",
+        "notFound": "This reset link is not valid"
+      },
+      "action": "Ask an admin for a new link."
+    }
   },
   "babies": {
     "name": "Name",
@@ -420,6 +434,14 @@
       "roleNotAllowed": "You can't invite someone with this role.",
       "used": "This invite link has already been used."
     },
+    "passwordReset": {
+      "expired": "This reset link has expired.",
+      "notFound": "The reset link could not be found.",
+      "revoked": "This reset link can no longer be used.",
+      "self": "Change your own password in Settings.",
+      "used": "This reset link has already been used.",
+      "userDisabled": "You can't create a link for a suspended member."
+    },
     "push": {
       "endpointNotAllowed": "This browser's push service isn't supported.",
       "invalidSubscription": "Invalid push subscription."
@@ -608,7 +630,17 @@
     "shareTextGeneric": "Join with this invitation link.",
     "share": "Share",
     "shareText": "Join {{instance}}.",
-    "memberSheetTitle": "{{name}}"
+    "memberSheetTitle": "{{name}}",
+    "resetLink": "Password reset link",
+    "resetSheetTitle": "Reset password for {{name}}",
+    "resetInfo": "The link works once and is valid for 24 hours. Creating a new link disables the previous one. Once the password is changed, this member is signed out on other devices.",
+    "createReset": "Create link",
+    "resetUrl": "Reset link",
+    "resetUrlHint": "You can only see this link now. Share it only with this member.",
+    "resetShareTitle": "Reset your {{instance}} password",
+    "resetShareTitleGeneric": "Reset password",
+    "resetShareText": "Choose a new password for {{instance}}.",
+    "resetShareTextGeneric": "Choose a new password with this link."
   },
   "settings": {
     "displayName": "Display name",
