@@ -1243,3 +1243,72 @@ test('push_banner_dismiss', async ({ ownerPage: page }) => {
     })
   }
 })
+
+test('password_reset_link', async ({
+  ownerPage: page,
+  browser,
+  baseURL,
+  locale,
+  timezoneId,
+}) => {
+  const retry = String(test.info().retry)
+  const name = `조카${retry}`
+  const username = `aunt2${retry}`
+  const { close } = await createFamilyPage(page, browser, {
+    baseURL,
+    locale,
+    timezoneId,
+    displayName: name,
+    username,
+  })
+  const newPassword = 'e2e-reset-new-password'
+  try {
+    // owner: 멤버 시트 → 재설정 링크 만들기.
+    await page.goto('/family')
+    await page.getByRole('button', { name }).click()
+    await page.getByRole('button', { name: '비밀번호 재설정 링크' }).click()
+    await page.getByRole('button', { name: '링크 만들기' }).click()
+    const url = await page
+      .getByLabel('재설정 링크', { exact: true })
+      .inputValue()
+    expect(url).toContain('/reset/')
+
+    // 링크 받은 멤버(새 컨텍스트): 새 비밀번호 설정 → 홈.
+    const context = await browser.newContext({ baseURL, locale, timezoneId })
+    try {
+      const fresh = await context.newPage()
+      await fresh.goto(url)
+      await expect(
+        fresh.getByRole('heading', { name: `${name}님의 새 비밀번호` }),
+      ).toBeVisible()
+      await expect(fresh.getByText(`아이디: ${username}`)).toBeVisible()
+      await fresh.getByLabel('비밀번호', { exact: true }).fill(newPassword)
+      await fresh.getByLabel('비밀번호 확인', { exact: true }).fill(newPassword)
+      await fresh.getByRole('button', { name: '비밀번호 바꾸기' }).click()
+      await expect(fresh).toHaveURL(/\/$/)
+    } finally {
+      await context.close()
+    }
+
+    // 또 다른 컨텍스트: 새 비밀번호로 로그인.
+    const loginContext = await browser.newContext({
+      baseURL,
+      locale,
+      timezoneId,
+    })
+    try {
+      const loginPage = await loginContext.newPage()
+      await loginPage.goto('/login')
+      await loginPage.getByLabel('아이디').fill(username)
+      await loginPage.getByLabel('비밀번호', { exact: true }).fill(newPassword)
+      await loginPage
+        .getByRole('button', { name: '로그인', exact: true })
+        .click()
+      await expect(loginPage).toHaveURL(/\/$/)
+    } finally {
+      await loginContext.close()
+    }
+  } finally {
+    await close()
+  }
+})
