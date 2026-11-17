@@ -1,6 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import IconPlay from '~icons/material-symbols/play-arrow-rounded'
 import IconProgress from '~icons/material-symbols/progress-activity-rounded'
+import IconComment from '~icons/material-symbols/chat-bubble-outline-rounded'
+import IconLike from '~icons/material-symbols/favorite-rounded'
 import IconWarning from '~icons/material-symbols/warning-outline-rounded'
 import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -47,6 +49,7 @@ export const Tile = memo(function Tile({
   sizes,
   className,
   extraLabel,
+  reactions,
 }: {
   item: AssetSummary
   baby?: string | undefined
@@ -59,6 +62,8 @@ export const Tile = memo(function Tile({
   className?: string
   // 접근성 이름 끝에 덧붙일 문구(휴지통 남은 일수 등).
   extraLabel?: string | undefined
+  // 지정 시 왼쪽 아래 하트, 댓글 수 배지(0 은 생략)와 접근성 이름. 그날 화면 전용.
+  reactions?: { likes: number; comments: number }
 }) {
   const { t, i18n } = useTranslation()
   const video = item.kind === 'video'
@@ -76,6 +81,12 @@ export const Tile = memo(function Tile({
     formatDay(item.local_date, i18n.language),
     timezone ? formatClock(item.taken_at, timezone, i18n.language) : null,
     state,
+    reactions && reactions.likes > 0
+      ? t('timeline.likeCount', { count: reactions.likes })
+      : null,
+    reactions && reactions.comments > 0
+      ? t('timeline.commentCount', { count: reactions.comments })
+      : null,
     extraLabel,
   ]
     .filter((v) => v != null)
@@ -115,6 +126,25 @@ export const Tile = memo(function Tile({
           aria-label={t('timeline.failed')}
           className="absolute inset-0 m-auto size-6 text-muted-foreground"
         />
+      )}
+      {reactions && (reactions.likes > 0 || reactions.comments > 0) && (
+        <span
+          aria-hidden
+          className="absolute bottom-0 left-0 flex items-center gap-1.5 bg-gradient-to-t from-black/50 to-transparent px-1.5 pt-4 pb-1 text-xs text-white tabular-nums"
+        >
+          {reactions.likes > 0 && (
+            <span className="flex items-center gap-0.5">
+              <IconLike className="size-3.5 text-primary" />
+              {reactions.likes}
+            </span>
+          )}
+          {reactions.comments > 0 && (
+            <span className="flex items-center gap-0.5">
+              <IconComment className="size-3.5" />
+              {reactions.comments}
+            </span>
+          )}
+        </span>
       )}
       {video && (
         <span className="absolute right-0 bottom-0 flex items-center bg-black/50 px-1 text-xs text-white tabular-nums">

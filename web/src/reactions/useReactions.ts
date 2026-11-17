@@ -73,6 +73,8 @@ function useToggle<T>(
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ['days'] })
+      // 뷰어의 이웃 목록 전체 재조회 회피. 그날 화면은 다시 열릴 때 재조회.
+      void qc.invalidateQueries({ queryKey: ['assets'], refetchType: 'none' })
       void qc.invalidateQueries({ queryKey: related })
       // 마지막 요청 뒤에만 서버 값으로 맞춤. 중간 재조회는 뒤이은 누름의 즉시 반영을 되돌림.
       if (qc.isMutating({ mutationKey }) === 1) {

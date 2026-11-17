@@ -77,10 +77,10 @@ async function openSheet(opts: {
       json(200, { items: opts.comments(), next_cursor: null }),
     ...opts.extra,
   })
-  const { user } = renderApp('/photos/a')
+  const { user, queryClient } = renderApp('/photos/a')
   await user.click(await screen.findByRole('button', { name: /댓글 보기/ }))
   const sheet = await screen.findByRole('dialog', { name: /^댓글/ })
-  return { user, sheet }
+  return { user, sheet, queryClient }
 }
 
 function box(sheet: HTMLElement) {
@@ -100,6 +100,37 @@ async function itemMenu(
 }
 
 describe('comments', () => {
+  it('post_invalidates_asset_lists', async () => {
+    let items = [commentFixture('c1', { body: '안녕' })]
+    const { user, sheet, queryClient } = await openSheet({
+      comments: () => items,
+      extra: {
+        'POST /api/assets/a/comments': () => {
+          const c = commentFixture('c2', { body: '새 댓글' })
+          items = [...items, c]
+          return json(201, c)
+        },
+      },
+    })
+    // 목록 키는 ['assets', {...}], 상세 키는 ['assets', id].
+    const lists = () =>
+      queryClient.getQueryCache().findAll({
+        queryKey: ['assets'],
+        predicate: (q) => typeof q.queryKey[1] === 'object',
+      })
+    await waitFor(() => {
+      expect(lists().length).toBeGreaterThan(0)
+    })
+    expect(lists().every((q) => !q.state.isInvalidated)).toBe(true)
+
+    await user.type(box(sheet), '새 댓글')
+    await user.click(postButton(sheet))
+
+    await waitFor(() => {
+      expect(lists().every((q) => q.state.isInvalidated)).toBe(true)
+    })
+  })
+
   it('sheet_lists_and_posts', async () => {
     let items = [
       commentFixture('c1', {

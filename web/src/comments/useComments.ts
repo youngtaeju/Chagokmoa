@@ -61,6 +61,8 @@ function useRefresh(target: ReactionTarget) {
   return async () => {
     void qc.invalidateQueries({ queryKey: targetKey(target) })
     void qc.invalidateQueries({ queryKey: ['days'] })
+    // 뷰어의 이웃 목록 전체 재조회 회피. 그날 화면은 다시 열릴 때 재조회.
+    void qc.invalidateQueries({ queryKey: ['assets'], refetchType: 'none' })
     await qc.invalidateQueries({ queryKey: commentsKey(target) })
   }
 }

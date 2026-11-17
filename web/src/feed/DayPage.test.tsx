@@ -1,6 +1,6 @@
 import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AssetPage, DayDetail } from '@/api/types'
+import type { AssetListPage, DayDetail } from '@/api/types'
 import { initI18n } from '@/i18n'
 import ko from '@/locales/ko.json'
 import { json, mockFetch } from '@/test/fetch'
@@ -49,16 +49,20 @@ function detail(over: Partial<DayDetail> = {}): DayDetail {
   }
 }
 
-function items(n: number, from = 0): AssetPage['items'] {
-  return Array.from({ length: n }, (_, i) =>
-    assetSummaryFixture(`a${String(from + i)}`, { local_date: '2024-05-09' }),
-  )
+function items(n: number, from = 0): AssetListPage['items'] {
+  return Array.from({ length: n }, (_, i) => ({
+    ...assetSummaryFixture(`a${String(from + i)}`, {
+      local_date: '2024-05-09',
+    }),
+    like_count: 0,
+    comment_count: 0,
+  }))
 }
 
 function renderDay(opts: {
   path?: string
   day?: () => Response
-  assets?: (url: URL) => AssetPage
+  assets?: (url: URL) => AssetListPage
 }) {
   const assetRequests: URL[] = []
   const dayRequests: URL[] = []
@@ -123,6 +127,47 @@ describe('DayPage', () => {
     expect(
       await header.findByRole('img', { name: '하트 4개, 댓글 2개' }),
     ).toHaveTextContent('42')
+  })
+
+  it('day_tile_shows_reaction_badge', async () => {
+    renderDay({
+      assets: () => ({
+        items: [
+          {
+            ...assetSummaryFixture('a0', { local_date: '2024-05-09' }),
+            like_count: 3,
+            comment_count: 2,
+          },
+          {
+            ...assetSummaryFixture('a1', { local_date: '2024-05-09' }),
+            like_count: 1,
+            comment_count: 0,
+          },
+          {
+            ...assetSummaryFixture('a2', { local_date: '2024-05-09' }),
+            like_count: 0,
+            comment_count: 0,
+          },
+        ],
+        next_cursor: null,
+      }),
+    })
+
+    const both = await screen.findByRole('link', {
+      name: /하트 3개, 댓글 2개$/,
+    })
+    expect(within(both).getByText('3')).toBeInTheDocument()
+    expect(within(both).getByText('2')).toBeInTheDocument()
+
+    const likeOnly = screen.getByRole('link', { name: /하트 1개$/ })
+    expect(within(likeOnly).getByText('1')).toBeInTheDocument()
+    expect(likeOnly).not.toHaveAccessibleName(/댓글/)
+
+    const tiles = screen.getAllByRole('link', { name: /^사진,/ })
+    expect(tiles).toHaveLength(3)
+    const none = tiles[2]
+    expect(none).not.toHaveAccessibleName(/하트|댓글/)
+    expect(none?.querySelector('span[aria-hidden]')).toBeNull()
   })
 
   it('title_omits_year_in_current_year', async () => {
