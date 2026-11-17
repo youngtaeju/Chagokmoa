@@ -4,10 +4,17 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { api, call } from '@/api/client'
 import { ApiError } from '@/api/errors'
-import type { Baby, Milestone } from '@/api/types'
+import type { AssetSummary, Baby, Milestone } from '@/api/types'
 import { Field, FormError } from '@/components/Field'
 import { Button } from '@/components/ui/button'
-import { isCalendarDate } from '@/lib/dates'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { formatDayTitle, isCalendarDate } from '@/lib/dates'
 import { useToday } from '@/settings/useSettings'
 import {
   PhotoField,
@@ -79,7 +86,7 @@ function MilestoneForm({
   milestone: Milestone | undefined
   onDone: () => void
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const qc = useQueryClient()
   const today = useToday()
   // 비교 기준은 시트를 연 때 값으로 고정. 상세 재조회로 서버 쪽 사진이 바뀌어도 사용자 변경으로 보지 않음.
@@ -99,9 +106,23 @@ function MilestoneForm({
   const [items, setItems] = useState<StripItem[]>(base.items)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [saving, setSaving] = useState(false)
+  const [suggested, setSuggested] = useState<string | null>(null)
   const [error, setError] = useState<unknown>(null)
   const validDate = isCalendarDate(date)
   const range = rangeText(t, findPreset(presetKey)?.range)
+
+  // 새로 고른 사진 중 가장 이른 촬영일이 출생일~오늘 범위이고 현재 날짜와 다르면 제안.
+  function suggestDate(added: AssetSummary[]) {
+    const earliest = added.map((a) => a.local_date).sort()[0]
+    if (
+      earliest !== undefined &&
+      earliest !== date &&
+      earliest >= baby.birth_date &&
+      earliest <= today
+    ) {
+      setSuggested(earliest)
+    }
+  }
 
   function check(trimmedLabel: string, trimmedNote: string): boolean {
     const next: FieldErrors = {}
@@ -270,11 +291,54 @@ function MilestoneForm({
         onChange={setItems}
         date={validDate ? date : undefined}
         hint={t('milestones.uploadHint')}
+        onPicked={suggestDate}
       />
       <FormError error={error} />
       <Button type="submit" className="h-11" disabled={saving}>
         {t('common.save')}
       </Button>
+      <Dialog
+        open={suggested !== null}
+        onOpenChange={(open) => {
+          if (!open) setSuggested(null)
+        }}
+      >
+        <DialogContent
+          role="alertdialog"
+          showCloseButton={false}
+          aria-describedby={undefined}
+        >
+          <DialogHeader>
+            <DialogTitle>
+              {t('milestones.useTakenDate', {
+                date: suggested
+                  ? formatDayTitle(suggested, today, i18n.language)
+                  : '',
+              })}
+            </DialogTitle>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setSuggested(null)
+              }}
+            >
+              {t('milestones.keepDate')}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                if (suggested) setDate(suggested)
+                setSuggested(null)
+              }}
+            >
+              {t('milestones.changeDate')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   )
 }

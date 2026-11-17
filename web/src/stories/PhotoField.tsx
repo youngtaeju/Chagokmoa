@@ -64,16 +64,19 @@ export async function queueFiles(
 
 // 이야기, 마일스톤 공용 사진 칸. 고른 사진 가로 띠, "올린 사진에서 고르기", "새로 올리기".
 // date: 고르기 시트에서 먼저 보일 날. hint: 새 파일이 있을 때 안내.
+// onPicked: 고르기 완료 시 이번에 새로 추가된 사진만 전달.
 export function PhotoField({
   items,
   onChange,
   date,
   hint,
+  onPicked,
 }: {
   items: readonly StripItem[]
   onChange: Dispatch<SetStateAction<StripItem[]>>
   date: string | undefined
   hint: string
+  onPicked?: (added: AssetSummary[]) => void
 }) {
   const { t } = useTranslation()
   const [picking, setPicking] = useState(false)
@@ -102,6 +105,9 @@ export function PhotoField({
       return [...kept, ...assets.filter((a) => !have.has(a.id)).map(assetItem)]
     })
     setPicking(false)
+    const had = new Set(assetIds(items))
+    const added = assets.filter((a) => !had.has(a.id))
+    if (added.length > 0) onPicked?.(added)
   }
 
   return (
