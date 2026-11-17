@@ -5,7 +5,7 @@ use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
 
-use super::{Asset, AssetKind, AssetSummary, MonthCount, Page, TrashItem, cursor, queries, trash};
+use super::{Asset, AssetKind, AssetListItem, MonthCount, Page, TrashItem, cursor, queries, trash};
 use crate::{
     auth::extract::CurrentUser,
     babies,
@@ -96,7 +96,7 @@ struct BabyIds {
     path = "/api/assets",
     params(ListQuery),
     responses(
-        (status = 200, description = "휴지통 제외, 촬영 시각 최신순", body = Page<AssetSummary>),
+        (status = 200, description = "휴지통 제외, 촬영 시각 최신순", body = Page<AssetListItem>),
         (status = 400, description = "쿼리 오류 (`request.invalidQuery`, `asset.invalidCursor`)", body = ErrorBody),
         (status = 401, description = "인증 필요", body = ErrorBody),
     )
@@ -105,7 +105,7 @@ async fn list_assets(
     State(state): State<AppState>,
     _current: CurrentUser,
     Query(q): Query<ListQuery>,
-) -> AppResult<Json<Page<AssetSummary>>> {
+) -> AppResult<Json<Page<AssetListItem>>> {
     let limit = q.limit.unwrap_or(DEFAULT_LIMIT);
     if !(1..=MAX_LIMIT).contains(&limit) {
         return Err(AppError::bad_request("request.invalidQuery"));
@@ -126,7 +126,7 @@ async fn list_assets(
         items.truncate(limit as usize);
         items
             .last()
-            .map(|last| cursor::encode(last.taken_at, last.id))
+            .map(|last| cursor::encode(last.asset.taken_at, last.asset.id))
     } else {
         None
     };

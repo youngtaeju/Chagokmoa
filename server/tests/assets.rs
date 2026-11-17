@@ -391,3 +391,51 @@ async fn list_kind_video(pool: PgPool) {
         .json();
     assert_eq!(ids(&page), vec![video]);
 }
+
+#[sqlx::test]
+async fn list_includes_reaction_counts(pool: PgPool) {
+    let app = media_app(&pool, Role::Family).await;
+    let (_, other) = app.login_as("other", Role::Guardian).await;
+    let reacted = seed(&pool, app.user.id, Utc::now()).await;
+    let plain = seed(&pool, app.user.id, Utc::now() - Duration::hours(1)).await;
+    for user in [app.user.id, other.id] {
+        sqlx::query!(
+            "INSERT INTO asset_likes (asset_id, user_id) VALUES ($1, $2)",
+            reacted,
+            user
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    sqlx::query!(
+        "INSERT INTO asset_comments (id, asset_id, author_id, body) VALUES ($1, $2, $3, 'hi')",
+        Uuid::now_v7(),
+        reacted,
+        other.id
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let page: Value = app.server.get("/api/assets").await.json();
+    let by_id = |id: Uuid| {
+        page["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|i| i["id"] == json!(id))
+            .unwrap()
+            .clone()
+    };
+    let r = by_id(reacted);
+    assert_eq!(
+        (r["like_count"].as_i64(), r["comment_count"].as_i64()),
+        (Some(2), Some(1))
+    );
+    let p = by_id(plain);
+    assert_eq!(
+        (p["like_count"].as_i64(), p["comment_count"].as_i64()),
+        (Some(0), Some(0))
+    );
+}

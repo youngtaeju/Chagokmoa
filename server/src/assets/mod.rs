@@ -153,6 +153,15 @@ pub struct TrashItem {
     pub deleted_at: DateTime<Utc>,
 }
 
+/// 사진 목록 항목. 반응 수 포함.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct AssetListItem {
+    #[serde(flatten)]
+    pub asset: AssetSummary,
+    pub like_count: i64,
+    pub comment_count: i64,
+}
+
 /// 커서 페이지.
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct Page<T> {

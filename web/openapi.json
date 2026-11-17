@@ -580,7 +580,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page_AssetSummary"
+                  "$ref": "#/components/schemas/Page_AssetListItem"
                 }
               }
             }
@@ -6455,6 +6455,31 @@
           "video"
         ]
       },
+      "AssetListItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AssetSummary"
+          },
+          {
+            "type": "object",
+            "required": [
+              "like_count",
+              "comment_count"
+            ],
+            "properties": {
+              "comment_count": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "like_count": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        ],
+        "description": "사진 목록 항목. 반응 수 포함."
+      },
       "AssetStatus": {
         "type": "string",
         "enum": [
@@ -7886,6 +7911,51 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "Page_AssetListItem": {
+        "type": "object",
+        "description": "커서 페이지.",
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/AssetSummary"
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "like_count",
+                    "comment_count"
+                  ],
+                  "properties": {
+                    "comment_count": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "like_count": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                }
+              ],
+              "description": "사진 목록 항목. 반응 수 포함."
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "다음 페이지가 없으면 `null`."
           }
         }
       },
