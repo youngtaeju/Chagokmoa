@@ -94,6 +94,13 @@ function clearOfflineCaches(): void {
   }
 }
 
+// 다른 계정으로 바뀌는 로그인(비밀번호 재설정) 직전 정리. keepKey: 유지할 쿼리 키 첫 요소.
+export function clearPreviousUserData(qc: QueryClient, keepKey: string): void {
+  clearUploads()
+  clearOfflineCaches()
+  qc.removeQueries({ predicate: (q) => q.queryKey[0] !== keepKey })
+}
+
 // 강제·직접 로그아웃 공용. 이전 사용자 데이터·업로드 큐 제거 후 비로그인 확정.
 function setSignedOut(qc: QueryClient): void {
   clearUploads()

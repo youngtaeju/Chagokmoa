@@ -115,7 +115,21 @@
     "showPasswordConfirm": "비밀번호 확인 보기",
     "hidePasswordConfirm": "비밀번호 확인 숨기기",
     "themeToDark": "다크 모드로 바꾸기",
-    "themeToLight": "라이트 모드로 바꾸기"
+    "themeToLight": "라이트 모드로 바꾸기",
+    "reset": {
+      "title": "{{name}}님의 새 비밀번호",
+      "username": "아이디: {{username}}",
+      "hint": "이 비밀번호로 다음부터 로그인해요.",
+      "submit": "비밀번호 바꾸기",
+      "welcome": "새 비밀번호로 로그인했어요.",
+      "error": {
+        "expired": "이 재설정 링크는 만료됐어요",
+        "used": "이 재설정 링크는 이미 사용됐어요",
+        "revoked": "이 재설정 링크는 더 이상 쓸 수 없어요",
+        "notFound": "재설정 링크가 올바르지 않아요"
+      },
+      "action": "관리자에게 새 링크를 요청해 주세요."
+    }
   },
   "babies": {
     "name": "이름",
@@ -420,6 +434,14 @@
       "roleNotAllowed": "이 역할로는 초대할 수 없어요.",
       "used": "이미 사용된 초대 링크예요."
     },
+    "passwordReset": {
+      "expired": "만료된 재설정 링크예요.",
+      "notFound": "재설정 링크를 찾을 수 없어요.",
+      "revoked": "더 이상 쓸 수 없는 재설정 링크예요.",
+      "self": "내 비밀번호는 설정 화면에서 바꿔 주세요.",
+      "used": "이미 사용된 재설정 링크예요.",
+      "userDisabled": "정지된 멤버에게는 링크를 만들 수 없어요."
+    },
     "push": {
       "endpointNotAllowed": "이 브라우저의 푸시 서비스는 지원하지 않아요.",
       "invalidSubscription": "푸시 구독 정보가 올바르지 않아요."
@@ -607,7 +629,17 @@
     "shareTextGeneric": "초대 링크로 참여해 주세요.",
     "share": "공유하기",
     "shareText": "{{instance}}에 참여해 주세요.",
-    "memberSheetTitle": "{{name}}"
+    "memberSheetTitle": "{{name}}",
+    "resetLink": "비밀번호 재설정 링크",
+    "resetSheetTitle": "{{name}}님 비밀번호 재설정",
+    "resetInfo": "링크는 24시간 동안, 한 번만 쓸 수 있어요. 새 링크를 만들면 이전 링크는 쓸 수 없게 돼요. 링크로 비밀번호를 바꾸면 이 멤버는 다른 기기에서 로그아웃돼요.",
+    "createReset": "링크 만들기",
+    "resetUrl": "재설정 링크",
+    "resetUrlHint": "이 링크는 지금만 볼 수 있어요. 해당 멤버에게만 전달해 주세요.",
+    "resetShareTitle": "{{instance}} 비밀번호 재설정",
+    "resetShareTitleGeneric": "비밀번호 재설정",
+    "resetShareText": "{{instance}}의 새 비밀번호를 정해 주세요.",
+    "resetShareTextGeneric": "링크에서 새 비밀번호를 정해 주세요."
   },
   "settings": {
     "displayName": "표시 이름",
