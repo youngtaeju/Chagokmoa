@@ -717,3 +717,157 @@ describe('milestones', () => {
     ).not.toBeInTheDocument()
   })
 })
+
+// 촬영일 맞추기: 뛰기 시트에서 "올린 사진에서 고르기" 로 사진을 골라 완료.
+async function pickExisting(
+  user: ReturnType<typeof setup>['user'],
+  sheet: HTMLElement,
+  indexes: number[],
+) {
+  await user.click(
+    within(sheet).getByRole('button', { name: ko.stories.pickExisting }),
+  )
+  const picker = await screen.findByRole('dialog', {
+    name: ko.stories.pickTitle,
+  })
+  const grid = await within(picker).findByRole('group', {
+    name: ko.stories.pickGrid,
+  })
+  const tiles = within(grid).getAllByRole('button')
+  for (const i of indexes) await user.click(tiles[i] as HTMLElement)
+  await user.click(within(picker).getByRole('button', { name: /장 고르기$/ }))
+}
+
+function dateInput(sheet: HTMLElement): HTMLInputElement {
+  return within(sheet).getByLabelText(ko.milestones.date)
+}
+
+function openWalk(
+  items: ReturnType<typeof assetSummaryFixture>[],
+  milestones?: Milestone[],
+) {
+  const app = setup(`/babies/${SKY.id}`, {
+    ...(milestones ? { milestones } : {}),
+    extra: { 'GET /api/assets': () => json(200, { items, next_cursor: null }) },
+  })
+  return app
+}
+
+describe('milestone taken date', () => {
+  it('asks_taken_date_after_pick', async () => {
+    const { user } = openWalk([
+      assetSummaryFixture('p1', { local_date: '2026-05-01' }),
+    ])
+    const picker = await openPicker(user)
+    await user.click(within(picker).getByRole('button', { name: /^뛰기/ }))
+    const sheet = await screen.findByRole('dialog', { name: '뛰기' })
+    await pickExisting(user, sheet, [0])
+    const ask = await screen.findByRole('alertdialog')
+    expect(ask).toHaveTextContent('5월 1일 금요일')
+    await user.click(
+      within(ask).getByRole('button', { name: ko.milestones.changeDate }),
+    )
+    expect(dateInput(sheet)).toHaveValue('2026-05-01')
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+
+  it('includes_year_when_not_current_year', async () => {
+    const { user } = openWalk([
+      assetSummaryFixture('p1', { local_date: '2025-10-01' }),
+    ])
+    const picker = await openPicker(user)
+    await user.click(within(picker).getByRole('button', { name: /^뛰기/ }))
+    const sheet = await screen.findByRole('dialog', { name: '뛰기' })
+    await pickExisting(user, sheet, [0])
+    expect(await screen.findByRole('alertdialog')).toHaveTextContent(
+      '2025년 10월 1일 수요일',
+    )
+  })
+
+  it('keep_date_leaves_field', async () => {
+    const { user } = openWalk([
+      assetSummaryFixture('p1', { local_date: '2026-05-01' }),
+    ])
+    const picker = await openPicker(user)
+    await user.click(within(picker).getByRole('button', { name: /^뛰기/ }))
+    const sheet = await screen.findByRole('dialog', { name: '뛰기' })
+    await pickExisting(user, sheet, [0])
+    const ask = await screen.findByRole('alertdialog')
+    await user.click(
+      within(ask).getByRole('button', { name: ko.milestones.keepDate }),
+    )
+    expect(dateInput(sheet)).toHaveValue('2026-11-10')
+  })
+
+  it('earliest_of_picked', async () => {
+    const { user } = openWalk([
+      assetSummaryFixture('p1', { local_date: '2026-05-03' }),
+      assetSummaryFixture('p2', { local_date: '2026-05-01' }),
+    ])
+    const picker = await openPicker(user)
+    await user.click(within(picker).getByRole('button', { name: /^뛰기/ }))
+    const sheet = await screen.findByRole('dialog', { name: '뛰기' })
+    await pickExisting(user, sheet, [0, 1])
+    expect(await screen.findByRole('alertdialog')).toHaveTextContent(
+      '5월 1일 금요일',
+    )
+  })
+
+  it('no_ask_when_same_or_out_of_range', async () => {
+    const { user } = openWalk([
+      assetSummaryFixture('p1', { local_date: '2026-11-10' }),
+      assetSummaryFixture('p2', { local_date: '2025-01-01' }),
+    ])
+    const picker = await openPicker(user)
+    await user.click(within(picker).getByRole('button', { name: /^뛰기/ }))
+    const sheet = await screen.findByRole('dialog', { name: '뛰기' })
+    // 같은 날
+    await pickExisting(user, sheet, [0])
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    // 출생일(2025-09-26) 이전. p1 은 이미 붙어 있어 새로 추가된 p2 만 대상.
+    await pickExisting(user, sheet, [1])
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(dateInput(sheet)).toHaveValue('2026-11-10')
+  })
+
+  it('asks_only_for_newly_picked', async () => {
+    const old = assetSummaryFixture('old', { local_date: '2026-03-01' })
+    const m = milestoneFixture('m9', {
+      baby_id: SKY.id,
+      preset_key: 'walk_alone',
+      achieved_on: '2026-11-01',
+      previews: [old],
+      asset_count: 1,
+      assets: [old],
+    })
+    const { user } = setup('/milestones/m9', {
+      milestones: [m],
+      extra: {
+        'GET /api/assets': () => json(200, { items: [old], next_cursor: null }),
+      },
+    })
+    await user.click(
+      await screen.findByRole('button', { name: ko.milestones.menu }),
+    )
+    await user.click(
+      await screen.findByRole('menuitem', { name: ko.milestones.edit }),
+    )
+    const sheet = await screen.findByRole('dialog', {
+      name: ko.milestones.editTitle,
+    })
+    // 이미 붙은 사진(촬영일 다름)을 그대로 두고 완료.
+    await user.click(
+      within(sheet).getByRole('button', { name: ko.stories.pickExisting }),
+    )
+    const picker = await screen.findByRole('dialog', {
+      name: ko.stories.pickTitle,
+    })
+    await user.click(
+      await within(picker).findByRole('button', {
+        name: ko.stories.pickDone_other.replace('{{count}}', '1'),
+      }),
+    )
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(dateInput(sheet)).toHaveValue('2026-11-01')
+  })
+})

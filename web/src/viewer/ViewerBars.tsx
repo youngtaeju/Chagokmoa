@@ -37,7 +37,8 @@ const BAR_BUTTON =
 // 오프라인이면 포커스는 유지하고 동작만 막음.
 const OFFLINE = 'aria-disabled:opacity-50'
 
-const COUNT_BUTTON = 'h-14 min-w-11 px-2 text-sm font-semibold tabular-nums'
+const COUNT_BUTTON =
+  'h-14 min-w-0 pl-0.5 pr-4 text-sm font-semibold tabular-nums'
 
 const MENU_ITEM =
   'flex min-h-11 cursor-default items-center gap-3 rounded-lg px-3 text-sm outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent'
@@ -239,7 +240,12 @@ export function ViewerBars({
             <>
               <Button
                 variant="ghost"
-                className={cn(BAR_BUTTON, OFFLINE)}
+                className={cn(
+                  BAR_BUTTON,
+                  OFFLINE,
+                  reactions.likeCount > 0 &&
+                    'min-w-11 items-end has-[>svg]:pr-1',
+                )}
                 aria-label={t('reactions.like')}
                 aria-pressed={reactions.liked}
                 aria-disabled={!online}

@@ -662,6 +662,13 @@ test('records_round_trip', async ({ ownerPage: page }) => {
       .click()
     await assets.getByRole('button', { name: '1장 고르기' }).click()
     await expect(assets).toBeHidden()
+    // 촬영일이 다른 사진이라 날짜 변경 확인. 오늘 유지.
+    const dateAsk = page.getByRole('alertdialog', {
+      name: /로 날짜를 바꿀까요\?/,
+    })
+    await expect(dateAsk).toBeVisible()
+    await dateAsk.getByRole('button', { name: '그대로 두기' }).click()
+    await expect(dateAsk).toBeHidden()
     await expect(
       sheet.getByRole('list', { name: '사진' }).getByRole('listitem'),
     ).toHaveCount(1)
