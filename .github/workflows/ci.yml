@@ -155,16 +155,16 @@ jobs:
       - name: 의존성 설치
         working-directory: web
         run: pnpm install --frozen-lockfile
-      - name: Chromium 설치
-        working-directory: web
-        timeout-minutes: 10
-        # --with-deps 내부 apt 에도 재시도 적용.
-        run: |
-          echo 'Acquire::Retries "3";' | sudo tee /etc/apt/apt.conf.d/80-retries
-          pnpm exec playwright install --with-deps chromium
+      # Playwright 공식 이미지(브라우저와 시스템 의존성 포함)에서 실행. 러너 apt 설치 없음.
+      # node_modules 는 위 단계(러너) 설치분 재사용. 스택은 --network host 로 localhost:18090.
+      # 이미지 태그는 web/package.json 의 @playwright/test 버전과 함께 올림.
       - name: e2e
-        working-directory: web
-        run: pnpm e2e
+        run: |
+          docker run --rm --network host --ipc host \
+            --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
+            -v "$PWD:/src" -w /src/web \
+            mcr.microsoft.com/playwright:v1.65.0-noble \
+            npx --no-install playwright test
       - name: trace 업로드
         if: failure()
         uses: actions/upload-artifact@v7
