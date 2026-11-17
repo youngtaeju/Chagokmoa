@@ -14,6 +14,7 @@ use crate::{
         validate::{validate_display_name, validate_locale, validate_password},
     },
     error::{AppError, AppResult, ErrorBody},
+    password_resets,
     request::{Json, Path},
     state::AppState,
 };
@@ -135,6 +136,8 @@ async fn patch_user(
             return Err(not_found());
         }
         if disabled {
+            // 정지 해제 후 링크가 되살아나지 않도록 회수. 세션 삭제보다 먼저(사용과 경합 시 행 잠금 대기).
+            password_resets::queries::revoke_for_user(&mut tx, id).await?;
             session::delete_all_for_user(&mut *tx, id).await?;
         }
     }
@@ -208,6 +211,7 @@ async fn change_password(
 
     let mut tx = state.pool.begin().await?;
     queries::update_password(&mut *tx, user_id, &new_hash).await?;
+    password_resets::queries::revoke_for_user(&mut tx, user_id).await?;
     session::delete_all_except(&mut *tx, user_id, current.session_id).await?;
     tx.commit().await?;
     Ok(StatusCode::NO_CONTENT)
