@@ -252,7 +252,11 @@
     "photo": "사진",
     "video": "영상",
     "processing": "처리 중",
-    "failed": "처리 실패"
+    "failed": "처리 실패",
+    "likeCount_one": "하트 {{count}}개",
+    "likeCount_other": "하트 {{count}}개",
+    "commentCount_one": "댓글 {{count}}개",
+    "commentCount_other": "댓글 {{count}}개"
   },
   "feed": {
     "today": "오늘",

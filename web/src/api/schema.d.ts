@@ -1239,6 +1239,13 @@ export interface components {
         };
         /** @enum {string} */
         AssetKind: "photo" | "video";
+        /** @description 사진 목록 항목. 반응 수 포함. */
+        AssetListItem: components["schemas"]["AssetSummary"] & {
+            /** Format: int64 */
+            comment_count: number;
+            /** Format: int64 */
+            like_count: number;
+        };
         /** @enum {string} */
         AssetStatus: "processing" | "ready" | "failed";
         /** @description 타임라인 목록 항목. */
@@ -1730,6 +1737,17 @@ export interface components {
             excerpt: string;
             /** Format: uuid */
             id: string;
+        };
+        /** @description 커서 페이지. */
+        Page_AssetListItem: {
+            items: (components["schemas"]["AssetSummary"] & {
+                /** Format: int64 */
+                comment_count: number;
+                /** Format: int64 */
+                like_count: number;
+            })[];
+            /** @description 다음 페이지가 없으면 `null`. */
+            next_cursor: string | null;
         };
         /** @description 커서 페이지. */
         Page_AssetSummary: {
@@ -2608,7 +2626,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Page_AssetSummary"];
+                    "application/json": components["schemas"]["Page_AssetListItem"];
                 };
             };
             /** @description 쿼리 오류 (`request.invalidQuery`, `asset.invalidCursor`) */

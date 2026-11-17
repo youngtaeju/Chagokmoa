@@ -2,7 +2,10 @@ use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::PgExecutor;
 use uuid::Uuid;
 
-use super::{Asset, AssetKind, AssetStatus, AssetSummary, MonthCount, TakenAtSource, TrashItem};
+use super::{
+    Asset, AssetKind, AssetListItem, AssetStatus, AssetSummary, MonthCount, TakenAtSource,
+    TrashItem,
+};
 use crate::error::AppResult;
 
 /// `liked`, `favorited` 는 `viewer` 기준.
@@ -207,17 +210,18 @@ pub async fn list(
     date: Option<NaiveDate>,
     kind: Option<AssetKind>,
     limit: i64,
-) -> AppResult<Vec<AssetSummary>> {
+) -> AppResult<Vec<AssetListItem>> {
     let (cursor_ts, cursor_id) = cursor.unzip();
-    let rows = sqlx::query_as!(
-        AssetSummary,
+    let rows = sqlx::query!(
         r#"SELECT a.id, a.kind AS "kind: AssetKind", a.status AS "status: AssetStatus",
                   a.taken_at, (a.taken_at AT TIME ZONE $1)::date AS "local_date!",
                   a.width, a.height, a.duration_ms, a.blurhash, a.dominant_color, a.uploaded_by,
                   COALESCE((SELECT array_agg(b.id ORDER BY b.sort_order, b.created_at, b.id)
                             FROM asset_babies ab JOIN babies b ON b.id = ab.baby_id
                             WHERE ab.asset_id = a.id), '{}') AS "baby_ids!",
-                  a.derivatives
+                  a.derivatives,
+                  (SELECT count(*) FROM asset_likes l WHERE l.asset_id = a.id) AS "like_count!",
+                  (SELECT count(*) FROM asset_comments c WHERE c.asset_id = a.id) AS "comment_count!"
            FROM assets a
            WHERE a.deleted_at IS NULL
              AND ($2::timestamptz IS NULL OR (a.taken_at, a.id) < ($2, $3::uuid))
@@ -237,7 +241,28 @@ pub async fn list(
     )
     .fetch_all(exec)
     .await?;
-    Ok(rows)
+    Ok(rows
+        .into_iter()
+        .map(|r| AssetListItem {
+            asset: AssetSummary {
+                id: r.id,
+                kind: r.kind,
+                status: r.status,
+                taken_at: r.taken_at,
+                local_date: r.local_date,
+                width: r.width,
+                height: r.height,
+                duration_ms: r.duration_ms,
+                blurhash: r.blurhash,
+                dominant_color: r.dominant_color,
+                uploaded_by: r.uploaded_by,
+                baby_ids: r.baby_ids,
+                derivatives: r.derivatives,
+            },
+            like_count: r.like_count,
+            comment_count: r.comment_count,
+        })
+        .collect())
 }
 
 /// 휴지통 제외 월별 개수. 최신 월부터.

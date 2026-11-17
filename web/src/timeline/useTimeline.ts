@@ -9,7 +9,7 @@ import {
 import { useMemo } from 'react'
 import { api, call } from '@/api/client'
 import { ApiError } from '@/api/errors'
-import type { Asset, AssetPage, AssetSummary, DayPage } from '@/api/types'
+import type { Asset, AssetListPage, AssetSummary, DayPage } from '@/api/types'
 
 // 무효화는 ['assets'] 접두로 전체.
 // date: 그날 화면의 하루 목록. kind: 영상 화면. 전체 타임라인 캐시와 키 분리.
@@ -89,7 +89,7 @@ export function useTimeline(
 
 // 처리 결과 필드만 교체. 촬영 시각 변경(날짜 묶음·순서)은 호출 측이 목록 재조회.
 function applyProcessed(qc: QueryClient, a: Asset): void {
-  const merge = (s: AssetSummary): AssetSummary =>
+  const merge = <T extends AssetSummary>(s: T): T =>
     s.id !== a.id
       ? s
       : {
@@ -105,7 +105,7 @@ function applyProcessed(qc: QueryClient, a: Asset): void {
           baby_ids: a.baby_ids,
         }
   // ['assets'] 아래에 다른 모양의 쿼리가 생겨도 무시.
-  qc.setQueriesData<InfiniteData<AssetPage>>(
+  qc.setQueriesData<InfiniteData<AssetListPage>>(
     { queryKey: ['assets'] },
     (old) => {
       if (!old?.pages) return old

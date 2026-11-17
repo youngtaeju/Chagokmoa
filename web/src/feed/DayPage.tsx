@@ -113,7 +113,15 @@ export function DayPage() {
       <ul className="-mx-4 grid grid-cols-3 gap-[2px] sm:grid-cols-4 lg:grid-cols-6">
         {(hasMedia ? items : []).map((item) => (
           <Cell key={item.id} item={item}>
-            <Tile item={item} baby={baby} timezone={timezone} />
+            <Tile
+              item={item}
+              baby={baby}
+              timezone={timezone}
+              reactions={{
+                likes: item.like_count,
+                comments: item.comment_count,
+              }}
+            />
           </Cell>
         ))}
       </ul>

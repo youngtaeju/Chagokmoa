@@ -106,6 +106,34 @@ describe('reactions', () => {
     expect(cached()).toMatchObject({ liked: true, like_count: 4 })
   })
 
+  it('badge_refreshes_after_like', async () => {
+    mockFetch({
+      'PUT /api/assets/a/like': () => json(204, null),
+      'GET /api/assets/a': () => json(200, assetFixture('a', { liked: true })),
+    })
+    const { qc, result } = setup(assetFixture('a'))
+    qc.setQueryData(['assets', { baby: null, date: '2024-05-09' }], {
+      pages: [],
+      pageParams: [],
+    })
+    expect(
+      qc.getQueryState(['assets', { baby: null, date: '2024-05-09' }])
+        ?.isInvalidated,
+    ).toBe(false)
+
+    await act(async () => {
+      result.current.mutate(true)
+      await Promise.resolve()
+    })
+    await waitFor(() => {
+      expect(qc.isMutating()).toBe(0)
+    })
+    expect(
+      qc.getQueryState(['assets', { baby: null, date: '2024-05-09' }])
+        ?.isInvalidated,
+    ).toBe(true)
+  })
+
   it('like_failure_reverts', async () => {
     let release = () => {}
     const gate = new Promise<void>((r) => {
