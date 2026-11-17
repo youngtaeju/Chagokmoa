@@ -12,19 +12,27 @@ RUN --mount=type=cache,id=chagokmoa-pnpm,target=/pnpm-store \
 COPY web/ ./
 RUN pnpm build
 
-FROM rust:1.99-trixie AS server
+FROM rust:1.99-trixie AS chef
 RUN apt-get update \
     && apt-get install -y --no-install-recommends pkg-config zlib1g-dev libheif-dev \
     && rm -rf /var/lib/apt/lists/*
+RUN cargo install cargo-chef --locked --version 0.1.78
 WORKDIR /src/server
-COPY web/src/locales/ /src/web/src/locales/
+
+# 의존성 목록(recipe.json)만 추출. Cargo.toml, Cargo.lock 이 같으면 같은 결과.
+FROM chef AS planner
 COPY server/ ./
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS server
 # sqlx 매크로는 커밋된 .sqlx/ 로 검사. 빌드에 DB 불필요.
 ENV SQLX_OFFLINE=true
-# target 은 캐시 마운트라 결과물을 레이어로 복사.
-RUN --mount=type=cache,id=chagokmoa-cargo-registry,target=/usr/local/cargo/registry \
-    --mount=type=cache,id=chagokmoa-target,target=/src/server/target \
-    cargo build --release --locked \
+# 의존성 빌드를 일반 레이어로. 캐시 마운트는 CI 레이어 캐시(type=gha)에 안 남아 사용 안 함.
+COPY --from=planner /src/server/recipe.json recipe.json
+RUN cargo chef cook --release --locked --recipe-path recipe.json
+COPY web/src/locales/ /src/web/src/locales/
+COPY server/ ./
+RUN cargo build --release --locked \
     && cp target/release/chagokmoa /chagokmoa
 
 FROM debian:trixie-slim AS runtime

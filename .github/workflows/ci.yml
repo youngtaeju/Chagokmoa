@@ -40,9 +40,16 @@ jobs:
           --health-retries 10
     steps:
       - uses: actions/checkout@v7
+      # 받은 .deb 파일을 Actions 캐시에 보관. 적중 시 apt 미러 접속 없음.
+      # 목록이나 Ubuntu 버전 바뀌면 version 올림.
+      # 복원 시 설치 스크립트 실행. ffmpeg 의존 libblas.so.3 는 update-alternatives 링크라 없으면 ffprobe 실행 실패.
       - name: 시스템 패키지 설치
         timeout-minutes: 10
-        run: sudo apt-get -o Acquire::Retries=3 update && sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends pkg-config zlib1g-dev libheif-dev libheif-plugin-libde265 libheif-plugin-aomenc libheif-plugin-dav1d ffmpeg
+        uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
+        with:
+          packages: pkg-config zlib1g-dev libheif-dev libheif-plugin-libde265 libheif-plugin-aomenc libheif-plugin-dav1d ffmpeg
+          version: ubuntu-24.04-1
+          execute_install_scripts: true
       - uses: dtolnay/rust-toolchain@1.99
         with:
           components: rustfmt, clippy
@@ -148,16 +155,16 @@ jobs:
       - name: 의존성 설치
         working-directory: web
         run: pnpm install --frozen-lockfile
-      - name: Chromium 설치
-        working-directory: web
-        timeout-minutes: 10
-        # --with-deps 내부 apt 에도 재시도 적용.
-        run: |
-          echo 'Acquire::Retries "3";' | sudo tee /etc/apt/apt.conf.d/80-retries
-          pnpm exec playwright install --with-deps chromium
+      # Playwright 공식 이미지(브라우저와 시스템 의존성 포함)에서 실행. 러너 apt 설치 없음.
+      # node_modules 는 위 단계(러너) 설치분 재사용. 스택은 --network host 로 localhost:18090.
+      # 이미지 태그는 web/package.json 의 @playwright/test 버전과 함께 올림.
       - name: e2e
-        working-directory: web
-        run: pnpm e2e
+        run: |
+          docker run --rm --network host --ipc host \
+            --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
+            -v "$PWD:/src" -w /src/web \
+            mcr.microsoft.com/playwright:v1.65.0-noble \
+            npx --no-install playwright test
       - name: trace 업로드
         if: failure()
         uses: actions/upload-artifact@v7
