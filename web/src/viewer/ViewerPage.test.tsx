@@ -1027,6 +1027,7 @@ describe('ViewerPage', () => {
       name: ko.reactions.like,
     })
     expect(like).toHaveAttribute('aria-pressed', 'false')
+    expect(like.className).toContain('has-[>svg]:pr-1')
     const count = screen.getByRole('button', {
       name: '하트 누른 가족 보기, 4명',
     })
@@ -1052,7 +1053,8 @@ describe('ViewerPage', () => {
 
   it('no_likers_button_at_zero', async () => {
     renderViewer({ path: '/photos/a', ids: ['a'] })
-    await screen.findByRole('button', { name: ko.reactions.like })
+    const like = await screen.findByRole('button', { name: ko.reactions.like })
+    expect(like.className).not.toContain('has-[>svg]:pr-1')
     expect(
       screen.queryByRole('button', { name: /하트 누른 가족 보기/ }),
     ).toBeNull()
