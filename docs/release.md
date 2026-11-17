@@ -26,9 +26,10 @@ git push origin vX.Y.Z
 ## 워크플로가 하는 일
 
 1. 태그 형식(`vX.Y.Z`)과 `server/Cargo.toml` 버전 일치 검사
-2. `docker/Dockerfile` 로 `linux/amd64` 이미지를 빌드하고 `docker/smoke.sh` 로 스모크 검사. 실패하면 push 하지 않습니다.
-3. `ghcr.io/youngtaeju/chagokmoa` 에 `X.Y.Z`, `X.Y`, `latest` 태그로 push (OCI 라벨: source, version, licenses=AGPL-3.0-only)
-4. 생성된 릴리스 노트로 GitHub Release 생성
+2. `docker/Dockerfile` 로 `linux/amd64` 이미지를 한 번 빌드해 `ghcr.io/youngtaeju/chagokmoa` 에 태그 없이 digest 로 push (OCI 라벨: source, version, licenses=AGPL-3.0-only)
+3. 그 digest 를 받아 `docker/smoke.sh` 로 스모크 검사
+4. 통과하면 같은 digest 에 `X.Y.Z`, `X.Y`, `latest` 태그. 스모크한 이미지와 배포되는 이미지가 같습니다. 실패하면 태그 없는 버전 하나가 패키지에 남고 배포되지 않습니다(필요하면 GitHub 패키지 설정에서 삭제).
+5. 생성된 릴리스 노트로 GitHub Release 생성
 
 ## 릴리스 전 수동 확인
 
