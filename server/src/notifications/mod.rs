@@ -21,6 +21,8 @@ pub enum NotificationKind {
     Mention,
     Story,
     Milestone,
+    /// 백업 실패. 소유자만, 행동자는 받는 사람 자신, 대상 없음.
+    Backup,
 }
 
 /// 알림 한 줄. 대상 요약은 종류별로 채움.
@@ -29,7 +31,7 @@ pub enum NotificationKind {
 pub struct Notification {
     pub id: Uuid,
     pub kind: NotificationKind,
-    /// 묶인 사진 수. 사진 외 종류는 1.
+    /// 묶인 사진 수, 백업은 그날 실패 횟수. 그 밖의 종류는 1.
     pub count: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

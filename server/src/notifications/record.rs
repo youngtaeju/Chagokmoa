@@ -5,7 +5,7 @@ use sqlx::PgConnection;
 use uuid::Uuid;
 
 use super::NotificationKind;
-use crate::{comments::mention_ids, error::AppResult};
+use crate::{comments::mention_ids, error::AppResult, settings};
 
 /// 댓글 알림 대상. 댓글 id 와 그 사진 또는 이야기 id.
 pub enum CommentTarget {
@@ -221,6 +221,44 @@ pub async fn record_comment(
         PUSH_NOW,
     )
     .await
+}
+
+/// 백업 실패. 행동자는 받는 소유자 자신.
+/// 인스턴스 시간대 같은 날 만든 줄이 있으면 count 증가만(푸시는 그날 첫 실패 한 번).
+pub async fn record_backup_failed(conn: &mut PgConnection, owners: &[Uuid]) -> AppResult<()> {
+    if owners.is_empty() {
+        return Ok(());
+    }
+    let timezone = settings::queries::load(&mut *conn).await?.timezone;
+    let grouped = sqlx::query_scalar!(
+        "UPDATE notifications SET count = count + 1, updated_at = now()
+         WHERE user_id = ANY($1) AND kind = 'backup'
+           AND (created_at AT TIME ZONE $2)::date = (now() AT TIME ZONE $2)::date
+         RETURNING user_id",
+        owners,
+        timezone
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    let fresh: Vec<Uuid> = owners
+        .iter()
+        .copied()
+        .filter(|u| !grouped.contains(u))
+        .collect();
+    if fresh.is_empty() {
+        return Ok(());
+    }
+    let ids: Vec<Uuid> = fresh.iter().map(|_| Uuid::now_v7()).collect();
+    sqlx::query!(
+        "INSERT INTO notifications (id, user_id, kind, actor_id)
+         SELECT r.id, r.user_id, 'backup', r.user_id
+         FROM unnest($1::uuid[], $2::uuid[]) AS r(id, user_id)",
+        &ids,
+        &fresh
+    )
+    .execute(&mut *conn)
+    .await?;
+    enqueue_pushes(conn, &ids, PUSH_NOW).await
 }
 
 /// 정지되지 않은 사용자 중 행동자 제외. 모든 종류 공용.

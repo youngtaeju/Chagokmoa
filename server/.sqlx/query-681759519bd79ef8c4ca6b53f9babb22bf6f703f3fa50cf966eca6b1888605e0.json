@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE backup_runs\n         SET status = 'failed', phase = NULL, finished_at = now(), error = 'interrupted'\n         WHERE status = 'running'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "681759519bd79ef8c4ca6b53f9babb22bf6f703f3fa50cf966eca6b1888605e0"
+}

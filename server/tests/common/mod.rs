@@ -33,6 +33,7 @@ pub fn test_config() -> Config {
         public_url: "http://localhost".to_string(),
         secret_key: (0u8..32).collect(),
         data_dir: PathBuf::from("./data"),
+        backup_dir: PathBuf::from("./backup"),
         port: 0,
         auto_migrate: false,
         worker_concurrency: 1,

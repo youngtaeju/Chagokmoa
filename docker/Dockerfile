@@ -43,6 +43,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates curl ffmpeg libheif1 \
         libheif-plugin-libde265 libheif-plugin-dav1d libheif-plugin-aomenc \
+        restic postgresql-client-17 \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=server /chagokmoa /app/chagokmoa
 COPY --from=web /src/web/dist /app/web

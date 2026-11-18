@@ -1,0 +1,70 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, started_at, finished_at, trigger AS \"trigger: Trigger\",\n                  status AS \"status: RunStatus\", phase AS \"phase: Phase\", local, remote, error\n           FROM backup_runs ORDER BY started_at DESC, id DESC LIMIT $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "started_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 2,
+        "name": "finished_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "trigger: Trigger",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "status: RunStatus",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "phase: Phase",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "local",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 7,
+        "name": "remote",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 8,
+        "name": "error",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "0bbc038e3800dc023e18441d1e554d95f8f36659ad1b934d013b01fd6c7c4c81"
+}

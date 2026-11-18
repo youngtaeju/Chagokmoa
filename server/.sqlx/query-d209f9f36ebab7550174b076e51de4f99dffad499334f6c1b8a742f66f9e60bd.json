@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO backup_runs (id, trigger, status) VALUES ($1, $2, 'running')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d209f9f36ebab7550174b076e51de4f99dffad499334f6c1b8a742f66f9e60bd"
+}

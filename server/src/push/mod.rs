@@ -9,10 +9,11 @@ pub mod text;
 pub mod vapid;
 
 /// 설정 화면 표시 순서.
-pub const PUSH_KINDS: [NotificationKind; 5] = [
+pub const PUSH_KINDS: [NotificationKind; 6] = [
     NotificationKind::Upload,
     NotificationKind::Comment,
     NotificationKind::Mention,
     NotificationKind::Story,
     NotificationKind::Milestone,
+    NotificationKind::Backup,
 ];

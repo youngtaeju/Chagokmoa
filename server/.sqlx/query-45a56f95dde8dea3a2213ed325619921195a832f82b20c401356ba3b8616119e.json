@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT to_regclass('public.users') IS NOT NULL\n                  AND to_regclass('public.assets') IS NOT NULL AS \"ours!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "ours!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "45a56f95dde8dea3a2213ed325619921195a832f82b20c401356ba3b8616119e"
+}

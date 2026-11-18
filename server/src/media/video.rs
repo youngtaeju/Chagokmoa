@@ -146,7 +146,7 @@ async fn run(program: &str, args: Vec<OsString>, timeout: Duration) -> Result<Ve
 }
 
 /// 타임아웃 초과 시 future drop 으로 자식 kill(`kill_on_drop`).
-async fn run_with_timeout(mut cmd: Command, timeout: Duration) -> Result<Vec<u8>> {
+pub(crate) async fn run_with_timeout(mut cmd: Command, timeout: Duration) -> Result<Vec<u8>> {
     let program = cmd.as_std().get_program().to_string_lossy().into_owned();
     let fut = cmd.stdin(Stdio::null()).kill_on_drop(true).output();
     let out = tokio::time::timeout(timeout, fut)

@@ -516,6 +516,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/backup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_status"];
+        put: operations["update_settings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backup/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["enable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backup/key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["new_key"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backup/key/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reveal_key"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backup/remote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["save_remote"];
+        post?: never;
+        delete: operations["delete_remote"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backup/remote/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["test_remote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backup/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["run_now"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/comments/{id}": {
         parameters: {
             query?: never;
@@ -1346,6 +1458,27 @@ export interface components {
             /** Format: int64 */
             video_count: number;
         };
+        BackupStatus: {
+            /** @description 자동 백업. */
+            enabled: boolean;
+            /** @description 복구 키 저장됨(백업 설정 완료). */
+            key_set: boolean;
+            last_run?: null | components["schemas"]["RunView"];
+            /** @description 로컬 백업 폴더(`/backup`)가 있고 쓰기 가능. */
+            mounted: boolean;
+            /**
+             * Format: date-time
+             * @description 다음 자동 백업 예정. 꺼져 있으면 null. 지난 시각이면 곧 실행.
+             */
+            next_run?: string | null;
+            remote?: null | components["schemas"]["RemoteStatus"];
+            repo_state?: null | components["schemas"]["RepoState"];
+            retention: components["schemas"]["Retention"];
+            /** @description 최근 실행. 최신 순. 진행 중이면 첫 항목이 `running`. */
+            runs: components["schemas"]["RunView"][];
+            /** @description 매일 실행 시각 `HH:MM`. 인스턴스 시간대. */
+            time: string;
+        };
         /** Format: binary */
         BinaryBody: string;
         ChangePasswordRequest: {
@@ -1547,6 +1680,12 @@ export interface components {
             preview?: null | components["schemas"]["VariantDoc"];
             thumb?: null | components["schemas"]["VariantDoc"];
         };
+        EnableRequest: {
+            /** @description 빈 폴더일 때 필수. 복구 키를 따로 적어 둠 확인. */
+            confirmed?: boolean;
+            /** @description 빈 폴더면 새 키(`POST /api/backup/key`), 기존 저장소면 그 저장소의 키. */
+            key: string;
+        };
         /** @description 에러 응답 본문 스키마(OpenAPI 전용). 실제 직렬화는 `IntoResponse`. */
         ErrorBody: {
             /** @description i18n 키. 예: `auth.required`. */
@@ -1626,6 +1765,9 @@ export interface components {
         InvitesResponse: {
             invites: components["schemas"]["Invite"][];
         };
+        KeyResponse: {
+            key: string;
+        };
         /** @description 하트 누른 사람. */
         Like: {
             /** Format: date-time */
@@ -1700,7 +1842,7 @@ export interface components {
             comment: null | components["schemas"]["NotificationComment"];
             /**
              * Format: int32
-             * @description 묶인 사진 수. 사진 외 종류는 1.
+             * @description 묶인 사진 수, 백업은 그날 실패 횟수. 그 밖의 종류는 1.
              */
             count: number;
             /** Format: date-time */
@@ -1727,7 +1869,7 @@ export interface components {
          * @description 알림 종류. DB 는 `text` 소문자.
          * @enum {string}
          */
-        NotificationKind: "upload" | "comment" | "mention" | "story" | "milestone";
+        NotificationKind: "upload" | "comment" | "mention" | "story" | "milestone" | "backup";
         NotificationMilestone: {
             cover: null | components["schemas"]["AssetSummary"];
             custom_label: string | null;
@@ -1937,11 +2079,18 @@ export interface components {
             disabled?: boolean | null;
             role?: null | components["schemas"]["Role"];
         };
+        /**
+         * @description 진행 중 단계. `forget` 은 보관 정책과 prune, check.
+         * @enum {string}
+         */
+        Phase: "dump" | "local" | "remote" | "forget";
         PushKey: {
             /** @description base64url(패딩 없음) 65바이트 VAPID 공개키. */
             public_key: string;
         };
         PushPrefs: {
+            /** @description 백업 실패. 소유자만 받음. */
+            backup: boolean;
             comment: boolean;
             mention: boolean;
             milestone: boolean;
@@ -1949,6 +2098,7 @@ export interface components {
             upload: boolean;
         };
         PushPrefsPatch: {
+            backup?: boolean | null;
             comment?: boolean | null;
             mention?: boolean | null;
             milestone?: boolean | null;
@@ -1989,6 +2139,27 @@ export interface components {
              */
             remaining: number;
         };
+        RemoteRequest: {
+            /** @description 인증값 환경 변수. 접두어별 허용 이름만. */
+            env?: {
+                [key: string]: string;
+            };
+            /** @description `s3:`, `b2:`, `rest:`, `azure:`, `gs:` 로 시작하는 restic 저장소 주소. */
+            repository: string;
+        };
+        RemoteStatus: {
+            /** @description 인증값 환경 변수 저장됨. */
+            configured: boolean;
+            /** @description 저장소 주소. 주소 안 비밀번호는 `***`. */
+            repository: string;
+        };
+        RemoteTestResult: {
+            /** @description 접속 실패 사유(restic 출력, 비밀값 제거 후). */
+            message?: string | null;
+            /** @description 이 설정으로 저장 가능(비어 있거나 같은 키로 열림). */
+            ok: boolean;
+            state?: null | components["schemas"]["RepoState"];
+        };
         ReorderBabiesRequest: {
             /** @description 전체 아기 ID 를 원하는 순서로. 누락·중복·모르는 ID 는 거부. */
             ids: string[];
@@ -2007,8 +2178,56 @@ export interface components {
             name: string;
             sex: null | components["schemas"]["Sex"];
         };
+        /** @description 저장소별 결과. `backup_runs.local`, `remote` 에 JSON 으로. */
+        RepoReport: {
+            /** Format: int64 */
+            data_added?: number | null;
+            /** Format: int64 */
+            duration_ms?: number | null;
+            /** @description 비밀값 제거 후. */
+            error?: string | null;
+            /** Format: int64 */
+            files_new?: number | null;
+            snapshot_id?: string | null;
+            warning?: string | null;
+        };
+        /** @enum {string} */
+        RepoState: "empty" | "restic" | "foreign" | "wrong_key";
+        Retention: {
+            /** Format: int32 */
+            daily: number;
+            /** Format: int32 */
+            monthly: number;
+            /** Format: int32 */
+            weekly: number;
+        };
+        RevealKeyRequest: {
+            /** @description 현재 소유자 비밀번호. */
+            password: string;
+        };
         /** @enum {string} */
         Role: "owner" | "guardian" | "family";
+        RunStarted: {
+            /** Format: uuid */
+            run_id: string;
+        };
+        /** @enum {string} */
+        RunStatus: "running" | "success" | "warning" | "failed";
+        RunView: {
+            /** @description 실패 사유. 비밀값 제거 후. */
+            error?: string | null;
+            /** Format: date-time */
+            finished_at?: string | null;
+            /** Format: uuid */
+            id: string;
+            local?: null | components["schemas"]["RepoReport"];
+            phase?: null | components["schemas"]["Phase"];
+            remote?: null | components["schemas"]["RepoReport"];
+            /** Format: date-time */
+            started_at: string;
+            status: components["schemas"]["RunStatus"];
+            trigger: components["schemas"]["Trigger"];
+        };
         SessionInfo: {
             /** Format: date-time */
             created_at: string;
@@ -2121,6 +2340,8 @@ export interface components {
              */
             deleted_at: string;
         };
+        /** @enum {string} */
+        Trigger: "scheduled" | "manual";
         /** @description 안 읽은 알림 수. 100 에서 멈춤. */
         UnreadCount: {
             /** Format: int64 */
@@ -2135,6 +2356,14 @@ export interface components {
             cover_asset_id?: string | null;
             /** @description 앞뒤 공백 제거 후 1~50자. */
             name?: string | null;
+        };
+        /** @description 생략 필드는 유지. */
+        UpdateBackupRequest: {
+            /** @description 켜기는 복구 키 저장과 백업 폴더 연결 필요. */
+            enabled?: boolean | null;
+            retention?: null | components["schemas"]["Retention"];
+            /** @description `HH:MM`, 인스턴스 시간대. */
+            time?: string | null;
         };
         /** @description 보낸 필드만 교체. `null` 은 비움, 결과에 키나 몸무게 하나는 남아야 함. */
         UpdateGrowthRequest: {
@@ -4587,6 +4816,474 @@ export interface operations {
             };
             /** @description 아기 없음 (`babies.notFound`) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 백업 설정과 상태. 비밀값 없음 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupStatus"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    update_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBackupRequest"];
+            };
+        };
+        responses: {
+            /** @description 갱신 후 상태 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupStatus"];
+                };
+            };
+            /** @description 본문 형식 오류, `backup.timeInvalid`, `backup.retentionInvalid` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 켜기 불가. `backup.notConfigured`, `backup.notMounted` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    enable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnableRequest"];
+            };
+        };
+        responses: {
+            /** @description 키 저장, 자동 백업 켬. 빈 폴더면 새 저장소 생성 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupStatus"];
+                };
+            };
+            /** @description 본문 형식 오류, `backup.keyInvalid`, `backup.keyNotConfirmed` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description `backup.alreadyConfigured`, `backup.notMounted`, `backup.wrongKey`, `backup.foreignRepo`, `backup.running` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    new_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 새 복구 키. 저장 안 함(`POST /api/backup/enable` 에서 저장) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyResponse"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description `backup.alreadyConfigured`, `backup.notMounted`, `backup.repoNotEmpty` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    reveal_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevealKeyRequest"];
+            };
+        };
+        responses: {
+            /** @description 저장된 복구 키 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyResponse"];
+                };
+            };
+            /** @description 본문 형식 오류 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 인증 필요 또는 비밀번호 불일치(`auth.invalidCredentials`) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description `backup.notConfigured` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    save_remote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoteRequest"];
+            };
+        };
+        responses: {
+            /** @description 시험 통과 후 저장. 비어 있으면 같은 키로 초기화 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupStatus"];
+                };
+            };
+            /** @description 본문 형식 오류, `backup.remoteUnsupported`, `backup.remoteInvalid`, `backup.remoteEnvInvalid`(`name`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description `backup.notConfigured`, `backup.wrongKey`, `backup.remoteFailed`(`message`), `backup.running` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    delete_remote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 원격 설정 삭제. 원격 저장소 내용은 그대로 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    test_remote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoteRequest"];
+            };
+        };
+        responses: {
+            /** @description 연결 시험 결과. 저장과 초기화 안 함 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteTestResult"];
+                };
+            };
+            /** @description 본문 형식 오류, `backup.remoteUnsupported`, `backup.remoteInvalid`, `backup.remoteEnvInvalid`(`name`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description `backup.notConfigured` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    run_now: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 지금 백업 시작. 진행과 결과는 `GET /api/backup` 의 `runs` */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunStarted"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description `backup.notConfigured`, `backup.running`, `backup.unsupportedPostgres`(`major`, `required`) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

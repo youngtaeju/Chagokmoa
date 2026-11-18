@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DROP SCHEMA IF EXISTS public CASCADE",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "e795b599220432f93a9cf91e422e8ec29520b61bbfee346f1dff7c182e1bd3f5"
+}

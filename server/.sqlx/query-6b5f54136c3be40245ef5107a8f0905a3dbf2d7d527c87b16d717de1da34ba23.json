@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM backup_runs WHERE id IN (\n           SELECT id FROM backup_runs ORDER BY started_at DESC, id DESC OFFSET $1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6b5f54136c3be40245ef5107a8f0905a3dbf2d7d527c87b16d717de1da34ba23"
+}

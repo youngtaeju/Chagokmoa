@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE notifications SET count = count + 1, updated_at = now()\n         WHERE user_id = ANY($1) AND kind = 'backup'\n           AND (created_at AT TIME ZONE $2)::date = (now() AT TIME ZONE $2)::date\n         RETURNING user_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3784103d3885fb71dba1e46eb78972d3616c3808e5c94c60ac87cf7e80093622"
+}

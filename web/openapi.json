@@ -2793,6 +2793,498 @@
         }
       }
     },
+    "/api/backup": {
+      "get": {
+        "operationId": "get_status",
+        "responses": {
+          "200": {
+            "description": "백업 설정과 상태. 비밀값 없음",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "update_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBackupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "갱신 후 상태",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "본문 형식 오류, `backup.timeInvalid`, `backup.retentionInvalid`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "켜기 불가. `backup.notConfigured`, `backup.notMounted`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/backup/enable": {
+      "post": {
+        "operationId": "enable",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnableRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "키 저장, 자동 백업 켬. 빈 폴더면 새 저장소 생성",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "본문 형식 오류, `backup.keyInvalid`, `backup.keyNotConfirmed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`backup.alreadyConfigured`, `backup.notMounted`, `backup.wrongKey`, `backup.foreignRepo`, `backup.running`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/backup/key": {
+      "post": {
+        "operationId": "new_key",
+        "responses": {
+          "200": {
+            "description": "새 복구 키. 저장 안 함(`POST /api/backup/enable` 에서 저장)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`backup.alreadyConfigured`, `backup.notMounted`, `backup.repoNotEmpty`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/backup/key/reveal": {
+      "post": {
+        "operationId": "reveal_key",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevealKeyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "저장된 복구 키",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "본문 형식 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요 또는 비밀번호 불일치(`auth.invalidCredentials`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`backup.notConfigured`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/backup/remote": {
+      "put": {
+        "operationId": "save_remote",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "시험 통과 후 저장. 비어 있으면 같은 키로 초기화",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "본문 형식 오류, `backup.remoteUnsupported`, `backup.remoteInvalid`, `backup.remoteEnvInvalid`(`name`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`backup.notConfigured`, `backup.wrongKey`, `backup.remoteFailed`(`message`), `backup.running`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_remote",
+        "responses": {
+          "204": {
+            "description": "원격 설정 삭제. 원격 저장소 내용은 그대로"
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/backup/remote/test": {
+      "post": {
+        "operationId": "test_remote",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "연결 시험 결과. 저장과 초기화 안 함",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoteTestResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "본문 형식 오류, `backup.remoteUnsupported`, `backup.remoteInvalid`, `backup.remoteEnvInvalid`(`name`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`backup.notConfigured`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/backup/run": {
+      "post": {
+        "operationId": "run_now",
+        "responses": {
+          "202": {
+            "description": "지금 백업 시작. 진행과 결과는 `GET /api/backup` 의 `runs`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStarted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`backup.notConfigured`, `backup.running`, `backup.unsupportedPostgres`(`major`, `required`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/comments/{id}": {
       "delete": {
         "operationId": "delete_comment",
@@ -6822,6 +7314,85 @@
           }
         }
       },
+      "BackupStatus": {
+        "type": "object",
+        "required": [
+          "mounted",
+          "enabled",
+          "time",
+          "retention",
+          "key_set",
+          "runs"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "자동 백업."
+          },
+          "key_set": {
+            "type": "boolean",
+            "description": "복구 키 저장됨(백업 설정 완료)."
+          },
+          "last_run": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunView",
+                "description": "끝난 실행 중 최신."
+              }
+            ]
+          },
+          "mounted": {
+            "type": "boolean",
+            "description": "로컬 백업 폴더(`/backup`)가 있고 쓰기 가능."
+          },
+          "next_run": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "다음 자동 백업 예정. 꺼져 있으면 null. 지난 시각이면 곧 실행."
+          },
+          "remote": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RemoteStatus"
+              }
+            ]
+          },
+          "repo_state": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RepoState",
+                "description": "로컬 폴더 내용(키 확인 없음). 연결 안 됨이면 null. `wrong_key` 는 나오지 않음."
+              }
+            ]
+          },
+          "retention": {
+            "$ref": "#/components/schemas/Retention"
+          },
+          "runs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunView"
+            },
+            "description": "최근 실행. 최신 순. 진행 중이면 첫 항목이 `running`."
+          },
+          "time": {
+            "type": "string",
+            "description": "매일 실행 시각 `HH:MM`. 인스턴스 시간대."
+          }
+        }
+      },
       "BinaryBody": {
         "type": "string",
         "format": "binary"
@@ -7358,6 +7929,22 @@
           }
         }
       },
+      "EnableRequest": {
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "properties": {
+          "confirmed": {
+            "type": "boolean",
+            "description": "빈 폴더일 때 필수. 복구 키를 따로 적어 둠 확인."
+          },
+          "key": {
+            "type": "string",
+            "description": "빈 폴더면 새 키(`POST /api/backup/key`), 기존 저장소면 그 저장소의 키."
+          }
+        }
+      },
       "ErrorBody": {
         "type": "object",
         "description": "에러 응답 본문 스키마(OpenAPI 전용). 실제 직렬화는 `IntoResponse`.",
@@ -7591,6 +8178,17 @@
             "items": {
               "$ref": "#/components/schemas/Invite"
             }
+          }
+        }
+      },
+      "KeyResponse": {
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
           }
         }
       },
@@ -7830,7 +8428,7 @@
           "count": {
             "type": "integer",
             "format": "int32",
-            "description": "묶인 사진 수. 사진 외 종류는 1."
+            "description": "묶인 사진 수, 백업은 그날 실패 횟수. 그 밖의 종류는 1."
           },
           "created_at": {
             "type": "string",
@@ -7906,7 +8504,8 @@
           "comment",
           "mention",
           "story",
-          "milestone"
+          "milestone",
+          "backup"
         ]
       },
       "NotificationMilestone": {
@@ -8562,6 +9161,16 @@
           }
         }
       },
+      "Phase": {
+        "type": "string",
+        "description": "진행 중 단계. `forget` 은 보관 정책과 prune, check.",
+        "enum": [
+          "dump",
+          "local",
+          "remote",
+          "forget"
+        ]
+      },
       "PushKey": {
         "type": "object",
         "required": [
@@ -8581,9 +9190,14 @@
           "comment",
           "mention",
           "story",
-          "milestone"
+          "milestone",
+          "backup"
         ],
         "properties": {
+          "backup": {
+            "type": "boolean",
+            "description": "백업 실패. 소유자만 받음."
+          },
           "comment": {
             "type": "boolean"
           },
@@ -8604,6 +9218,12 @@
       "PushPrefsPatch": {
         "type": "object",
         "properties": {
+          "backup": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "comment": {
             "type": [
               "boolean",
@@ -8717,6 +9337,75 @@
           }
         }
       },
+      "RemoteRequest": {
+        "type": "object",
+        "required": [
+          "repository"
+        ],
+        "properties": {
+          "env": {
+            "type": "object",
+            "description": "인증값 환경 변수. 접두어별 허용 이름만.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "repository": {
+            "type": "string",
+            "description": "`s3:`, `b2:`, `rest:`, `azure:`, `gs:` 로 시작하는 restic 저장소 주소."
+          }
+        }
+      },
+      "RemoteStatus": {
+        "type": "object",
+        "required": [
+          "repository",
+          "configured"
+        ],
+        "properties": {
+          "configured": {
+            "type": "boolean",
+            "description": "인증값 환경 변수 저장됨."
+          },
+          "repository": {
+            "type": "string",
+            "description": "저장소 주소. 주소 안 비밀번호는 `***`."
+          }
+        }
+      },
+      "RemoteTestResult": {
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "properties": {
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "접속 실패 사유(restic 출력, 비밀값 제거 후)."
+          },
+          "ok": {
+            "type": "boolean",
+            "description": "이 설정으로 저장 가능(비어 있거나 같은 키로 열림)."
+          },
+          "state": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RepoState",
+                "description": "접속 실패면 null."
+              }
+            ]
+          }
+        }
+      },
       "ReorderBabiesRequest": {
         "type": "object",
         "required": [
@@ -8782,6 +9471,101 @@
           }
         }
       },
+      "RepoReport": {
+        "type": "object",
+        "description": "저장소별 결과. `backup_runs.local`, `remote` 에 JSON 으로.",
+        "properties": {
+          "data_added": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "duration_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "비밀값 제거 후."
+          },
+          "files_new": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "snapshot_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "warning": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "RepoState": {
+        "type": "string",
+        "enum": [
+          "empty",
+          "restic",
+          "foreign",
+          "wrong_key"
+        ]
+      },
+      "Retention": {
+        "type": "object",
+        "required": [
+          "daily",
+          "weekly",
+          "monthly"
+        ],
+        "properties": {
+          "daily": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "monthly": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "weekly": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "RevealKeyRequest": {
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "properties": {
+          "password": {
+            "type": "string",
+            "description": "현재 소유자 비밀번호."
+          }
+        }
+      },
       "Role": {
         "type": "string",
         "enum": [
@@ -8789,6 +9573,97 @@
           "guardian",
           "family"
         ]
+      },
+      "RunStarted": {
+        "type": "object",
+        "required": [
+          "run_id"
+        ],
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "RunStatus": {
+        "type": "string",
+        "enum": [
+          "running",
+          "success",
+          "warning",
+          "failed"
+        ]
+      },
+      "RunView": {
+        "type": "object",
+        "required": [
+          "id",
+          "started_at",
+          "trigger",
+          "status"
+        ],
+        "properties": {
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "실패 사유. 비밀값 제거 후."
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "local": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RepoReport"
+              }
+            ]
+          },
+          "phase": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Phase",
+                "description": "진행 중 단계. 끝났으면 null."
+              }
+            ]
+          },
+          "remote": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RepoReport"
+              }
+            ]
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/Trigger"
+          }
+        }
       },
       "SessionInfo": {
         "type": "object",
@@ -9099,6 +9974,13 @@
         ],
         "description": "휴지통 목록 항목."
       },
+      "Trigger": {
+        "type": "string",
+        "enum": [
+          "scheduled",
+          "manual"
+        ]
+      },
       "UnreadCount": {
         "type": "object",
         "description": "안 읽은 알림 수. 100 에서 멈춤.",
@@ -9130,6 +10012,37 @@
               "null"
             ],
             "description": "앞뒤 공백 제거 후 1~50자."
+          }
+        }
+      },
+      "UpdateBackupRequest": {
+        "type": "object",
+        "description": "생략 필드는 유지.",
+        "properties": {
+          "enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "켜기는 복구 키 저장과 백업 폴더 연결 필요."
+          },
+          "retention": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Retention",
+                "description": "일 0~365, 주 0~520, 월 0~240. 하나 이상 0 초과."
+              }
+            ]
+          },
+          "time": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`HH:MM`, 인스턴스 시간대."
           }
         }
       },

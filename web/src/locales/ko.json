@@ -421,6 +421,11 @@
       "notFound": "아기를 찾을 수 없어요.",
       "orderMismatch": "순서 정보가 현재 목록과 달라요. 새로고침해 주세요."
     },
+    "backup": {
+      "notConfigured": "백업이 아직 설정되지 않았어요.",
+      "running": "백업이 이미 진행 중이에요. 끝난 뒤 다시 시도해 주세요.",
+      "unsupportedPostgres": "이 데이터베이스 버전(Postgres {{major}})에서는 백업할 수 없어요. Postgres {{required}}이 필요해요."
+    },
     "comment": {
       "bodyInvalid": "댓글은 1~1000자로 써 주세요.",
       "mentionInvalid": "부를 수 없는 가족이 있어요.",
@@ -941,7 +946,9 @@
     "commentStory": "{{name}}님이 이야기에 댓글을 남겼어요: \"{{text}}\"",
     "mention": "{{name}}님이 회원님을 언급했어요: \"{{text}}\"",
     "story": "{{name}}님이 이야기를 남겼어요: \"{{text}}\"",
-    "milestone": "{{name}}님이 마일스톤을 남겼어요: {{label}}"
+    "milestone": "{{name}}님이 마일스톤을 남겼어요: {{label}}",
+    "backupFailed": "백업에 실패했어요. 백업 화면에서 확인해 주세요",
+    "backupFailedMany": "오늘 백업이 {{count}}번 실패했어요. 백업 화면에서 확인해 주세요"
   },
   "push": {
     "title": "알림 설정",
@@ -957,7 +964,8 @@
       "comment": "댓글",
       "mention": "멘션",
       "story": "이야기",
-      "milestone": "마일스톤"
+      "milestone": "마일스톤",
+      "backup": "백업 실패"
     },
     "listNote": "알림 목록에는 설정과 관계없이 모두 보여요",
     "banner": "새 소식을 휴대폰 알림으로 받아 보세요",

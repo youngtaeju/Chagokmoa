@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (SELECT count(*) FROM users) AS \"users!\",\n                  (SELECT count(*) FROM assets) AS \"assets!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "users!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "assets!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "726e9954cd55e497c6248dda17c2e454993474f69e7a611d03759120d00ed563"
+}
