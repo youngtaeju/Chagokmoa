@@ -5,7 +5,7 @@ use chagokmoa::{
     app::{build_router, openapi},
     config::{self, Config},
     db, jobs, maintenance,
-    media::{storage, video},
+    media::{regen, storage, video},
     push,
     shutdown::{forced, shutdown_signal},
     state::AppState,
@@ -30,6 +30,12 @@ enum Cmd {
     ResetPassword {
         /// 대상 사용자명
         username: String,
+    },
+    /// 파생물 재생성 작업을 큐에 넣고 넣은 수 출력. 처리는 실행 중인 서버가 담당
+    RegenerateDerivatives {
+        /// 파생물 디렉터리가 없는 항목만
+        #[arg(long)]
+        missing: bool,
     },
     /// OpenAPI 문서를 표준 출력으로 출력 (설정, DB 불필요)
     Openapi,
@@ -138,6 +144,11 @@ async fn main() -> anyhow::Result<()> {
                     std::process::exit(1);
                 }
             }
+        }
+        Cmd::RegenerateDerivatives { missing } => {
+            let pool = db::connect(&config::database_url()?).await?;
+            let queued = regen::enqueue(&pool, &config::data_dir(), missing).await?;
+            println!("queued {queued}");
         }
         Cmd::Openapi => println!("{}", serde_json::to_string_pretty(&openapi())?),
     }

@@ -564,6 +564,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/derivatives/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["regeneration_status"];
+        put?: never;
+        post: operations["start_regeneration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/favorites": {
         parameters: {
             query?: never;
@@ -1949,6 +1965,29 @@ export interface components {
         PushSubscriptionState: {
             /** @description 이 세션의 구독 주소. 없으면 `null`. */
             endpoint: string | null;
+        };
+        RegenerateQueued: {
+            /**
+             * Format: int64
+             * @description 이번에 큐에 넣은 수. 이미 대기 중인 항목은 제외.
+             */
+            queued: number;
+        };
+        RegenerateRequest: {
+            /** @description `true` 면 파생물 디렉터리가 없는 항목만. */
+            missing_only: boolean;
+        };
+        RegenerateStatus: {
+            /**
+             * Format: int64
+             * @description 실패 상태 재생성 작업 수. 다음 큐 등록 때까지 유지.
+             */
+            failed: number;
+            /**
+             * Format: int64
+             * @description 대기와 실행 중 재생성 작업 수.
+             */
+            remaining: number;
         };
         ReorderBabiesRequest: {
             /** @description 전체 아기 ID 를 원하는 순서로. 누락·중복·모르는 ID 는 거부. */
@@ -4770,6 +4809,95 @@ export interface operations {
             };
             /** @description 그날 휴지통 밖 사진, 이야기, 마일스톤 모두 없음 (`day.notFound`) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    regeneration_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 남은 재생성 작업 수와 실패 수 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegenerateStatus"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    start_regeneration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description 재생성 작업 등록. 원본이 있는 `ready` 항목(휴지통 포함) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegenerateQueued"];
+                };
+            };
+            /** @description 본문 형식 오류 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

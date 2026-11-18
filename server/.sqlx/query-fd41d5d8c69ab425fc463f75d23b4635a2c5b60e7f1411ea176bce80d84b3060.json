@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE assets SET width = $2, height = $3, duration_ms = $4,\n             blurhash = $5, dominant_color = $6, derivatives = $7\n         WHERE id = $1 AND status = 'ready'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Text",
+        "Text",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fd41d5d8c69ab425fc463f75d23b4635a2c5b60e7f1411ea176bce80d84b3060"
+}

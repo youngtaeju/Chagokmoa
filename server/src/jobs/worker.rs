@@ -8,7 +8,12 @@ use tokio::{sync::watch, task::JoinHandle};
 use uuid::Uuid;
 
 use super::{ClaimedJob, Job};
-use crate::{assets, error::AppResult, media::process, state::AppState};
+use crate::{
+    assets,
+    error::AppResult,
+    media::{process, regen},
+    state::AppState,
+};
 
 /// 깨움 신호를 놓쳤을 때 대비한 큐 재확인 주기.
 const POLL_INTERVAL: Duration = Duration::from_secs(5);
@@ -24,7 +29,7 @@ const ERROR_MAX_CHARS: usize = 500;
 /// 작업 자체 실패·패닉은 자산·작업 행에 기록하고 `Ok(true)`. `Err` 는 큐·DB 오류.
 pub async fn run_next(state: &AppState) -> AppResult<bool> {
     let Some(ClaimedJob { id, job, attempts }) =
-        super::claim(&state.pool, &["process_asset"]).await?
+        super::claim(&state.pool, &["process_asset", "regenerate_derivatives"]).await?
     else {
         return Ok(false);
     };
@@ -40,6 +45,19 @@ pub async fn run_next(state: &AppState) -> AppResult<bool> {
                     tracing::info!(%asset_id, job_id = %id, "process_asset job finished");
                 }
                 Err(err) => record_failure(state, id, asset_id, attempts, &err).await?,
+            }
+        }
+        Job::RegenerateDerivatives { asset_id } if attempts > MAX_ATTEMPTS => {
+            let err = anyhow!("regeneration interrupted repeatedly (attempts {attempts})");
+            record_regen_failure(state, id, asset_id, &err).await?;
+        }
+        Job::RegenerateDerivatives { asset_id } => {
+            match catch_panic(regen::run(state, asset_id)).await {
+                Ok(()) => {
+                    super::finish(&state.pool, id).await?;
+                    tracing::debug!(%asset_id, job_id = %id, "regenerate_derivatives job finished");
+                }
+                Err(err) => record_regen_failure(state, id, asset_id, &err).await?,
             }
         }
         // `claim` 종류 필터로 도달 불가. 방어용.
@@ -87,6 +105,19 @@ async fn record_failure(
         tracing::debug!(%asset_id, %job_id, error = ?err, "processing error after asset removal ignored");
         process::remove_orphan_derivatives(state, asset_id).await;
     }
+    Ok(())
+}
+
+/// 재생성 실패는 작업 행에만 기록. 자산 상태와 기존 파생물은 그대로.
+async fn record_regen_failure(
+    state: &AppState,
+    job_id: Uuid,
+    asset_id: Uuid,
+    err: &anyhow::Error,
+) -> AppResult<()> {
+    let message = error_message(err, &state.config.data_dir);
+    super::fail(&state.pool, job_id, &message).await?;
+    tracing::warn!(%asset_id, %job_id, error = ?err, "derivatives regeneration failed");
     Ok(())
 }
 

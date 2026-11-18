@@ -224,3 +224,52 @@ async fn empty_assets_table_skips_originals_and_derivatives(pool: PgPool) {
     );
     assert!(original.exists() && derivs.exists() && !part.exists());
 }
+
+#[sqlx::test(migrations = "./migrations")]
+async fn regen_leftovers_removed(pool: PgPool) {
+    let app = media_app(&pool, Role::Guardian).await;
+    let id = Uuid::now_v7();
+    insert_seed_asset(&pool, &app, id).await;
+    let live = derivatives(&app, id, true);
+    let root = app.data.path().join("derivatives");
+    let leftover = |name: String, old: bool| {
+        let dir = root.join(name);
+        write(&dir.join("thumb.webp"));
+        if old {
+            age(&dir, OLD);
+        }
+        dir
+    };
+    // 행 있는 자산과 행 없는 자산 모두 대상.
+    let old = [
+        leftover(format!("{id}.regen"), true),
+        leftover(format!("{id}.stale"), true),
+        leftover(format!("{}.regen", Uuid::now_v7()), true),
+    ];
+    let fresh = leftover(format!("{}.regen", Uuid::now_v7()), false);
+    // 다른 확장자는 대상 아님.
+    let unknown = leftover(format!("{id}.tmp"), true);
+
+    let report = orphans::sweep(&app.state, GRACE).await.expect("sweep");
+
+    assert_eq!(report.derivatives_removed, 3);
+    assert!(old.iter().all(|p| !p.exists()));
+    assert!(live.exists() && fresh.exists() && unknown.exists());
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn stale_restored_when_live_missing(pool: PgPool) {
+    let app = media_app(&pool, Role::Guardian).await;
+    let id = Uuid::now_v7();
+    insert_seed_asset(&pool, &app, id).await;
+    let root = app.data.path().join("derivatives");
+    let stale = root.join(format!("{id}.stale"));
+    write(&stale.join("thumb.webp"));
+    age(&stale, OLD);
+
+    let report = orphans::sweep(&app.state, GRACE).await.expect("sweep");
+
+    assert_eq!(report.derivatives_removed, 0);
+    assert!(!stale.exists());
+    assert!(root.join(id.to_string()).join("thumb.webp").is_file());
+}

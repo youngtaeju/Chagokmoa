@@ -27,11 +27,11 @@ use crate::{
 const MIN_CREATION_TS: i64 = 946_684_800;
 
 /// 처리 결과. 한 번의 UPDATE 로 `ready` 기록.
-struct Processed {
-    width: u32,
-    height: u32,
-    duration_ms: Option<i32>,
-    rendered: Rendered,
+pub(super) struct Processed {
+    pub(super) width: u32,
+    pub(super) height: u32,
+    pub(super) duration_ms: Option<i32>,
+    pub(super) rendered: Rendered,
     gps: Option<(f64, f64)>,
     camera_make: Option<String>,
     camera_model: Option<String>,
@@ -48,23 +48,14 @@ enum Captured {
 /// 성공 시 자산 `ready`. 실패는 에러로 반환(상태 기록은 호출 측).
 /// 자산 행이 없거나 처리 중 사라지면 파생물 정리 후 `Ok`.
 pub async fn process_asset(state: &AppState, asset_id: Uuid) -> anyhow::Result<()> {
+    let _lock = state.derivative_locks.acquire(asset_id).await;
     let Some(src) = assets::queries::source(&state.pool, asset_id).await? else {
         tracing::info!(%asset_id, "asset gone before processing");
         return Ok(());
     };
     let data_dir = &state.config.data_dir;
     let original = data_dir.join(&src.original_path);
-    let ty = original
-        .extension()
-        .and_then(|ext| ext.to_str())
-        .and_then(MediaType::from_ext)
-        .with_context(|| format!("unknown original type: {}", src.original_path))?;
-    if !tokio::fs::try_exists(&original)
-        .await
-        .context("check original")?
-    {
-        bail!("original file missing: {}", src.original_path);
-    }
+    let ty = original_type(&original, &src.original_path).await?;
     let settings = settings::queries::load(&state.pool).await?;
     let dir = storage::derivative_dir(data_dir, asset_id);
     // 재처리 시 이전 설정의 파일(예: preview.avif) 잔존 방지.
@@ -72,10 +63,7 @@ pub async fn process_asset(state: &AppState, asset_id: Uuid) -> anyhow::Result<(
         .await
         .context("clear previous derivatives")?;
 
-    let processed = match src.kind {
-        AssetKind::Photo => photo(original, ty, dir.clone(), settings.derivatives_avif).await?,
-        AssetKind::Video => video(&original, ty, &dir, settings.derivatives_avif).await?,
-    };
+    let processed = render(src.kind, original, ty, dir, settings.derivatives_avif).await?;
     if !mark_ready(state, asset_id, processed, &settings.timezone).await? {
         remove_orphan_derivatives(state, asset_id).await;
     }
@@ -88,6 +76,36 @@ pub async fn remove_orphan_derivatives(state: &AppState, asset_id: Uuid) {
     let dir = storage::derivative_dir(&state.config.data_dir, asset_id);
     if let Err(err) = remove_dir(&dir).await {
         tracing::warn!(%err, %asset_id, "orphan derivatives removal failed");
+    }
+}
+
+/// 원본 형식. 확장자로 판별, 파일 없으면 에러.
+pub(super) async fn original_type(original: &Path, rel: &str) -> anyhow::Result<MediaType> {
+    let ty = original
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .and_then(MediaType::from_ext)
+        .with_context(|| format!("unknown original type: {rel}"))?;
+    if !tokio::fs::try_exists(original)
+        .await
+        .context("check original")?
+    {
+        bail!("original file missing: {rel}");
+    }
+    Ok(ty)
+}
+
+/// `dir` 에 파생물(영상은 재생본 포함) 생성.
+pub(super) async fn render(
+    kind: AssetKind,
+    original: PathBuf,
+    ty: MediaType,
+    dir: PathBuf,
+    avif: bool,
+) -> anyhow::Result<Processed> {
+    match kind {
+        AssetKind::Photo => photo(original, ty, dir, avif).await,
+        AssetKind::Video => video(&original, ty, &dir, avif).await,
     }
 }
 
@@ -222,7 +240,7 @@ async fn mark_ready(
 }
 
 /// 없으면 무시.
-async fn remove_dir(dir: &Path) -> io::Result<()> {
+pub(super) async fn remove_dir(dir: &Path) -> io::Result<()> {
     match tokio::fs::remove_dir_all(dir).await {
         Err(err) if err.kind() != io::ErrorKind::NotFound => Err(err),
         _ => Ok(()),

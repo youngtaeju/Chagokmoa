@@ -3090,6 +3090,98 @@
         }
       }
     },
+    "/api/derivatives/regenerate": {
+      "get": {
+        "operationId": "regeneration_status",
+        "responses": {
+          "200": {
+            "description": "남은 재생성 작업 수와 실패 수",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegenerateStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "start_regeneration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "재생성 작업 등록. 원본이 있는 `ready` 항목(휴지통 포함)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegenerateQueued"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "본문 형식 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/favorites": {
       "get": {
         "operationId": "list_favorites",
@@ -8577,6 +8669,51 @@
               "null"
             ],
             "description": "이 세션의 구독 주소. 없으면 `null`."
+          }
+        }
+      },
+      "RegenerateQueued": {
+        "type": "object",
+        "required": [
+          "queued"
+        ],
+        "properties": {
+          "queued": {
+            "type": "integer",
+            "format": "int64",
+            "description": "이번에 큐에 넣은 수. 이미 대기 중인 항목은 제외.",
+            "minimum": 0
+          }
+        }
+      },
+      "RegenerateRequest": {
+        "type": "object",
+        "required": [
+          "missing_only"
+        ],
+        "properties": {
+          "missing_only": {
+            "type": "boolean",
+            "description": "`true` 면 파생물 디렉터리가 없는 항목만."
+          }
+        }
+      },
+      "RegenerateStatus": {
+        "type": "object",
+        "required": [
+          "remaining",
+          "failed"
+        ],
+        "properties": {
+          "failed": {
+            "type": "integer",
+            "format": "int64",
+            "description": "실패 상태 재생성 작업 수. 다음 큐 등록 때까지 유지."
+          },
+          "remaining": {
+            "type": "integer",
+            "format": "int64",
+            "description": "대기와 실행 중 재생성 작업 수."
           }
         }
       },

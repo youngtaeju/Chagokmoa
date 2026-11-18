@@ -8,6 +8,7 @@ use std::{
 
 use uuid::Uuid;
 
+use super::regen;
 use crate::{error::AppResult, state::AppState};
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -19,6 +20,7 @@ pub struct SweepReport {
 
 /// 행이 없고 mtime 이 `older_than` 보다 오래된 파일만 처리.
 /// 임시 파일·파생물은 삭제, 원본은 `orphans/originals/YYYY/MM/` 로 이동.
+/// 재생성 잔재 디렉터리는 행 확인 없이 삭제(`derivatives_removed` 에 합산). 라이브 없는 `.stale` 은 복원.
 /// 개별 파일 I/O 실패는 경고 후 건너뜀. DB 에러만 전파.
 pub async fn sweep(state: &AppState, older_than: Duration) -> AppResult<SweepReport> {
     let data_dir = &state.config.data_dir;
@@ -49,6 +51,36 @@ pub async fn sweep(state: &AppState, older_than: Duration) -> AppResult<SweepRep
         match tokio::fs::remove_file(&path).await {
             Ok(()) => report.temp_removed += 1,
             Err(err) => tracing::warn!(%err, path = rel(&path), "orphan temp removal failed"),
+        }
+    }
+
+    // 재생성 중단 잔재(`<uuid>.regen`, `<uuid>.stale`). 자산 행과 무관하게 삭제.
+    // 같은 자산 재생성과 겹치지 않게 파생물 락 보유 후 삭제.
+    for ext in [regen::TEMP_EXT, regen::STALE_EXT] {
+        let dir = data_dir.join("derivatives");
+        for (id, path) in list_uuid_entries(data_dir, &dir, true, Some(ext)).await {
+            if !is_old(&path, cutoff).await {
+                continue;
+            }
+            let _lock = state.derivative_locks.acquire(id).await;
+            if ext == regen::STALE_EXT {
+                // 라이브 디렉터리 없이 남은 `.stale` 은 마지막 사본. 삭제 대신 복원.
+                match regen::restore_stale(&path.with_extension(""), &path).await {
+                    Ok(true) => continue,
+                    Ok(false) => {}
+                    Err(err) => {
+                        tracing::warn!(%err, path = rel(&path), "stale derivatives restore failed");
+                        continue;
+                    }
+                }
+            }
+            match tokio::fs::remove_dir_all(&path).await {
+                Ok(()) => report.derivatives_removed += 1,
+                Err(err) if err.kind() == io::ErrorKind::NotFound => {}
+                Err(err) => {
+                    tracing::warn!(%err, path = rel(&path), "regeneration leftover removal failed");
+                }
+            }
         }
     }
 
