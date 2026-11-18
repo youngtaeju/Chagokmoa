@@ -191,6 +191,28 @@ describe('NotificationsPage', () => {
     ).toBeInTheDocument()
   })
 
+  // 행동자는 받는 소유자 자신이라 첫 글자 대신 백업 아이콘.
+  it('backup_row_shows_icon_not_initial', async () => {
+    renderNotifications(() => ({
+      items: [
+        notificationFixture('b', {
+          kind: 'backup',
+          count: 2,
+          asset: null,
+          actor: { id: me.id, display_name: '아빠' },
+        }),
+      ],
+      next_cursor: null,
+      seen_at: '2026-11-16T00:00:00Z',
+    }))
+    const sentence = '오늘 백업이 2번 실패했어요. 백업 화면에서 확인해 주세요'
+    await screen.findByText(sentence)
+    const row = rowOf(sentence)
+    expect(row).toHaveAttribute('href', '/me/backup')
+    expect(within(row).queryByText('아')).toBeNull()
+    expect(row.querySelector('svg')).not.toBeNull()
+  })
+
   it('highlights_rows_newer_than_seen_at', async () => {
     renderNotifications(() => ({
       items: [

@@ -57,7 +57,7 @@ describe('i18n', () => {
 
   it('every_server_error_key_is_translated', () => {
     const re =
-      /"((?:asset|auth|babies|day|invite|request|server|settings|story|upload|users)\.[a-zA-Z]+)"/g
+      /"((?:asset|auth|babies|backup|day|invite|request|server|settings|story|upload|users)\.[a-zA-Z]+)"/g
     const keys = new Set<string>()
     for (const f of rsFiles(
       path.resolve(import.meta.dirname, '../../../server/src'),
@@ -104,6 +104,11 @@ describe('i18n', () => {
       'settings.sessionRevoked',
       'settings.instanceSaved',
       'pwa.updateAvailable',
+      'backup.enabled',
+      'backup.runStarted',
+      'backup.settingsSaved',
+      'backup.remoteSaved',
+      'backup.remoteDeleted',
     ]
     const value = (key: string): unknown =>
       key

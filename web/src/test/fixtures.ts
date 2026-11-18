@@ -7,6 +7,7 @@ import type {
   DaySummary,
   Milestone,
   AppNotification,
+  BackupStatus,
   Role,
   Settings,
   Story,
@@ -246,4 +247,23 @@ export const emptyFeedRoutes = {
   'GET /api/memories': () => json(200, null),
   'GET /api/users': () => json(200, { users: [] }),
   'GET /api/notifications/unread-count': () => json(200, { count: 0 }),
+}
+
+// 백업 설정 전, 빈 폴더 연결됨.
+export function backupStatusFixture(
+  over: Partial<BackupStatus> = {},
+): BackupStatus {
+  return {
+    mounted: true,
+    repo_state: 'empty',
+    enabled: false,
+    time: '03:00',
+    retention: { daily: 7, weekly: 4, monthly: 12 },
+    remote: null,
+    key_set: false,
+    last_run: null,
+    next_run: null,
+    runs: [],
+    ...over,
+  }
 }
