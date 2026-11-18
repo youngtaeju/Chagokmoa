@@ -14,6 +14,7 @@ type RowPath =
   | '/me/appearance'
   | '/me/trash'
   | '/me/instance'
+  | '/me/backup'
   | '/family'
 
 const ROW =
@@ -80,6 +81,9 @@ export function MePage() {
         <NavRow to="/family" label={t('me.family')} />
         {hasRole(user, 'owner') && (
           <NavRow to="/me/instance" label={t('me.instance')} />
+        )}
+        {hasRole(user, 'owner') && (
+          <NavRow to="/me/backup" label={t('me.backup')} />
         )}
       </Group>
       <Group title={t('me.account')}>

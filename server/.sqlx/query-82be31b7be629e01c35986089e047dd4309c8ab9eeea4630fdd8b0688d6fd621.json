@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE jobs SET status = 'running', locked_at = now(), attempts = attempts + 1\n         WHERE id = (SELECT id FROM jobs\n                     WHERE status = 'queued' AND run_after <= now() AND kind = ANY($1)\n                     ORDER BY run_after LIMIT 1 FOR UPDATE SKIP LOCKED)\n         RETURNING id, kind, payload, attempts",
+  "query": "UPDATE jobs SET status = 'running', locked_at = now(), attempts = attempts + 1\n         WHERE id = (SELECT id FROM jobs\n                     WHERE status = 'queued' AND run_after <= now() AND kind = ANY($1)\n                     ORDER BY (kind = 'regenerate_derivatives'), run_after LIMIT 1 FOR UPDATE SKIP LOCKED)\n         RETURNING id, kind, payload, attempts",
   "describe": {
     "columns": [
       {
@@ -36,5 +36,5 @@
       false
     ]
   },
-  "hash": "a4198aa0fb89e38667f10b9570d4f7740c487185ee4804ab7ff2f264b82ccfd6"
+  "hash": "82be31b7be629e01c35986089e047dd4309c8ab9eeea4630fdd8b0688d6fd621"
 }

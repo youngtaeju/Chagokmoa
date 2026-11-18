@@ -315,3 +315,84 @@ describe('me sub pages', () => {
     })
   })
 })
+
+describe('backup page', () => {
+  it('regen_flow_posts_and_polls_until_done', async () => {
+    let posted: unknown = null
+    let polls = 0
+    const { user } = renderPage(
+      {
+        'GET /api/derivatives/regenerate': () => {
+          polls += 1
+          return json(200, {
+            remaining: polls === 1 ? 0 : polls === 2 ? 2 : 0,
+            failed: 0,
+          })
+        },
+        'POST /api/derivatives/regenerate': async (req) => {
+          posted = await req.json()
+          return json(200, { queued: 2 })
+        },
+      },
+      { role: 'owner', path: '/me/backup' },
+    )
+    await user.click(await screen.findByRole('button', { name: '다시 만들기' }))
+    const dialog = await screen.findByRole('alertdialog')
+    await user.click(within(dialog).getByRole('button', { name: '없는 것만' }))
+    expect(
+      await screen.findByText('남은 항목 2개를 만드는 중이에요.'),
+    ).toBeInTheDocument()
+    expect(posted).toEqual({ missing_only: true })
+    expect(
+      await screen.findByText('모두 만들었어요.', {}, { timeout: 6000 }),
+    ).toBeInTheDocument()
+  }, 15_000)
+
+  it('regen_shows_failed_count_when_done', async () => {
+    let polls = 0
+    const { user } = renderPage(
+      {
+        'GET /api/derivatives/regenerate': () => {
+          polls += 1
+          return json(200, {
+            remaining: polls === 1 ? 0 : polls === 2 ? 2 : 0,
+            failed: 1,
+          })
+        },
+        'POST /api/derivatives/regenerate': () => json(200, { queued: 2 }),
+      },
+      { role: 'owner', path: '/me/backup' },
+    )
+    await user.click(await screen.findByRole('button', { name: '다시 만들기' }))
+    const dialog = await screen.findByRole('alertdialog')
+    await user.click(within(dialog).getByRole('button', { name: '없는 것만' }))
+    expect(
+      await screen.findByText('1개는 만들지 못했어요.', {}, { timeout: 6000 }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('모두 만들었어요.')).toBeNull()
+  }, 15_000)
+
+  it('regen_all_sends_missing_only_false_and_cancel_closes', async () => {
+    let posted: unknown = null
+    const { user } = renderPage(
+      {
+        'GET /api/derivatives/regenerate': () =>
+          json(200, { remaining: 0, failed: 0 }),
+        'POST /api/derivatives/regenerate': async (req) => {
+          posted = await req.json()
+          return json(200, { queued: 0 })
+        },
+      },
+      { role: 'owner', path: '/me/backup' },
+    )
+    await user.click(await screen.findByRole('button', { name: '다시 만들기' }))
+    await user.click(await screen.findByRole('button', { name: '취소' }))
+    await waitFor(() => {
+      expect(screen.queryByRole('alertdialog')).toBeNull()
+    })
+    await user.click(screen.getByRole('button', { name: '다시 만들기' }))
+    await user.click(await screen.findByRole('button', { name: '전부' }))
+    expect(await screen.findByText('모두 만들었어요.')).toBeInTheDocument()
+    expect(posted).toEqual({ missing_only: false })
+  })
+})

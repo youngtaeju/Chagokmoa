@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM jobs WHERE kind = 'regenerate_derivatives' AND status = 'failed'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "a2db6510c2f7f11a42739bec133df58063b9d1fe91bfe218e5fced47afd96008"
+}

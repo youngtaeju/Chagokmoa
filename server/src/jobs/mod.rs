@@ -11,8 +11,16 @@ pub mod worker;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Job {
-    ProcessAsset { asset_id: Uuid },
-    SendPush { notification_id: Uuid },
+    ProcessAsset {
+        asset_id: Uuid,
+    },
+    /// 파생물만 다시 생성. 상태와 메타데이터 불변.
+    RegenerateDerivatives {
+        asset_id: Uuid,
+    },
+    SendPush {
+        notification_id: Uuid,
+    },
 }
 
 #[derive(Deserialize)]
@@ -30,6 +38,7 @@ impl Job {
     pub fn kind(&self) -> &'static str {
         match self {
             Job::ProcessAsset { .. } => "process_asset",
+            Job::RegenerateDerivatives { .. } => "regenerate_derivatives",
             Job::SendPush { .. } => "send_push",
         }
     }
@@ -37,7 +46,9 @@ impl Job {
     /// `jobs.payload` 값.
     pub fn payload(&self) -> Value {
         match self {
-            Job::ProcessAsset { asset_id } => json!({ "asset_id": asset_id }),
+            Job::ProcessAsset { asset_id } | Job::RegenerateDerivatives { asset_id } => {
+                json!({ "asset_id": asset_id })
+            }
             Job::SendPush { notification_id } => json!({ "notification_id": notification_id }),
         }
     }
@@ -47,6 +58,12 @@ impl Job {
             "process_asset" => {
                 let p: AssetPayload = serde_json::from_value(payload)?;
                 Ok(Job::ProcessAsset {
+                    asset_id: p.asset_id,
+                })
+            }
+            "regenerate_derivatives" => {
+                let p: AssetPayload = serde_json::from_value(payload)?;
+                Ok(Job::RegenerateDerivatives {
                     asset_id: p.asset_id,
                 })
             }
@@ -95,13 +112,14 @@ pub struct ClaimedJob {
 }
 
 /// 실행 시각이 된 `kinds` 종류의 `queued` 작업 1개를 `running` 으로. 동시 워커끼리 행 잠금 건너뜀.
+/// 재생성 작업은 다른 종류보다 뒤(대량 재생성 중에도 새 업로드 먼저).
 /// 해석 불가 작업은 `failed` 로 돌리고 에러.
 pub async fn claim(pool: &PgPool, kinds: &[&str]) -> AppResult<Option<ClaimedJob>> {
     let Some(row) = sqlx::query!(
         "UPDATE jobs SET status = 'running', locked_at = now(), attempts = attempts + 1
          WHERE id = (SELECT id FROM jobs
                      WHERE status = 'queued' AND run_after <= now() AND kind = ANY($1)
-                     ORDER BY run_after LIMIT 1 FOR UPDATE SKIP LOCKED)
+                     ORDER BY (kind = 'regenerate_derivatives'), run_after LIMIT 1 FOR UPDATE SKIP LOCKED)
          RETURNING id, kind, payload, attempts",
         kinds as &[&str]
     )
@@ -165,6 +183,12 @@ mod tests {
         assert_eq!(Job::parse(job.kind(), job.payload()).unwrap(), job);
         assert!(Job::parse("unknown", job.payload()).is_err());
         assert!(Job::parse("process_asset", json!({})).is_err());
+
+        let regen = Job::RegenerateDerivatives {
+            asset_id: Uuid::now_v7(),
+        };
+        assert_eq!(regen.kind(), "regenerate_derivatives");
+        assert_eq!(Job::parse(regen.kind(), regen.payload()).unwrap(), regen);
 
         let push = Job::SendPush {
             notification_id: Uuid::now_v7(),

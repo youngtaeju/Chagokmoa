@@ -1,8 +1,10 @@
 pub mod exif;
 pub mod hash;
 pub mod image;
+pub mod locks;
 pub mod orphans;
 pub mod process;
+pub mod regen;
 pub mod sniff;
 pub mod storage;
 pub mod video;
