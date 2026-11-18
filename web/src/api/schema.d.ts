@@ -1700,7 +1700,7 @@ export interface components {
             comment: null | components["schemas"]["NotificationComment"];
             /**
              * Format: int32
-             * @description 묶인 사진 수. 사진 외 종류는 1.
+             * @description 묶인 사진 수, 백업은 그날 실패 횟수. 그 밖의 종류는 1.
              */
             count: number;
             /** Format: date-time */
@@ -1727,7 +1727,7 @@ export interface components {
          * @description 알림 종류. DB 는 `text` 소문자.
          * @enum {string}
          */
-        NotificationKind: "upload" | "comment" | "mention" | "story" | "milestone";
+        NotificationKind: "upload" | "comment" | "mention" | "story" | "milestone" | "backup";
         NotificationMilestone: {
             cover: null | components["schemas"]["AssetSummary"];
             custom_label: string | null;
@@ -1942,6 +1942,8 @@ export interface components {
             public_key: string;
         };
         PushPrefs: {
+            /** @description 백업 실패. 소유자만 받음. */
+            backup: boolean;
             comment: boolean;
             mention: boolean;
             milestone: boolean;
@@ -1949,6 +1951,7 @@ export interface components {
             upload: boolean;
         };
         PushPrefsPatch: {
+            backup?: boolean | null;
             comment?: boolean | null;
             mention?: boolean | null;
             milestone?: boolean | null;

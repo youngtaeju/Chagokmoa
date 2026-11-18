@@ -170,6 +170,17 @@ pub fn body(
                 &[("name", name), ("label", &label)],
             )
         }
+        NotificationKind::Backup => {
+            if n.count > 1 {
+                t(
+                    locale,
+                    "notifications.backupFailedMany",
+                    &[("count", &n.count.to_string())],
+                )
+            } else {
+                t(locale, "notifications.backupFailed", &[])
+            }
+        }
     }
 }
 
@@ -194,6 +205,7 @@ pub fn url(n: &Notification, delta: i32) -> Option<String> {
             .milestone
             .as_ref()
             .map(|m| format!("/milestones/{}", m.id)),
+        NotificationKind::Backup => Some("/me/backup".to_string()),
     }
 }
 
@@ -262,6 +274,8 @@ mod tests {
                 "mention",
                 "story",
                 "milestone",
+                "backupFailed",
+                "backupFailedMany",
             ] {
                 let path = format!("notifications.{key}");
                 assert_ne!(t(locale, &path, &[]), path, "{path}");
@@ -377,6 +391,23 @@ mod tests {
             mk(None, Some("첫 외출")),
             "엄마님이 마일스톤을 남겼어요: 첫 외출"
         );
+    }
+
+    #[test]
+    fn backup_texts() {
+        let me = Uuid::now_v7();
+        let mut n = note(NotificationKind::Backup);
+        let names = HashMap::new();
+        assert_eq!(
+            body(Locale::Ko, &n, 1, me, &names),
+            "백업에 실패했어요. 백업 화면에서 확인해 주세요"
+        );
+        n.count = 3;
+        assert_eq!(
+            body(Locale::En, &n, 1, me, &names),
+            "Backup failed 3 times today. Check the backup screen"
+        );
+        assert_eq!(url(&n, 1), Some("/me/backup".to_string()));
     }
 
     #[test]

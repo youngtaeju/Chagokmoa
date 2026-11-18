@@ -1,7 +1,18 @@
 //! 백업. restic 저장소와 DB 덤프.
 
 pub mod dump;
+pub mod queries;
 pub mod restic;
+pub mod run;
+pub mod settings;
+
+/// 저장소 위치 출력용. userinfo 비밀번호는 `***`.
+fn mask_location(location: &str) -> String {
+    match split_url_password(location) {
+        (_, Some(password)) => location.replacen(&format!(":{password}@"), ":***@", 1),
+        (location, None) => location,
+    }
+}
 
 /// URL userinfo 의 비밀번호 분리. (비밀번호 뺀 URL, 인코딩 그대로인 비밀번호).
 fn split_url_password(url: &str) -> (String, Option<String>) {

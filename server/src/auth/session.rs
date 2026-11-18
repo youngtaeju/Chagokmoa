@@ -215,6 +215,7 @@ mod tests {
             public_url: public_url.to_string(),
             secret_key: vec![0; 32],
             data_dir: PathBuf::new(),
+            backup_dir: PathBuf::new(),
             port: 0,
             auto_migrate: false,
             worker_concurrency: 1,

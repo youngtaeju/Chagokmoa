@@ -60,6 +60,11 @@ function sentence(
         name,
         label: n.milestone ? milestoneLabel(t, n.milestone) : '',
       })
+    case 'backup':
+      // 같은 날 실패는 한 줄로 묶여 count 가 횟수.
+      return n.count > 1
+        ? t('notifications.backupFailedMany', { count: n.count })
+        : t('notifications.backupFailed')
   }
 }
 

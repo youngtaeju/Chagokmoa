@@ -17,14 +17,14 @@ use std::{
 
 use anyhow::{Context, anyhow};
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use tokio::{
     io::{AsyncBufRead, AsyncBufReadExt, BufReader},
     process::Command,
 };
 
-use super::split_url_password;
+use super::{mask_location, split_url_password};
 use crate::error::{AppError, AppResult};
 
 /// 컨테이너마다 바뀌는 호스트 이름 대신 고정. 이전 스냅숏을 부모로 찾고 보관 정책 묶음도 하나.
@@ -56,10 +56,7 @@ pub struct Repo {
 impl fmt::Debug for Repo {
     /// 위치의 userinfo 비밀번호는 `***`, env 는 키만.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let location = match split_url_password(&self.location) {
-            (_, Some(password)) => self.location.replacen(&format!(":{password}@"), ":***@", 1),
-            (location, None) => location,
-        };
+        let location = mask_location(&self.location);
         let env_keys: Vec<&str> = self.env.iter().map(|(k, _)| k.as_str()).collect();
         f.debug_struct("Repo")
             .field("location", &location)
@@ -80,7 +77,7 @@ pub enum RepoState {
     WrongKey,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Retention {
     pub daily: u32,
     pub weekly: u32,
@@ -305,7 +302,7 @@ impl Repo {
     }
 
     /// 오류 문구에서 비밀값 가림.
-    fn redact(&self, text: &str) -> String {
+    pub(crate) fn redact(&self, text: &str) -> String {
         let (_, location_password) = split_url_password(&self.location);
         let mut out = text.to_owned();
         for secret in self

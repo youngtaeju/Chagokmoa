@@ -7,6 +7,8 @@ pub struct Config {
     pub public_url: String,
     pub secret_key: Vec<u8>,
     pub data_dir: PathBuf,
+    /// 로컬 restic 저장소. 기본 `/backup`(compose 볼륨).
+    pub backup_dir: PathBuf,
     pub port: u16,
     pub auto_migrate: bool,
     pub worker_concurrency: usize,
@@ -22,6 +24,7 @@ impl Config {
         let secret_key = parse_secret_key(&required("SECRET_KEY")?)?;
 
         let data_dir = data_dir();
+        let backup_dir = backup_dir();
 
         let port = match std::env::var("PORT") {
             Ok(v) => v.parse().context("PORT must be a valid port number")?,
@@ -43,6 +46,7 @@ impl Config {
             public_url,
             secret_key,
             data_dir,
+            backup_dir,
             port,
             auto_migrate,
             worker_concurrency,
@@ -60,6 +64,13 @@ pub fn data_dir() -> PathBuf {
     std::env::var("DATA_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from("./data"))
+}
+
+pub fn backup_dir() -> PathBuf {
+    std::env::var("BACKUP_DIR")
+        .ok()
+        .filter(|v| !v.is_empty())
+        .map_or_else(|| PathBuf::from("/backup"), PathBuf::from)
 }
 
 fn required(key: &str) -> anyhow::Result<String> {

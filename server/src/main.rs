@@ -3,6 +3,7 @@ use std::net::SocketAddr;
 use anyhow::Context;
 use chagokmoa::{
     app::{build_router, openapi},
+    backup,
     config::{self, Config},
     db, jobs, maintenance,
     media::{regen, storage, video},
@@ -37,6 +38,8 @@ enum Cmd {
         #[arg(long)]
         missing: bool,
     },
+    /// 지금 백업하고 결과 출력. 실패면 종료 코드 1
+    Backup,
     /// OpenAPI 문서를 표준 출력으로 출력 (설정, DB 불필요)
     Openapi,
 }
@@ -95,6 +98,7 @@ async fn main() -> anyhow::Result<()> {
             tracing::info!(%addr, "listening");
             let (stop, force) = shutdown_signal()?;
             let maintenance = maintenance::spawn(state.clone(), stop.clone());
+            let backup_schedule = backup::run::spawn(state.clone(), stop.clone());
             video::check_tools().await;
             let requeued = jobs::requeue_running(&state.pool).await?;
             if requeued > 0 {
@@ -113,6 +117,7 @@ async fn main() -> anyhow::Result<()> {
                     })
                     .await?;
                 maintenance.await?;
+                backup_schedule.await?;
                 // 한 워커의 실패가 나머지 join 을 막지 않게.
                 for worker in workers {
                     if let Err(err) = worker.await {
@@ -149,6 +154,28 @@ async fn main() -> anyhow::Result<()> {
             let pool = db::connect(&config::database_url()?).await?;
             let queued = regen::enqueue(&pool, &config::data_dir(), missing).await?;
             println!("queued {queued}");
+        }
+        Cmd::Backup => {
+            let config = Config::from_env()?;
+            let pool = db::connect(&config.database_url).await?;
+            let state = AppState::new(pool, config);
+            let id = backup::run::run_once(&state, backup::run::Trigger::Manual).await?;
+            let run = backup::queries::get(&state.pool, id)
+                .await?
+                .context("backup run record missing")?;
+            // 기록에는 비밀값 없음(저장 전 제거).
+            println!("status {:?}", run.status);
+            for (name, report) in [("local", &run.local), ("remote", &run.remote)] {
+                if let Some(report) = report {
+                    println!("{name} {report}");
+                }
+            }
+            if let Some(error) = &run.error {
+                println!("error {error}");
+            }
+            if run.status == backup::run::RunStatus::Failed {
+                std::process::exit(1);
+            }
         }
         Cmd::Openapi => println!("{}", serde_json::to_string_pretty(&openapi())?),
     }

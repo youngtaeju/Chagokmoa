@@ -291,17 +291,19 @@ async fn prefs_default_on_and_patch(pool: PgPool) {
     let (mom, _) = server_as(&pool, "mom", Role::Owner).await;
     let (dad, _) = server_as(&pool, "dad", Role::Guardian).await;
     let all = serde_json::json!({
-        "upload": true, "comment": true, "mention": true, "story": true, "milestone": true
+        "upload": true, "comment": true, "mention": true, "story": true, "milestone": true,
+        "backup": true
     });
     assert_eq!(mom.get("/api/push/prefs").await.json::<Value>(), all);
     let res = mom
         .patch("/api/push/prefs")
         .add_header(XRW, XRW_VALUE)
-        .json(&serde_json::json!({ "mention": false }))
+        .json(&serde_json::json!({ "mention": false, "backup": false }))
         .await;
     res.assert_status_ok();
     let expected = serde_json::json!({
-        "upload": true, "comment": true, "mention": false, "story": true, "milestone": true
+        "upload": true, "comment": true, "mention": false, "story": true, "milestone": true,
+        "backup": false
     });
     assert_eq!(res.json::<Value>(), expected);
     assert_eq!(mom.get("/api/push/prefs").await.json::<Value>(), expected);
@@ -309,7 +311,7 @@ async fn prefs_default_on_and_patch(pool: PgPool) {
     // 다시 켜면 행 삭제
     mom.patch("/api/push/prefs")
         .add_header(XRW, XRW_VALUE)
-        .json(&serde_json::json!({ "mention": true }))
+        .json(&serde_json::json!({ "mention": true, "backup": true }))
         .await
         .assert_status_ok();
     assert_eq!(mom.get("/api/push/prefs").await.json::<Value>(), all);

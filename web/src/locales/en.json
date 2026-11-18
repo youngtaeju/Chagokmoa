@@ -421,6 +421,11 @@
       "notFound": "The baby could not be found.",
       "orderMismatch": "The order doesn't match the current list. Please refresh."
     },
+    "backup": {
+      "notConfigured": "Backup isn't set up yet.",
+      "running": "A backup is already running. Try again after it finishes.",
+      "unsupportedPostgres": "Backup isn't available on this database version (Postgres {{major}}). Postgres {{required}} is required."
+    },
     "comment": {
       "bodyInvalid": "Comments must be 1 to 1000 characters.",
       "mentionInvalid": "Someone you mentioned can't be mentioned.",
@@ -943,7 +948,9 @@
     "commentStory": "{{name}} commented on a story: \"{{text}}\"",
     "mention": "{{name}} mentioned you: \"{{text}}\"",
     "story": "{{name}} shared a story: \"{{text}}\"",
-    "milestone": "{{name}} added a milestone: {{label}}"
+    "milestone": "{{name}} added a milestone: {{label}}",
+    "backupFailed": "Backup failed. Check the backup screen",
+    "backupFailedMany": "Backup failed {{count}} times today. Check the backup screen"
   },
   "push": {
     "title": "Notifications",
@@ -959,7 +966,8 @@
       "comment": "Comments",
       "mention": "Mentions",
       "story": "Stories",
-      "milestone": "Milestones"
+      "milestone": "Milestones",
+      "backup": "Backup failures"
     },
     "listNote": "All notifications still appear in your list",
     "banner": "Get updates as phone notifications",

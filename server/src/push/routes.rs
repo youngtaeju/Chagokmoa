@@ -64,6 +64,8 @@ pub struct PushPrefs {
     pub mention: bool,
     pub story: bool,
     pub milestone: bool,
+    /// 백업 실패. 소유자만 받음.
+    pub backup: bool,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -73,6 +75,7 @@ pub struct PushPrefsPatch {
     pub mention: Option<bool>,
     pub story: Option<bool>,
     pub milestone: Option<bool>,
+    pub backup: Option<bool>,
 }
 
 fn endpoint_allowed(endpoint: &str) -> bool {
@@ -201,6 +204,7 @@ async fn load_prefs(state: &AppState, user_id: uuid::Uuid) -> AppResult<PushPref
         mention: on(NotificationKind::Mention),
         story: on(NotificationKind::Story),
         milestone: on(NotificationKind::Milestone),
+        backup: on(NotificationKind::Backup),
     })
 }
 
@@ -241,6 +245,7 @@ async fn patch_prefs(
         NotificationKind::Mention => patch.mention,
         NotificationKind::Story => patch.story,
         NotificationKind::Milestone => patch.milestone,
+        NotificationKind::Backup => patch.backup,
     };
     let mut tx = state.pool.begin().await?;
     for kind in PUSH_KINDS {

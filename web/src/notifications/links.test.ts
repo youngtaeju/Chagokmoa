@@ -36,6 +36,11 @@ describe('notificationLink', () => {
     }
   })
 
+  it('backup_failure_opens_backup_screen', () => {
+    const n = notificationFixture('n', { kind: 'backup', asset: null })
+    expect(notificationLink(n)).toEqual({ to: '/me/backup' })
+  })
+
   it('story_kinds_open_story', () => {
     const cases = [
       notificationFixture('n', { kind: 'story', asset: null, story }),

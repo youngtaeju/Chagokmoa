@@ -4,6 +4,7 @@ use sqlx::PgPool;
 use tokio::sync::{Notify, OnceCell};
 
 use crate::{
+    backup::run::DbSteps,
     config::Config,
     error::AppResult,
     media::locks::DerivativeLocks,
@@ -28,6 +29,8 @@ pub struct AppState {
     pub push_wake: Arc<Notify>,
     /// 구독 주소 허용 목록 검사. 테스트에서 `false` 로 로컬 가짜 푸시 서버 허용.
     pub push_endpoint_check: bool,
+    /// 백업의 서버 버전 확인과 덤프. 테스트에서 가짜로 교체.
+    pub backup_db: DbSteps,
 }
 
 impl AppState {
@@ -42,6 +45,7 @@ impl AppState {
             vapid: Arc::new(OnceCell::new()),
             push_wake: Arc::new(Notify::new()),
             push_endpoint_check: true,
+            backup_db: DbSteps::default(),
         }
     }
 
