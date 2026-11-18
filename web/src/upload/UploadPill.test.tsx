@@ -51,6 +51,8 @@ async function renderShell(path = '/') {
     'GET /api/auth/sessions': () => json(200, { sessions: [] }),
     'GET /api/invites': () => json(200, { invites: [] }),
     'POST /api/auth/logout': () => json(204, null),
+    // 탭 이동 테스트의 앨범 화면 지연 로딩이 끝나면 나가는 요청.
+    'GET /api/albums': () => json(200, []),
   })
   const app = renderApp(path)
   await screen.findAllByText(settingsFixture.instance_name)

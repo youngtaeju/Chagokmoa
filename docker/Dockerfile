@@ -32,8 +32,10 @@ COPY --from=planner /src/server/recipe.json recipe.json
 RUN cargo chef cook --release --locked --recipe-path recipe.json
 COPY web/src/locales/ /src/web/src/locales/
 COPY server/ ./
+# target 차분이 이 레이어에 남아 CI 캐시에 쌓이지 않게 삭제. cook 레이어는 그대로.
 RUN cargo build --release --locked \
-    && cp target/release/chagokmoa /chagokmoa
+    && cp target/release/chagokmoa /chagokmoa \
+    && rm -rf target
 
 FROM debian:trixie-slim AS runtime
 # --no-install-recommends: libheif1 의 Recommends 인 x265(GPL) 플러그인 제외.
