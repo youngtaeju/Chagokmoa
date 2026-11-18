@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT current_setting('server_version_num')::int4 AS \"num!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "num!",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "52c71b51e0dbe4e3114dbd0d0a2ab3e319063594f84e7cc9f311f24ea721b8d5"
+}
