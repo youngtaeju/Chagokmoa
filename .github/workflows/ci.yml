@@ -159,6 +159,8 @@ jobs:
       # node_modules 는 위 단계(러너) 설치분 재사용. 스택은 --network host 로 localhost:18090.
       # 이미지 태그는 web/package.json 의 @playwright/test 버전과 함께 올림.
       - name: e2e
+        # 이미지 받기 정지 시 잡 제한(45분)까지 대기 방지. 정상 약 3분.
+        timeout-minutes: 15
         run: |
           docker run --rm --network host --ipc host \
             --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
