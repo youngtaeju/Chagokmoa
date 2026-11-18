@@ -11,7 +11,7 @@ use std::{
 use chagokmoa::{
     backup::{
         queries,
-        restic::Repo,
+        restic::{Repo, RepoState},
         run::{self, DbSteps, RunStatus, Trigger},
         settings::{self, BackupSettings, Remote},
     },
@@ -526,4 +526,50 @@ async fn mid_run_db_error_still_recorded(pool: PgPool) {
     .await
     .unwrap();
     assert_eq!(notified, 1);
+}
+
+#[sqlx::test]
+async fn empty_backup_dir_recreated_with_stored_key(pool: PgPool) {
+    let env = env(&pool).await;
+    write(&env.data().join("originals/2026/11/a.jpg"), b"photo-a");
+    // 원격에서 새 서버로 복구한 뒤 빈 백업 폴더 연결
+    let backup = env.state.config.backup_dir.clone();
+    std::fs::remove_dir_all(&backup).unwrap();
+    std::fs::create_dir(&backup).unwrap();
+
+    let id = run::run_once(&env.state, Trigger::Scheduled).await.unwrap();
+
+    let row = queries::get(&pool, id).await.unwrap().unwrap();
+    assert_eq!(row.status, RunStatus::Warning, "{:?}", row.error);
+    assert!(row.error.is_none());
+    let local = row.local.expect("local result");
+    assert_eq!(local["warning"], json!("local repository created"));
+    let snapshot_id = local["snapshot_id"].as_str().expect("snapshot id");
+    let repo = env.local_repo();
+    assert_eq!(repo.probe().await.unwrap(), RepoState::Restic);
+    let snapshots = repo.snapshots().await.unwrap();
+    assert_eq!(snapshots.len(), 1);
+    assert_eq!(snapshots[0].id, snapshot_id);
+
+    // 다음 실행은 경고 없이 성공
+    let id = run::run_once(&env.state, Trigger::Scheduled).await.unwrap();
+    let row = queries::get(&pool, id).await.unwrap().unwrap();
+    assert_eq!(row.status, RunStatus::Success, "{:?}", row.error);
+}
+
+#[sqlx::test]
+async fn missing_backup_dir_fails_without_creating(pool: PgPool) {
+    let env = env(&pool).await;
+    let backup = env.state.config.backup_dir.clone();
+    std::fs::remove_dir_all(&backup).unwrap();
+
+    let id = run::run_once(&env.state, Trigger::Scheduled).await.unwrap();
+
+    let row = queries::get(&pool, id).await.unwrap().unwrap();
+    assert_eq!(row.status, RunStatus::Failed);
+    let local = row.local.expect("local result");
+    assert!(local["error"].is_string());
+    assert!(local.get("warning").is_none());
+    assert!(row.error.unwrap().starts_with("local: "));
+    assert!(!backup.exists());
 }

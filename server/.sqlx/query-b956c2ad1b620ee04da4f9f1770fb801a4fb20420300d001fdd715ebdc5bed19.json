@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH s AS (\n             SELECT ($1::timestamptz AT TIME ZONE $2)::date AS today\n           ), t AS (\n             SELECT ((s.today + $3::time) AT TIME ZONE $2) AS at,\n                    ((s.today + 1 + $3::time) AT TIME ZONE $2) AS tomorrow\n             FROM s\n           )\n           SELECT CASE\n                    WHEN $1 < t.at OR NOT EXISTS (SELECT 1 FROM backup_runs WHERE started_at >= t.at)\n                    THEN t.at ELSE t.tomorrow\n                  END AS \"next!\"\n           FROM t",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "next!",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Text",
+        "Time"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "b956c2ad1b620ee04da4f9f1770fb801a4fb20420300d001fdd715ebdc5bed19"
+}

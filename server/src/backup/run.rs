@@ -1,5 +1,5 @@
 //! 백업 실행과 일정. 한 번에 하나(Postgres advisory lock, 서버와 CLI 공통).
-//! 순서: 서버 버전 확인 → 덤프 → 로컬(unlock, backup) → 원격(unlock, backup) → 보관 정책(주 1회 prune, check).
+//! 순서: 서버 버전 확인 → 덤프 → 로컬(빈 폴더면 init, unlock, backup) → 원격(unlock, backup) → 보관 정책(주 1회 prune, check).
 
 use std::{
     path::{Path, PathBuf},
@@ -9,15 +9,17 @@ use std::{
 use anyhow::Context;
 use chrono::{DateTime, Utc};
 use futures_util::future::BoxFuture;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sqlx::{PgPool, Postgres, pool::PoolConnection};
 use tokio::{sync::watch, task::JoinHandle};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 use super::{
     dump, queries,
-    restic::{BackupSummary, Repo, Retention},
+    restic::{self, BackupSummary, Repo, RepoState, Retention},
+    routes,
     settings::{self, BackupSettings},
 };
 use crate::{
@@ -36,8 +38,9 @@ const KEEP_RUNS: i64 = 100;
 /// 일정 확인 주기.
 const CHECK_INTERVAL: Duration = Duration::from_secs(60);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type, Serialize, ToSchema)]
 #[sqlx(type_name = "text", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum Trigger {
     Scheduled,
     Manual,
@@ -53,8 +56,9 @@ impl Trigger {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type, Serialize, ToSchema)]
 #[sqlx(type_name = "text", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum RunStatus {
     Running,
     Success,
@@ -64,8 +68,9 @@ pub enum RunStatus {
 }
 
 /// 진행 중 단계. `forget` 은 보관 정책과 prune, check.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type, Serialize, ToSchema)]
 #[sqlx(type_name = "text", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum Phase {
     Dump,
     Local,
@@ -101,8 +106,8 @@ impl Default for DbSteps {
 }
 
 /// 저장소별 결과. `backup_runs.local`, `remote` 에 JSON 으로.
-#[derive(Debug, Default, Serialize)]
-struct RepoReport {
+#[derive(Debug, Default, Clone, Serialize, Deserialize, ToSchema)]
+pub struct RepoReport {
     #[serde(skip_serializing_if = "Option::is_none")]
     snapshot_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -143,7 +148,7 @@ impl RepoReport {
 }
 
 /// 오류 문구. anyhow 는 원인 사슬까지.
-fn describe(err: &AppError) -> String {
+pub(super) fn describe(err: &AppError) -> String {
     match err {
         AppError::Internal(e) => format!("{e:#}"),
         other => other.to_string(),
@@ -175,15 +180,10 @@ pub struct Started {
     _lock: PoolConnection<Postgres>,
 }
 
-/// 설정 확인, 잠금, 기록 시작, 서버 버전 확인까지. 버전 불일치는 실패 기록과 알림 뒤 오류.
-pub async fn start(state: &AppState, trigger: Trigger) -> AppResult<Started> {
-    let settings: BackupSettings = settings::load(&state.pool).await?;
-    let Some(local) = settings.local_repo(&state.config) else {
-        return Err(AppError::conflict("backup.notConfigured"));
-    };
-    let remote = settings.remote_repo(&state.config);
-
-    let mut lock = state.pool.acquire().await?;
+/// 실행 잠금. 백업 실행과 저장소 만들기(설정 화면) 공용. 이미 잡혀 있으면 409 `backup.running`.
+/// 드롭 시 연결째 닫아 해제.
+pub(super) async fn try_lock(pool: &PgPool) -> AppResult<PoolConnection<Postgres>> {
+    let mut lock = pool.acquire().await?;
     // 세션 잠금이라 풀로 돌아가면 남음. 드롭(취소, 패닉 포함) 때 연결째 닫음.
     // 질의 전에 설정. 잠금 획득 직후 취소돼도 연결이 풀로 돌아가지 않게.
     lock.close_on_drop();
@@ -193,6 +193,18 @@ pub async fn start(state: &AppState, trigger: Trigger) -> AppResult<Started> {
     if !locked {
         return Err(AppError::conflict("backup.running"));
     }
+    Ok(lock)
+}
+
+/// 설정 확인, 잠금, 기록 시작, 서버 버전 확인까지. 버전 불일치는 실패 기록과 알림 뒤 오류.
+pub async fn start(state: &AppState, trigger: Trigger) -> AppResult<Started> {
+    let settings: BackupSettings = settings::load(&state.pool).await?;
+    let Some(local) = settings.local_repo(&state.config) else {
+        return Err(AppError::conflict("backup.notConfigured"));
+    };
+    let remote = settings.remote_repo(&state.config);
+
+    let lock = try_lock(&state.pool).await?;
 
     let interrupted = queries::mark_interrupted(&state.pool).await?;
     if interrupted > 0 {
@@ -309,7 +321,7 @@ impl Started {
         ];
         let tag = self.trigger.tag();
         queries::set_phase(&state.pool, id, Phase::Local).await?;
-        out.local = backup_repo(&self.local, &paths, tag).await;
+        out.local = backup_local(&self.local, &state.config.backup_dir, &paths, tag).await;
         if let (Some(repo), Some(report)) = (&self.remote, &mut out.remote) {
             queries::set_phase(&state.pool, id, Phase::Remote).await?;
             *report = backup_repo(repo, &paths, tag).await;
@@ -426,6 +438,36 @@ async fn backup_repo(repo: &Repo, paths: &[PathBuf], tag: &str) -> RepoReport {
         Ok(summary) => RepoReport::from_summary(summary),
         Err(e) => RepoReport::failed(repo, &e),
     }
+}
+
+/// 로컬 저장소 경고. 비밀값 없는 고정 문구.
+const LOCAL_CREATED: &str = "local repository created";
+
+/// 로컬 스냅숏. 연결된 백업 폴더가 비어 있으면 저장된 키로 저장소 생성 후 경고.
+/// 원격에서 새 서버로 복구, 디스크 교체 대비. 폴더 없음이나 쓰기 불가면 생성 없이 실패(컨테이너 레이어에 저장소 방지).
+async fn backup_local(repo: &Repo, dir: &Path, paths: &[PathBuf], tag: &str) -> RepoReport {
+    let created = match init_if_empty(repo, dir).await {
+        Ok(created) => created,
+        Err(e) => return RepoReport::failed(repo, &e),
+    };
+    let mut report = backup_repo(repo, paths, tag).await;
+    if created {
+        report.warning = Some(match report.warning.take() {
+            Some(w) => format!("{LOCAL_CREATED}; {w}"),
+            None => LOCAL_CREATED.to_owned(),
+        });
+    }
+    report
+}
+
+/// 쓰기 가능하고 빈 폴더면 init, 만들었으면 true. 실행 잠금 안이라 설정 화면 init 과 경합 없음.
+async fn init_if_empty(repo: &Repo, dir: &Path) -> AppResult<bool> {
+    if !routes::writable(dir).await || restic::local_state(dir).await? != RepoState::Empty {
+        return Ok(false);
+    }
+    repo.init().await?;
+    tracing::warn!("local backup repository was empty, created with stored key");
+    Ok(true)
 }
 
 /// 보관 정책. `prune` 이면 공간 회수와 무결성 확인까지.

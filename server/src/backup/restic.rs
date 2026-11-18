@@ -23,6 +23,7 @@ use tokio::{
     io::{AsyncBufRead, AsyncBufReadExt, BufReader},
     process::Command,
 };
+use utoipa::ToSchema;
 
 use super::{mask_location, split_url_password};
 use crate::error::{AppError, AppResult};
@@ -66,7 +67,8 @@ impl fmt::Debug for Repo {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum RepoState {
     /// 폴더 없음 또는 비어 있음(원격은 저장소 없음).
     Empty,
@@ -77,7 +79,7 @@ pub enum RepoState {
     WrongKey,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct Retention {
     pub daily: u32,
     pub weekly: u32,
@@ -527,6 +529,15 @@ impl Repo {
         self.run_ok(&["restore", snapshot, "--target", &target], None)
             .await
     }
+}
+
+/// 로컬 폴더 내용만으로 판정(restic 실행 없음). `Restic` 은 저장소 형태일 뿐 키 확인 아님.
+pub async fn local_state(dir: &Path) -> AppResult<RepoState> {
+    Ok(match local_layout(dir).await? {
+        Layout::Empty => RepoState::Empty,
+        Layout::Restic => RepoState::Restic,
+        Layout::Foreign => RepoState::Foreign,
+    })
 }
 
 enum Layout {

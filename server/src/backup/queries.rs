@@ -5,7 +5,7 @@ use serde_json::Value;
 use sqlx::PgExecutor;
 use uuid::Uuid;
 
-use super::run::{Phase, RunStatus, Trigger};
+use super::run::{LOCK_KEY, Phase, RunStatus, Trigger};
 use crate::error::AppResult;
 
 #[derive(Debug, Clone)]
@@ -45,6 +45,36 @@ pub async fn running(exec: impl PgExecutor<'_>) -> AppResult<Option<BackupRun>> 
            ORDER BY started_at DESC LIMIT 1"#
     )
     .fetch_optional(exec)
+    .await?)
+}
+
+/// 최근 실행 `limit` 개. 최신 순.
+pub async fn recent(exec: impl PgExecutor<'_>, limit: i64) -> AppResult<Vec<BackupRun>> {
+    Ok(sqlx::query_as!(
+        BackupRun,
+        r#"SELECT id, started_at, finished_at, trigger AS "trigger: Trigger",
+                  status AS "status: RunStatus", phase AS "phase: Phase", local, remote, error
+           FROM backup_runs ORDER BY started_at DESC, id DESC LIMIT $1"#,
+        limit
+    )
+    .fetch_all(exec)
+    .await?)
+}
+
+/// 실행 잠금을 어느 세션(서버, CLI)이든 보유 중이면 true. 잠금을 직접 잡지 않음(실행 시작과 경쟁 방지).
+/// bigint advisory lock 은 `pg_locks` 에 상위 32비트 classid, 하위 32비트 objid, objsubid 1.
+pub async fn lock_held(exec: impl PgExecutor<'_>) -> AppResult<bool> {
+    Ok(sqlx::query_scalar!(
+        r#"SELECT EXISTS (
+             SELECT 1 FROM pg_locks
+             WHERE locktype = 'advisory' AND granted AND objsubid = 1
+               AND database = (SELECT oid FROM pg_database WHERE datname = current_database())
+               AND classid = ($1::int8 >> 32)::oid
+               AND objid = ($1::int8 & 4294967295)::oid
+           ) AS "held!""#,
+        LOCK_KEY
+    )
+    .fetch_one(exec)
     .await?)
 }
 
@@ -155,6 +185,34 @@ pub(super) async fn due(
            SELECT $1 >= s.at AND NOT EXISTS (SELECT 1 FROM backup_runs WHERE started_at >= s.at)
              AS "due!"
            FROM s"#,
+        now,
+        timezone,
+        time
+    )
+    .fetch_one(exec)
+    .await?)
+}
+
+/// 다음 일정 시각. 오늘 예정 시각 전이거나 지났는데 아직 실행 전이면 오늘, 그 밖은 내일.
+pub async fn next_run(
+    exec: impl PgExecutor<'_>,
+    now: DateTime<Utc>,
+    timezone: &str,
+    time: NaiveTime,
+) -> AppResult<DateTime<Utc>> {
+    Ok(sqlx::query_scalar!(
+        r#"WITH s AS (
+             SELECT ($1::timestamptz AT TIME ZONE $2)::date AS today
+           ), t AS (
+             SELECT ((s.today + $3::time) AT TIME ZONE $2) AS at,
+                    ((s.today + 1 + $3::time) AT TIME ZONE $2) AS tomorrow
+             FROM s
+           )
+           SELECT CASE
+                    WHEN $1 < t.at OR NOT EXISTS (SELECT 1 FROM backup_runs WHERE started_at >= t.at)
+                    THEN t.at ELSE t.tomorrow
+                  END AS "next!"
+           FROM t"#,
         now,
         timezone,
         time
