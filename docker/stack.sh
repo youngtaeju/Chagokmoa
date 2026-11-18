@@ -49,7 +49,7 @@ stack_down() {
     [ -f "$WORK/stack.override.yml" ] || return 0
     compose down -v --remove-orphans >/dev/null 2>&1 || true
     # bind mount 디렉터리는 root·postgres 소유. 컨테이너 안에서 삭제.
-    docker run --rm --entrypoint rm -v "$WORK:/w" "$IMAGE" -rf /w/data /w/postgres >/dev/null 2>&1 || true
+    docker run --rm --entrypoint rm -v "$WORK:/w" "$IMAGE" -rf /w/data /w/postgres /w/backup >/dev/null 2>&1 || true
     rm -rf "$WORK"
 }
 
@@ -65,6 +65,12 @@ if [ "${BASH_SOURCE[0]}" = "$0" ]; then
         # 이전 실행 잔여물 정리. 항상 빈 DB 에서 시작.
         stack_down
         stack_write
+        # 백업 e2e 용 폴더. entrypoint 가 PUID 소유로 보정.
+        mkdir -p "$WORK/backup"
+        cat >>"$WORK/stack.override.yml" <<EOF
+    volumes:
+      - ./backup:/backup
+EOF
         # 기동 실패 시 로그 출력 후 정리.
         trap 'status=$?; if [ "$status" -ne 0 ]; then compose logs --no-color app >&2 || true; stack_down; fi' EXIT
         compose up -d --quiet-pull

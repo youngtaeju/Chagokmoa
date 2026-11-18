@@ -1319,3 +1319,25 @@ test('password_reset_link', async ({
     await close()
   }
 })
+
+test('backup_enable_and_run', async ({ ownerPage: page }) => {
+  await page.goto('/me/backup')
+  // 이미 켜진 상태(재시도)면 키 만들기 단계 생략.
+  const createKey = page.getByRole('button', { name: '복구 키 만들기' })
+  const runNow = page.getByRole('button', { name: '지금 백업' })
+  await expect(createKey.or(runNow)).toBeVisible()
+  if (await createKey.isVisible()) {
+    await createKey.click()
+    await page.getByLabel('복구 키를 안전한 곳에 적어 뒀어요').check()
+    await page.getByRole('button', { name: '백업 켜기' }).click()
+  }
+  await expect(page.getByRole('heading', { name: '백업 상태' })).toBeVisible()
+  // 재시도나 일정 실행으로 기록이 이미 있을 수 있어 클릭 전 개수 기준.
+  const runs = page
+    .getByRole('list', { name: '최근 기록' })
+    .getByRole('listitem')
+  const before = await runs.count()
+  await runNow.click()
+  await expect(runs).toHaveCount(before + 1, { timeout: 60_000 })
+  await expect(runs.first()).toContainText('성공', { timeout: 60_000 })
+})
