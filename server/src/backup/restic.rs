@@ -29,7 +29,7 @@ use super::{mask_location, split_url_password};
 use crate::error::{AppError, AppResult};
 
 /// 컨테이너마다 바뀌는 호스트 이름 대신 고정. 이전 스냅숏을 부모로 찾고 보관 정책 묶음도 하나.
-const HOST: &str = "chagokmoa";
+pub const HOST: &str = "chagokmoa";
 /// 접속 확인 수준(probe, init, unlock). 원격 재시도로 오래 멈추는 경우 대비.
 const QUICK_TIMEOUT: Duration = Duration::from_secs(120);
 /// 목록과 보관 정책. 원격 첫 조회는 캐시가 비어 느림.
@@ -106,6 +106,15 @@ pub struct Snapshot {
     pub paths: Vec<String>,
     #[serde(default, deserialize_with = "null_as_empty")]
     pub tags: Vec<String>,
+    /// restic 0.17 부터. 이전 버전은 None.
+    #[serde(default)]
+    pub summary: Option<SnapshotSummary>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SnapshotSummary {
+    pub total_files_processed: u64,
+    pub total_bytes_processed: u64,
 }
 
 fn null_as_empty<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<String>, D::Error> {

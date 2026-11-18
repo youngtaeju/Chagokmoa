@@ -381,9 +381,16 @@ fn dump_arguments() {
     let restore = dump::restore_command(url, Path::new("/x/db.dump"));
     let args: Vec<_> = restore.as_std().get_args().collect();
     assert_eq!(restore.as_std().get_program(), "pg_restore");
-    for flag in ["--clean", "--if-exists", "--no-owner", "/x/db.dump"] {
+    for flag in [
+        "--single-transaction",
+        "--exit-on-error",
+        "--no-owner",
+        "--no-privileges",
+        "/x/db.dump",
+    ] {
         assert!(args.contains(&OsStr::new(flag)), "{flag}");
     }
+    assert!(!args.contains(&OsStr::new("--clean")));
 
     // 비밀번호 없는 URL 은 그대로, PGPASSWORD 미설정
     let plain = dump::dump_command("postgres://u@h/db", Path::new("/x"));

@@ -3,6 +3,7 @@
 pub mod dump;
 pub mod queries;
 pub mod restic;
+pub mod restore;
 pub mod routes;
 pub mod run;
 pub mod settings;

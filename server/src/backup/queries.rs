@@ -78,6 +78,14 @@ pub async fn lock_held(exec: impl PgExecutor<'_>) -> AppResult<bool> {
     .await?)
 }
 
+/// 복구 직후. 남은 running 은 덤프 시점의 자기 실행(결과는 옛 서버에만).
+pub(super) async fn delete_running(exec: impl PgExecutor<'_>) -> AppResult<u64> {
+    let result = sqlx::query!("DELETE FROM backup_runs WHERE status = 'running'")
+        .execute(exec)
+        .await?;
+    Ok(result.rows_affected())
+}
+
 /// 잠금 보유 중에만 호출. 남은 running 은 중단된 이전 실행.
 pub(super) async fn mark_interrupted(exec: impl PgExecutor<'_>) -> AppResult<u64> {
     let result = sqlx::query!(

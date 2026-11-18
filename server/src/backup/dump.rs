@@ -1,8 +1,8 @@
 //! DB 덤프와 적용. `pg_dump`, `pg_restore` 하위 프로세스. 비밀번호는 `PGPASSWORD` 로만.
 
-use std::{ffi::OsString, path::Path, time::Duration};
+use std::{ffi::OsString, path::Path, process::Stdio, time::Duration};
 
-use anyhow::Context;
+use anyhow::{Context, anyhow};
 use sqlx::PgPool;
 use tokio::process::Command;
 
@@ -41,9 +41,16 @@ pub fn dump_command(database_url: &str, path: &Path) -> Command {
     cmd
 }
 
+/// 빈 스키마 대상. 한 트랜잭션, 첫 오류에서 중단. 소유자와 권한은 접속 사용자 기준(옛 서버 역할 이름과 무관).
 pub fn restore_command(database_url: &str, path: &Path) -> Command {
     let mut cmd = pg_command("pg_restore", database_url);
-    cmd.args(["--clean", "--if-exists", "--no-owner"]).arg(path);
+    cmd.args([
+        "--single-transaction",
+        "--exit-on-error",
+        "--no-owner",
+        "--no-privileges",
+    ])
+    .arg(path);
     cmd
 }
 
@@ -53,6 +60,49 @@ pub async fn to_file(database_url: &str, path: &Path) -> AppResult<()> {
 }
 
 pub async fn restore_from_file(database_url: &str, path: &Path) -> AppResult<()> {
-    run_with_timeout(restore_command(database_url, path), TIMEOUT).await?;
+    let out = restore_command(database_url, path)
+        .stdin(Stdio::null())
+        .kill_on_drop(true)
+        .output();
+    let out = tokio::time::timeout(TIMEOUT, out)
+        .await
+        .map_err(|_| anyhow!("pg_restore timed out after {}s", TIMEOUT.as_secs()))?
+        .context("pg_restore spawn failed")?;
+    if !out.status.success() {
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        return Err(anyhow!(
+            "pg_restore failed ({}): {}",
+            out.status,
+            error_line(&stderr)
+        )
+        .into());
+    }
     Ok(())
+}
+
+/// 실패 원인 줄. `--exit-on-error` 출력은 `pg_restore: error: ...` 뒤에 실패한 SQL 이 이어져 마지막 줄이 `);` 등.
+fn error_line(stderr: &str) -> &str {
+    stderr
+        .lines()
+        .find(|l| l.contains("error:"))
+        .or_else(|| stderr.lines().rev().find(|l| !l.trim().is_empty()))
+        .unwrap_or("")
+        .trim()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn picks_error_line() {
+        let stderr = "pg_restore: error: could not execute query: ERROR:  relation \"b\" already exists\n\
+                      Command was: CREATE TABLE public.b (\n    id integer\n);\n\n";
+        assert_eq!(
+            error_line(stderr),
+            "pg_restore: error: could not execute query: ERROR:  relation \"b\" already exists"
+        );
+        assert_eq!(error_line("warning only\nlast\n"), "last");
+        assert_eq!(error_line(""), "");
+    }
 }

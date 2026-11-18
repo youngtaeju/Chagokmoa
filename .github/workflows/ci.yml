@@ -135,6 +135,10 @@ jobs:
           { echo '```'; docker image ls chagokmoa:ci; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: 스모크
         run: bash docker/smoke.sh chagokmoa:ci
+      # 덤프와 복구 왕복은 이미지의 pg_dump 17 로(러너 클라이언트는 16).
+      - name: 백업과 복구 왕복
+        timeout-minutes: 10
+        run: bash docker/backup-smoke.sh chagokmoa:ci
 
   e2e:
     # docker job 이 채운 GHA 빌드 캐시 재사용. 같은 이미지 이중 빌드 방지.

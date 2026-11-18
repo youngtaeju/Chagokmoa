@@ -40,6 +40,22 @@ enum Cmd {
     },
     /// 지금 백업하고 결과 출력. 실패면 종료 코드 1
     Backup,
+    /// 백업 저장소의 스냅숏에서 DB 와 원본 복구, 파생물 재생성 작업 등록. 앱 중지 상태에서 실행.
+    /// 복구 키는 RESTIC_PASSWORD 또는 입력, 원격 인증값은 같은 이름의 환경 변수
+    Restore {
+        /// restic 저장소(절대 경로 또는 s3:, b2:, rest:, azure:, gs: 주소). 기본은 BACKUP_DIR(/backup)
+        #[arg(long, env = "RESTIC_REPOSITORY", hide_env_values = true)]
+        repository: Option<String>,
+        /// 스냅숏 id 또는 앞부분. 기본은 최신. 목록은 --list
+        #[arg(long)]
+        snapshot: Option<String>,
+        /// 스냅숏 목록만 출력하고 종료(DB 와 파일 변경 없음)
+        #[arg(long, conflicts_with_all = ["snapshot", "force"])]
+        list: bool,
+        /// 사용자나 사진이 있는 DB, 파일이 있는 originals 도 덮어씀(재확인 입력 필요)
+        #[arg(long)]
+        force: bool,
+    },
     /// OpenAPI 문서를 표준 출력으로 출력 (설정, DB 불필요)
     Openapi,
 }
@@ -176,6 +192,31 @@ async fn main() -> anyhow::Result<()> {
             if run.status == backup::run::RunStatus::Failed {
                 std::process::exit(1);
             }
+        }
+        Cmd::Restore {
+            repository,
+            snapshot,
+            list,
+            force,
+        } => {
+            let opts = backup::restore::Options {
+                database_url: config::database_url()?,
+                data_dir: config::data_dir(),
+                backup_dir: config::backup_dir(),
+                repository,
+                snapshot,
+                force,
+            };
+            if list {
+                backup::restore::list(&opts, &mut backup::restore::Terminal).await?;
+                println!("restore a snapshot with: restore --snapshot <ID>");
+                return Ok(());
+            }
+            let pool = backup::restore::connect(&opts.database_url).await?;
+            let steps = backup::restore::Steps::default();
+            backup::restore::run(&pool, &opts, steps, &mut backup::restore::Terminal).await?;
+            println!("restore complete. start the app: docker compose up -d");
+            println!("thumbnails are regenerated in the background after the app starts");
         }
         Cmd::Openapi => println!("{}", serde_json::to_string_pretty(&openapi())?),
     }

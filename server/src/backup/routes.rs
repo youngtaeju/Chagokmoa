@@ -338,6 +338,14 @@ pub fn validate_remote(repository: &str, env: &BTreeMap<String, String>) -> AppR
     })
 }
 
+/// 원격 주소 접두어의 허용 인증값 이름. 지원하지 않는 주소면 None.
+pub fn remote_env_names(repository: &str) -> Option<&'static [&'static str]> {
+    REMOTE_BACKENDS
+        .iter()
+        .find(|(prefix, _)| repository.trim().starts_with(prefix))
+        .map(|(_, names)| *names)
+}
+
 /// 복구 키가 있는 설정과 그 원격 저장소. 키 없으면 409.
 async fn remote_with_key(state: &AppState, req: &RemoteRequest) -> AppResult<(Remote, Repo)> {
     let remote = validate_remote(&req.repository, &req.env)?;

@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"count!\" FROM pg_catalog.pg_stat_activity\n           WHERE datname = current_database()\n             AND backend_type = 'client backend'\n             AND pid <> pg_backend_pid()\n             AND application_name IS DISTINCT FROM $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "29a5d106cd79fef72dec467736bc93bde55a552d236c06e3588e1d3c62dcfc18"
+}
