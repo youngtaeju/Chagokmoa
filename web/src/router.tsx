@@ -58,6 +58,10 @@ const PasswordPage = lazyRouteComponent(
   () => import('@/me/subPages'),
   'PasswordPage',
 )
+const BackupPage = lazyRouteComponent(
+  () => import('@/backup/BackupPage'),
+  'BackupPage',
+)
 const DevicesPage = lazyRouteComponent(
   () => import('@/me/subPages'),
   'DevicesPage',
@@ -489,6 +493,13 @@ const meInstanceRoute = createRoute({
   component: InstancePage,
 })
 
+const meBackupRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/me/backup',
+  beforeLoad: requireRole('owner', '/me'),
+  component: BackupPage,
+})
+
 // 모든 멤버 읽기.
 const albumsRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -603,6 +614,7 @@ const routeTree = rootRoute.addChildren([
       meNotificationsRoute,
       meAppearanceRoute,
       meInstanceRoute,
+      meBackupRoute,
       albumsRoute,
       favoritesRoute,
       videosRoute,

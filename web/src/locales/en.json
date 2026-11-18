@@ -695,6 +695,19 @@
     "updateAvailable": "A new version is available",
     "reload": "Reload"
   },
+  "backup": {
+    "regenTitle": "Rebuild derivatives",
+    "regenDesc": "Thumbnails and playback videos are rebuilt from the originals. Your original photos and videos stay untouched.",
+    "regenButton": "Rebuild",
+    "regenConfirmTitle": "Rebuild derivatives?",
+    "regenConfirm": "You can build only the missing ones, or rebuild everything. Rebuilding everything takes longer with more photos.",
+    "regenMissing": "Missing only",
+    "regenAll": "Everything",
+    "regenRemaining": "Rebuilding, {{count}} left.",
+    "regenDone": "All done.",
+    "regenFailed_one": "{{count}} item could not be rebuilt.",
+    "regenFailed_other": "{{count}} items could not be rebuilt."
+  },
   "me": {
     "account": "Account",
     "app": "App",
@@ -708,6 +721,7 @@
     "appearance": "Display & language",
     "trash": "Trash",
     "instance": "Home settings",
+    "backup": "Backup",
     "logout": "Sign out",
     "version": "App version {{version}}",
     "back": "Back"

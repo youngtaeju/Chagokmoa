@@ -42,7 +42,7 @@ describe('MePage', () => {
       ],
       owner: [
         [ko.me.photos, [ko.me.trash]],
-        [ko.me.home, [ko.me.family, ko.me.instance]],
+        [ko.me.home, [ko.me.family, ko.me.instance, ko.me.backup]],
         [ko.me.account, [ko.me.profile, ko.me.password, ko.me.devices]],
         [ko.me.app, [ko.me.notifications, ko.me.appearance]],
       ],
@@ -137,6 +137,13 @@ describe('MePage', () => {
       expect(router.state.location.pathname).toBe('/me')
     })
     expect(window.history.length).toBe(length)
+  })
+
+  it('backup_page_owner_only', async () => {
+    const { router } = renderMe('guardian', '/me/backup')
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/me')
+    })
   })
 
   it('instance_page_owner_only', async () => {

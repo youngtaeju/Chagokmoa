@@ -694,6 +694,18 @@
     "updateAvailable": "새 버전이 있어요",
     "reload": "새로고침"
   },
+  "backup": {
+    "regenTitle": "파생물 다시 만들기",
+    "regenDesc": "썸네일과 재생용 영상을 원본에서 다시 만들어요. 사진과 영상 원본은 그대로예요.",
+    "regenButton": "다시 만들기",
+    "regenConfirmTitle": "파생물을 다시 만들까요?",
+    "regenConfirm": "없는 것만 만들거나, 전부 새로 만들 수 있어요. 전부 만들면 사진이 많을수록 오래 걸려요.",
+    "regenMissing": "없는 것만",
+    "regenAll": "전부",
+    "regenRemaining": "남은 항목 {{count}}개를 만드는 중이에요.",
+    "regenDone": "모두 만들었어요.",
+    "regenFailed_other": "{{count}}개는 만들지 못했어요."
+  },
   "me": {
     "account": "계정",
     "app": "앱",
@@ -707,6 +719,7 @@
     "appearance": "화면과 언어",
     "trash": "휴지통",
     "instance": "우리 집 설정",
+    "backup": "백업",
     "logout": "로그아웃",
     "version": "앱 버전 {{version}}",
     "back": "뒤로"
