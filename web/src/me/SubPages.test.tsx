@@ -6,6 +6,7 @@ import { json, mockFetch } from '@/test/fetch'
 import {
   apiError,
   babyFixture,
+  backupStatusFixture,
   emptyFeedRoutes,
   settingsFixture,
   userFixture,
@@ -322,6 +323,7 @@ describe('backup page', () => {
     let polls = 0
     const { user } = renderPage(
       {
+        'GET /api/backup': () => json(200, backupStatusFixture()),
         'GET /api/derivatives/regenerate': () => {
           polls += 1
           return json(200, {
@@ -352,6 +354,7 @@ describe('backup page', () => {
     let polls = 0
     const { user } = renderPage(
       {
+        'GET /api/backup': () => json(200, backupStatusFixture()),
         'GET /api/derivatives/regenerate': () => {
           polls += 1
           return json(200, {
@@ -376,6 +379,7 @@ describe('backup page', () => {
     let posted: unknown = null
     const { user } = renderPage(
       {
+        'GET /api/backup': () => json(200, backupStatusFixture()),
         'GET /api/derivatives/regenerate': () =>
           json(200, { remaining: 0, failed: 0 }),
         'POST /api/derivatives/regenerate': async (req) => {

@@ -1,5 +1,6 @@
 import { useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useMe } from '@/auth/session'
 import { FormError } from '@/components/Field'
 import { Switch } from '@/components/ui/switch'
 import { MeSubPage } from '@/me/MeSubPage'
@@ -7,6 +8,8 @@ import { usePushDevice } from './usePushDevice'
 import { useSetPushPref, usePushPrefs, type PushKind } from './usePushPrefs'
 
 const KINDS: PushKind[] = ['upload', 'comment', 'mention', 'story', 'milestone']
+// 백업 실패 알림은 소유자만 받음.
+const OWNER_KINDS: PushKind[] = [...KINDS, 'backup']
 
 const ROW = 'flex min-h-14 items-center gap-3 px-4 text-[15px]'
 
@@ -87,9 +90,10 @@ function KindsGroup() {
   const prefs = usePushPrefs()
   const set = useSetPushPref()
   const id = useId()
+  const kinds = useMe().user?.role === 'owner' ? OWNER_KINDS : KINDS
   return (
     <Group title={t('push.kinds')}>
-      {KINDS.map((k) => (
+      {kinds.map((k) => (
         <div key={k} className={ROW}>
           <span id={`${id}-${k}`} className="flex-1">
             {t(`push.kind.${k}`)}

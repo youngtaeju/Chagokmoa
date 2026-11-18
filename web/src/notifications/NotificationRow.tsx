@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
+import IconBackup from '~icons/material-symbols/backup-outline-rounded'
 import type { AssetSummary, AppNotification, User } from '@/api/types'
 import { relativeTime } from '@/comments/relativeTime'
 import { toSegments } from '@/comments/mentions'
@@ -91,7 +92,7 @@ function Thumb({ a }: { a: AssetSummary }) {
   )
 }
 
-// 행동자 첫 글자, 문장, 상대 시각, 대상 썸네일. 새 줄은 옅은 살구 바탕과 왼쪽 점.
+// 행동자 첫 글자(백업은 아이콘), 문장, 상대 시각, 대상 썸네일. 새 줄은 옅은 살구 바탕과 왼쪽 점.
 export function NotificationRow({
   n,
   isNew,
@@ -130,7 +131,12 @@ export function NotificationRow({
         aria-hidden
         className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-sm font-bold text-accent-ink"
       >
-        {Array.from(n.actor.display_name)[0] ?? '?'}
+        {/* 백업은 행동자가 받는 소유자 자신이라 첫 글자 대신 아이콘. */}
+        {n.kind === 'backup' ? (
+          <IconBackup className="size-5" />
+        ) : (
+          (Array.from(n.actor.display_name)[0] ?? '?')
+        )}
       </span>
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="line-clamp-2 text-sm break-words">

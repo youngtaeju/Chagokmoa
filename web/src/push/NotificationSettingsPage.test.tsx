@@ -1,5 +1,6 @@
 import { cleanup, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Role } from '@/api/types'
 import { initI18n } from '@/i18n'
 import ko from '@/locales/ko.json'
 import { json, mockFetch } from '@/test/fetch'
@@ -22,15 +23,19 @@ const prefs = {
   mention: false,
   story: true,
   milestone: true,
+  backup: true,
 }
 
-function render(extra: Parameters<typeof mockFetch>[0] = {}) {
+function render(
+  extra: Parameters<typeof mockFetch>[0] = {},
+  role: Role = 'owner',
+) {
   const patches: unknown[] = []
   // 서버처럼 저장값 유지.
   let saved = { ...prefs }
   mockFetch({
     ...emptyFeedRoutes,
-    'GET /api/auth/me': () => json(200, { user: userFixture('owner') }),
+    'GET /api/auth/me': () => json(200, { user: userFixture(role) }),
     'GET /api/settings': () => json(200, settingsFixture),
     'GET /api/push/prefs': () => json(200, saved),
     'PATCH /api/push/prefs': async (req) => {
@@ -199,6 +204,33 @@ describe('NotificationSettingsPage', () => {
     await waitFor(() => {
       expect(comment).toHaveAttribute('aria-checked', 'true')
     })
+  })
+
+  // 백업 실패 알림은 소유자만 받음.
+  it('backup_kind_owner_only', async () => {
+    installPush({ current: null })
+    const { user, patches } = render()
+    const backup = await screen.findByRole('switch', {
+      name: ko.push.kind.backup,
+    })
+    await waitFor(() => {
+      expect(backup).toHaveAttribute('aria-checked', 'true')
+    })
+    await user.click(backup)
+    await waitFor(() => {
+      expect(backup).toHaveAttribute('aria-checked', 'false')
+    })
+    expect(patches).toEqual([{ backup: false }])
+    cleanup()
+
+    installPush({ current: null })
+    render({}, 'guardian')
+    expect(
+      await screen.findByRole('switch', { name: ko.push.kind.comment }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('switch', { name: ko.push.kind.backup }),
+    ).toBeNull()
   })
 
   // 앞 PATCH 응답이 늦게 와도 뒤 변경을 덮지 않음.
