@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # 주 1회 CI 이미지 보안 갱신(같은 태그 재빌드) 겸 전체 검사.
+  schedule:
+    - cron: '23 18 * * 0'
 
 permissions:
   contents: read
@@ -16,6 +19,54 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # server 잡 전용 빌드 이미지. docker/ci.Dockerfile 내용 해시 태그가 없을 때만 빌드.
+  # 같은 PR 에서 목록을 바꿔도 그 PR 의 server 잡이 새 이미지 사용.
+  ci-image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.tag.outputs.image }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: 태그 계산
+        id: tag
+        run: |
+          hash="$(sha256sum docker/ci.Dockerfile | cut -c1-12)"
+          echo "image=ghcr.io/${{ github.repository_owner }}/chagokmoa-ci:sha-${hash}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # 예약 실행은 항상 다시 빌드(기반 이미지와 Debian 보안 갱신). 실패해도 기존 태그는 그대로.
+      - name: 태그 존재 확인
+        id: exists
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ] \
+            && docker manifest inspect "${{ steps.tag.outputs.image }}" >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: docker/setup-buildx-action@v4
+        if: steps.exists.outputs.found != 'true'
+      - name: 빌드와 push
+        if: steps.exists.outputs.found != 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: docker
+          file: docker/ci.Dockerfile
+          platforms: linux/amd64
+          push: true
+          pull: ${{ github.event_name == 'schedule' }}
+          no-cache: ${{ github.event_name == 'schedule' }}
+          tags: ${{ steps.tag.outputs.image }}
+          cache-from: type=gha,scope=ci-image
+          cache-to: type=gha,scope=ci-image,mode=max
+
   server:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
