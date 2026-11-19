@@ -122,6 +122,36 @@ NAS 공유 폴더 마운트(NFS, SMB 등)에서는 소유권 변경이 거부될
 sudo chown 1000:1000 /volume1/backup/chagokmoa   # .env 의 PUID:PGID
 ```
 
+#### 시놀로지 공유 폴더
+
+시놀로지 공유 폴더에는 기본으로 ACL(Windows 방식 접근 권한)이 걸려 있습니다. ACL 이 있는 폴더는 소유자와 일반 권한보다 ACL 이 우선하므로, 컨테이너가 기동할 때 소유권을 `PUID:PGID` 로 맞춰도 쓰기가 거부될 수 있습니다. `PUID`(예: 1000)는 DSM 사용자가 아닌 경우가 많아 DSM 화면의 공유 폴더 권한에서 고를 수도 없습니다.
+
+증상은 다음과 같습니다.
+
+- 백업 화면에 "백업 폴더가 연결되지 않았어요" 가 계속 표시됩니다.
+- 컨테이너 안에서 `/backup` 이 `d---------` 로 보이고 파일을 만들 수 없습니다.
+
+```bash
+docker compose exec app sh -c 'ls -ldn /backup'
+docker compose exec -u 1000:1000 app sh -c 'touch /backup/.t && rm /backup/.t && echo WRITE_OK'
+sudo synoacltool -get /volume1/backup/chagokmoa
+```
+
+백업 전용 하위 폴더 하나만 ACL 을 지우고 일반 리눅스 권한으로 바꿉니다. 공유 폴더 전체가 아니라 앱이 쓰는 하위 폴더만 바꿉니다.
+
+```bash
+sudo synoacltool -del /volume1/backup/chagokmoa
+sudo chown 1000:1000 /volume1/backup/chagokmoa   # .env 의 PUID:PGID
+sudo chmod 700 /volume1/backup/chagokmoa
+ls -ldn /volume1/backup/chagokmoa                # drwx------ 1000 1000, 끝에 + 가 없어야 합니다
+```
+
+`WRITE_OK` 가 나오면 앱을 다시 시작하지 않고 백업 화면을 새로 고치면 됩니다.
+
+- 권한이 `700` 이므로 File Station 에서 일반 사용자 계정으로는 이 폴더 안을 볼 수 없습니다. 백업 내용은 restic 저장소라 직접 열어 볼 일은 거의 없습니다.
+- Hyper Backup 은 시스템 권한으로 실행되므로 이 폴더를 그대로 외부로 보낼 수 있습니다.
+- 다른 방법으로 `.env` 의 `PUID`/`PGID` 를 DSM 사용자의 uid, gid(`id <사용자명>` 으로 확인)로 바꿀 수 있습니다. 이 경우 다음 기동 때 `./data` 전체의 소유자도 바뀝니다.
+
 폴더가 연결되지 않았거나 쓸 수 없으면 백업 화면에서 켤 수 없고, compose 설정 안내가 표시됩니다.
 
 compose 의 `hostname: chagokmoa` 는 그대로 두십시오. 컨테이너를 다시 만들어도 이름이 같아서, 중단된 이전 백업이 남긴 restic 잠금을 다음 실행이 대부분 바로 정리합니다(그렇지 않은 잠금도 30분이 지나면 정리합니다).
