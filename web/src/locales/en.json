@@ -421,6 +421,13 @@
       "notFound": "The baby could not be found.",
       "orderMismatch": "The order doesn't match the current list. Please refresh."
     },
+    "mail": {
+      "notConfigured": "Mail isn't set up yet.",
+      "sendFailed": "Couldn't send the mail. {{message}}",
+      "invalidAddress": "The email address isn't valid.",
+      "hostRequired": "Enter the SMTP server.",
+      "invalidPort": "The port must be between 1 and 65535."
+    },
     "backup": {
       "notConfigured": "Backup isn't set up yet.",
       "running": "A backup is already running. Try again after it finishes.",
@@ -713,6 +720,36 @@
     "updateAvailable": "A new version is available",
     "reload": "Reload"
   },
+  "mail": {
+    "service": "Mail service",
+    "presetGmail": "Gmail",
+    "presetNaver": "Naver",
+    "presetCustom": "Custom",
+    "hintGmail": "Turn on 2-step verification on your Google account, then enter an app password. The sender address must be that Gmail address.",
+    "hintNaver": "Turn on SMTP in Naver Mail settings. If you use 2-step verification, enter an app password.",
+    "host": "SMTP server",
+    "port": "Port",
+    "security": "Security",
+    "security_starttls": "STARTTLS",
+    "security_tls": "TLS",
+    "security_none": "None",
+    "noneWarn": "Mail is sent without encryption. Only use this for a mail server on the same network.",
+    "username": "Username",
+    "password": "Password",
+    "passwordSet": "Set. Enter only to change",
+    "fromAddress": "Sender address",
+    "saved": "Mail settings saved",
+    "testTitle": "Test mail",
+    "testHint": "Sends with the saved settings.",
+    "testTo": "Recipient",
+    "testSend": "Send",
+    "testSent": "Test mail sent",
+    "delete": "Delete mail settings",
+    "deleteTitle": "Delete mail settings?",
+    "deleteConfirm": "The saved SMTP server and password will be removed. Mail features stay off until you set them up again.",
+    "deleteAction": "Delete",
+    "deleted": "Mail settings deleted"
+  },
   "backup": {
     "regenTitle": "Rebuild derivatives",
     "regenDesc": "Thumbnails and playback videos are rebuilt from the originals. Your original photos and videos stay untouched.",
@@ -842,6 +879,7 @@
     "general": "General",
     "media": "Media processing",
     "backup": "Backup",
+    "mail": "Mail",
     "logout": "Sign out",
     "version": "App version {{version}}",
     "back": "Back"
