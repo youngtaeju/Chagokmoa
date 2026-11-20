@@ -167,7 +167,7 @@ describe('BabyProfilePage', () => {
     ])
   })
 
-  // 나 화면과 같은 규칙: 구역 사이 실선.
+  // 설정 화면과 같은 규칙: 구역 사이 실선.
   it('sections_divided_by_line', async () => {
     renderBabies(`/babies/${SKY.id}`, [SKY])
     for (const name of ['개월별 앨범', '성장', '마일스톤']) {

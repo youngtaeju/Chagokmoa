@@ -24,7 +24,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { MeSubPage } from '@/me/MeSubPage'
+import { SubPage } from '@/components/SubPage'
 import { milestonesKeyRoot } from '@/milestones/useMilestones'
 import { useSettings } from '@/settings/useSettings'
 import { babiesKey } from '@/timeline/useBabies'
@@ -172,7 +172,7 @@ export function TrashPage() {
   )
 
   return (
-    <MeSubPage title={t('nav.trash')} actions={menu}>
+    <SubPage title={t('nav.trash')} actions={menu}>
       {days != null && (
         <p className="text-sm text-muted-foreground">
           {days === 0
@@ -325,6 +325,6 @@ export function TrashPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </MeSubPage>
+    </SubPage>
   )
 }

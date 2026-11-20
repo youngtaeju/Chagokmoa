@@ -208,7 +208,7 @@ describe('NotificationsPage', () => {
     const sentence = '오늘 백업이 2번 실패했어요. 백업 화면에서 확인해 주세요'
     await screen.findByText(sentence)
     const row = rowOf(sentence)
-    expect(row).toHaveAttribute('href', '/me/backup')
+    expect(row).toHaveAttribute('href', '/settings/backup')
     expect(within(row).queryByText('아')).toBeNull()
     expect(row.querySelector('svg')).not.toBeNull()
   })

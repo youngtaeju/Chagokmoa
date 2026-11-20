@@ -316,7 +316,7 @@ describe('UploadPill', () => {
   it('logout_hides_pill', async () => {
     uploadStore.startRun()
     uploadStore.put(item('f1', { status: 'uploading', progress: 0.4 }))
-    const { user, router } = await renderShell('/me')
+    const { user, router } = await renderShell('/settings')
     expect(pill('1개 올리는 중 · 40%')).toBeInTheDocument()
     await user.click(await screen.findByRole('button', { name: ko.nav.logout }))
     await waitFor(() => {

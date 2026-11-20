@@ -124,10 +124,10 @@ export function AppShell() {
     from: '/authed/shell/babies/$id/age/$age',
     shouldThrow: false,
   })
-  // 나 탭 하위 화면(MeSubPage, 가족 포함), 달력, 알림, 앨범 탭과 그 하위 화면, 성장 기록 목록, 마일스톤 상세, 이야기 화면(쓰기, 상세, 고치기)은 자체 머리글. 셸 머리글은 오프라인 배너만.
+  // 설정 탭 하위 화면(SubPage, 가족 포함), 달력, 알림, 앨범 탭과 그 하위 화면, 성장 기록 목록, 마일스톤 상세, 이야기 화면(쓰기, 상세, 고치기)은 자체 머리글. 셸 머리글은 오프라인 배너만.
   const ownHeader = useRouterState({
     select: (s) =>
-      /^\/me\/[^/]/.test(s.location.pathname) ||
+      /^\/settings\/[^/]/.test(s.location.pathname) ||
       s.location.pathname === '/family' ||
       s.location.pathname === '/calendar' ||
       s.location.pathname === '/notifications' ||

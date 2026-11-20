@@ -8,6 +8,7 @@ import {
   apiError,
   assetFixture,
   babyFixture,
+  backupStatusFixture,
   emptyFeedRoutes,
   settingsFixture,
   userFixture,
@@ -35,6 +36,9 @@ function mockApp(role: Role) {
     'GET /api/favorites': () => json(200, { items: [], next_cursor: null }),
     'GET /api/assets': () => json(200, { items: [], next_cursor: null }),
     'GET /api/assets/a1': () => json(200, assetFixture('a1')),
+    'GET /api/backup': () => json(200, backupStatusFixture()),
+    'GET /api/derivatives/regenerate': () =>
+      json(200, { remaining: 0, failed: 0 }),
   })
 }
 
@@ -42,10 +46,14 @@ describe('router', () => {
   it.each([
     ['/photo/a1?baby=b1', '/photos/a1?baby=b1'],
     ['/members', '/family'],
-    ['/settings', '/me'],
     ['/upload', '/'],
-    ['/trash', '/me/trash'],
-  ])('legacy_paths_redirect %s', async (from, to) => {
+    ['/trash', '/settings/trash'],
+    ['/me', '/settings'],
+    ['/me/profile', '/settings/profile'],
+    ['/me/trash', '/settings/trash'],
+    ['/me/backup', '/settings/backup'],
+    ['/me/instance', '/settings/general'],
+  ])('legacy_me_paths_redirect %s', async (from, to) => {
     mockApp('owner')
     const { router } = renderApp('/')
     await screen.findAllByText(settingsFixture.instance_name)
@@ -79,9 +87,9 @@ describe('router', () => {
 
   it('legacy_path_direct_entry_replaced', async () => {
     mockApp('owner')
-    const { router } = renderApp('/settings')
+    const { router } = renderApp('/me')
     await waitFor(() => {
-      expect(router.state.location.href).toBe('/me')
+      expect(router.state.location.href).toBe('/settings')
     })
     expect(router.history.length).toBe(1)
   })
@@ -99,13 +107,13 @@ describe('router', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('me_trash_guardian_only', async () => {
+  it('settings_trash_guardian_only', async () => {
     mockApp('guardian')
-    const { router } = renderApp('/me/trash')
+    const { router } = renderApp('/settings/trash')
     expect(
       await screen.findByRole('heading', { name: ko.nav.trash }),
     ).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/me/trash')
+    expect(router.state.location.pathname).toBe('/settings/trash')
   })
 
   // 마지막 본 아기 없으면 대표 아기. 있으면 마지막 본 아기.
@@ -160,9 +168,11 @@ describe('router', () => {
       'GET /api/auth/me': () => apiError(401, 'auth.required'),
       'GET /api/auth/status': () => json(200, { signup_open: false }),
     })
-    const { router } = renderApp('/me/trash')
+    const { router } = renderApp('/settings/trash')
     await waitFor(() => {
-      expect(router.state.location.href).toBe('/login?redirect=%2Fme%2Ftrash')
+      expect(router.state.location.href).toBe(
+        '/login?redirect=%2Fsettings%2Ftrash',
+      )
     })
   })
 })

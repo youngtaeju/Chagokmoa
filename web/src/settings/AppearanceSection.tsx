@@ -19,7 +19,7 @@ const PREVIEW: Record<ThemePref, { page: string; bar: string }> = {
 
 const THEMES = ['system', 'light', 'dark'] as const
 
-// 나 화면과 같은 규칙: 그룹 위 실선, 진한 라벨.
+// 설정 화면과 같은 규칙: 그룹 위 실선, 진한 라벨.
 function Group({
   title,
   children,

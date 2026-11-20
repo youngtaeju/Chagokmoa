@@ -4,16 +4,16 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 
-// 나 탭, 앨범 탭 하위 화면, 알림 화면 공통 틀. 셸 머리글을 대신해 뒤로(기록 있으면 되돌아가기, 직접 진입이면 backTo) + 제목 + 오른쪽 actions.
-export function MeSubPage({
+// 설정 탭, 앨범 탭 하위 화면, 알림 화면 공통 틀. 셸 머리글을 대신해 뒤로(기록 있으면 되돌아가기, 직접 진입이면 backTo) + 제목 + 오른쪽 actions.
+export function SubPage({
   title,
   actions,
-  backTo = '/me',
+  backTo = '/settings',
   children,
 }: {
   title: string
   actions?: ReactNode
-  backTo?: '/me' | '/albums' | '/'
+  backTo?: '/settings' | '/albums' | '/'
   children: ReactNode
 }) {
   const { t } = useTranslation()

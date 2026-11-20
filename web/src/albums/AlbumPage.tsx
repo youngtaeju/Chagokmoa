@@ -29,7 +29,7 @@ import {
 import { errorMessage } from '@/i18n'
 import { formatDate, formatMonthDay } from '@/lib/dates'
 import { cn } from '@/lib/utils'
-import { MeSubPage } from '@/me/MeSubPage'
+import { SubPage } from '@/components/SubPage'
 import { useBrowserOnline } from '@/pwa/OfflineBanner'
 import { useSettings } from '@/settings/useSettings'
 import { AssetGrid } from '@/timeline/AssetGrid'
@@ -286,7 +286,7 @@ export function AlbumPage() {
   const meta = a ? metaLine(t, i18n.language, a) : ''
 
   return (
-    <MeSubPage
+    <SubPage
       title={a?.name ?? t('albums.title')}
       backTo="/albums"
       actions={
@@ -379,6 +379,6 @@ export function AlbumPage() {
           )}
         </>
       )}
-    </MeSubPage>
+    </SubPage>
   )
 }

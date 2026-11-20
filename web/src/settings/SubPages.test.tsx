@@ -42,7 +42,7 @@ function renderPage(
   {
     role = 'guardian',
     settings = settingsFixture,
-    path = '/me/profile',
+    path = '/settings/profile',
   }: { role?: Role; settings?: Settings; path?: string } = {},
 ) {
   mockFetch({
@@ -62,7 +62,7 @@ describe('me sub pages', () => {
         'POST /api/users/me/password': () =>
           apiError(401, 'auth.invalidCredentials'),
       },
-      { path: '/me/password' },
+      { path: '/settings/password' },
     )
     await user.type(await screen.findByLabelText('현재 비밀번호'), 'wrong-pass')
     await user.type(screen.getByLabelText('새 비밀번호'), 'new-password-1')
@@ -71,13 +71,13 @@ describe('me sub pages', () => {
     expect(
       await screen.findByText('현재 비밀번호가 맞지 않아요.'),
     ).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/me/password')
+    expect(router.state.location.pathname).toBe('/settings/password')
   })
 
   it('password_change_invalidates_sessions', async () => {
     const { user, queryClient } = renderPage(
       { 'POST /api/users/me/password': () => json(204, null) },
-      { path: '/me/password' },
+      { path: '/settings/password' },
     )
     // 서버가 다른 세션을 지우므로 목록 캐시 무효화.
     queryClient.setQueryData(['sessions'], { sessions: [CURRENT, OTHER] })
@@ -96,7 +96,7 @@ describe('me sub pages', () => {
     const spy = vi.spyOn(Intl, 'supportedValuesOf').mockImplementation(() => {
       throw new RangeError('unsupported')
     })
-    renderPage({}, { role: 'owner', path: '/me/instance' })
+    renderPage({}, { role: 'owner', path: '/settings/general' })
     const select = await screen.findByLabelText('시간대')
     expect(within(select).getAllByRole('option')).toHaveLength(1)
     spy.mockRestore()
@@ -113,7 +113,7 @@ describe('me sub pages', () => {
           })
         },
       },
-      { path: '/me/appearance' },
+      { path: '/settings/appearance' },
     )
     const group = await screen.findByRole('radiogroup', { name: '언어' })
     expect(within(group).getByRole('radio', { name: '한국어' })).toBeChecked()
@@ -125,7 +125,7 @@ describe('me sub pages', () => {
   })
 
   it('theme_change_applies', async () => {
-    const { user } = renderPage({}, { path: '/me/appearance' })
+    const { user } = renderPage({}, { path: '/settings/appearance' })
     const group = await screen.findByRole('radiogroup', { name: '테마' })
     expect(
       within(group)
@@ -160,7 +160,7 @@ describe('me sub pages', () => {
   })
 
   it('instance_page_renders_for_owner', async () => {
-    renderPage({}, { role: 'owner', path: '/me/instance' })
+    renderPage({}, { role: 'owner', path: '/settings/general' })
     expect(
       await screen.findByRole('heading', { name: '우리 집 설정' }),
     ).toBeInTheDocument()
@@ -177,7 +177,7 @@ describe('me sub pages', () => {
       },
       {
         role: 'owner',
-        path: '/me/instance',
+        path: '/settings/general',
         settings: { ...settingsFixture, trash_retention_days: 14 },
       },
     )
@@ -200,7 +200,7 @@ describe('me sub pages', () => {
     // 아기 1명: 고르기 없음.
     const one = renderPage(
       { 'GET /api/babies': () => json(200, [SKY]) },
-      { role: 'owner', path: '/me/instance' },
+      { role: 'owner', path: '/settings/general' },
     )
     await screen.findByLabelText('휴지통 보관 일수')
     await waitFor(() => {
@@ -226,7 +226,7 @@ describe('me sub pages', () => {
           return json(200, current)
         },
       },
-      { role: 'owner', path: '/me/instance' },
+      { role: 'owner', path: '/settings/general' },
     )
     const picker = await screen.findByLabelText('대표 아기')
     expect(picker).toHaveValue(SKY.id)
@@ -261,7 +261,7 @@ describe('me sub pages', () => {
           return json(200, { ...settingsFixture, trash_retention_days: 7 })
         },
       },
-      { role: 'owner', path: '/me/instance' },
+      { role: 'owner', path: '/settings/general' },
     )
     await screen.findByLabelText('대표 아기')
     const input = screen.getByLabelText('휴지통 보관 일수')
@@ -281,7 +281,7 @@ describe('me sub pages', () => {
         'GET /api/auth/sessions': () =>
           json(200, { sessions: [CURRENT, A, B] }),
       },
-      { path: '/me/devices' },
+      { path: '/settings/devices' },
     )
     const buttons = await screen.findAllByRole('button', {
       name: /^Firefox 로그아웃/,
@@ -304,7 +304,7 @@ describe('me sub pages', () => {
           return json(204, null)
         },
       },
-      { path: '/me/devices' },
+      { path: '/settings/devices' },
     )
     await screen.findByText('Chrome')
     expect(
@@ -336,7 +336,7 @@ describe('backup page', () => {
           return json(200, { queued: 2 })
         },
       },
-      { role: 'owner', path: '/me/backup' },
+      { role: 'owner', path: '/settings/backup' },
     )
     await user.click(await screen.findByRole('button', { name: '다시 만들기' }))
     const dialog = await screen.findByRole('alertdialog')
@@ -364,7 +364,7 @@ describe('backup page', () => {
         },
         'POST /api/derivatives/regenerate': () => json(200, { queued: 2 }),
       },
-      { role: 'owner', path: '/me/backup' },
+      { role: 'owner', path: '/settings/backup' },
     )
     await user.click(await screen.findByRole('button', { name: '다시 만들기' }))
     const dialog = await screen.findByRole('alertdialog')
@@ -387,7 +387,7 @@ describe('backup page', () => {
           return json(200, { queued: 0 })
         },
       },
-      { role: 'owner', path: '/me/backup' },
+      { role: 'owner', path: '/settings/backup' },
     )
     await user.click(await screen.findByRole('button', { name: '다시 만들기' }))
     await user.click(await screen.findByRole('button', { name: '취소' }))

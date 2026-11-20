@@ -4,7 +4,7 @@ import type { AppNotification } from '@/api/types'
 import { useMe } from '@/auth/session'
 import { Button } from '@/components/ui/button'
 import { errorMessage } from '@/i18n'
-import { MeSubPage } from '@/me/MeSubPage'
+import { SubPage } from '@/components/SubPage'
 import { useUsers } from '@/members/useUsers'
 import { PushBanner } from '@/push/PushBanner'
 import { useSettings, useToday } from '@/settings/useSettings'
@@ -71,7 +71,7 @@ export function NotificationsPage() {
   const now = new Date()
 
   return (
-    <MeSubPage title={t('notifications.title')} backTo="/">
+    <SubPage title={t('notifications.title')} backTo="/">
       <PushBanner />
       {status === 'pending' && (
         <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
@@ -129,6 +129,6 @@ export function NotificationsPage() {
           </Button>
         </div>
       )}
-    </MeSubPage>
+    </SubPage>
   )
 }

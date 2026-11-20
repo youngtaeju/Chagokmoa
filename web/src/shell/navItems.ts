@@ -4,17 +4,17 @@ import IconBabyFill from '~icons/material-symbols/child-care-rounded'
 import IconBaby from '~icons/material-symbols/child-care-outline-rounded'
 import IconHomeFill from '~icons/material-symbols/home-rounded'
 import IconHome from '~icons/material-symbols/home-outline-rounded'
-import IconPersonFill from '~icons/material-symbols/person-rounded'
-import IconPerson from '~icons/material-symbols/person-outline-rounded'
 import IconAlbumsFill from '~icons/material-symbols/photo-library-rounded'
 import IconAlbums from '~icons/material-symbols/photo-library-outline-rounded'
+import IconSettingsFill from '~icons/material-symbols/settings-rounded'
+import IconSettings from '~icons/material-symbols/settings-outline-rounded'
 import type { ComponentType, SVGProps } from 'react'
 import { useTranslation } from 'react-i18next'
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>
 
 export interface NavItem {
-  to: '/' | '/calendar' | '/babies' | '/albums' | '/me'
+  to: '/' | '/calendar' | '/babies' | '/albums' | '/settings'
   label: string
   // 선택 = 채움, 나머지 = 외곽선.
   icon: Icon
@@ -56,12 +56,12 @@ export function useNavItems(): NavItem[] {
       paths: ['/albums'],
     },
     {
-      to: '/me',
+      to: '/settings',
       label: t('nav.me'),
-      icon: IconPerson,
-      activeIcon: IconPersonFill,
-      // 가족 화면은 나 탭 우리 집 소속.
-      paths: ['/me', '/family'],
+      icon: IconSettings,
+      activeIcon: IconSettingsFill,
+      // 가족 화면은 설정 탭 우리 집 소속.
+      paths: ['/settings', '/family'],
     },
   ]
 }

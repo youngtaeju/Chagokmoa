@@ -55,7 +55,7 @@ function tabBar() {
 describe('AppShell', () => {
   // 달력, 앨범 화면은 자체 머리글. 휴대폰 셸 머리글(우리 집 이름) 숨김.
   it('own_header_routes', async () => {
-    const { router } = await renderShell('guardian', '/me', [], {
+    const { router } = await renderShell('guardian', '/settings', [], {
       'GET /api/favorites': () => json(200, { items: [], next_cursor: null }),
       'GET /api/assets': () => json(200, { items: [], next_cursor: null }),
       'GET /api/albums': () => json(200, []),
@@ -262,7 +262,7 @@ describe('AppShell', () => {
       'pb-[calc(8.5rem+env(safe-area-inset-bottom))]',
     )
 
-    await router.navigate({ to: '/me' })
+    await router.navigate({ to: '/settings' })
     await waitFor(() => {
       expect(router.state.status).toBe('idle')
     })
@@ -321,7 +321,10 @@ describe('AppShell', () => {
 
   it('logout_goes_to_login', async () => {
     vi.spyOn(navigator, 'language', 'get').mockReturnValue('en-US')
-    const { router, user, queryClient } = await renderShell('guardian', '/me')
+    const { router, user, queryClient } = await renderShell(
+      'guardian',
+      '/settings',
+    )
     await user.click(await screen.findByRole('button', { name: ko.nav.logout }))
     await waitFor(() => {
       expect(router.state.location.href).toBe('/login')

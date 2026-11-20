@@ -49,13 +49,16 @@ const FamilyPage = lazyRouteComponent(
   () => import('@/family/FamilyPage'),
   'FamilyPage',
 )
-const MePage = lazyRouteComponent(() => import('@/me/MePage'), 'MePage')
+const SettingsPage = lazyRouteComponent(
+  () => import('@/settings/SettingsPage'),
+  'SettingsPage',
+)
 const ProfilePage = lazyRouteComponent(
-  () => import('@/me/subPages'),
+  () => import('@/settings/subPages'),
   'ProfilePage',
 )
 const PasswordPage = lazyRouteComponent(
-  () => import('@/me/subPages'),
+  () => import('@/settings/subPages'),
   'PasswordPage',
 )
 const BackupPage = lazyRouteComponent(
@@ -63,11 +66,11 @@ const BackupPage = lazyRouteComponent(
   'BackupPage',
 )
 const DevicesPage = lazyRouteComponent(
-  () => import('@/me/subPages'),
+  () => import('@/settings/subPages'),
   'DevicesPage',
 )
 const AppearancePage = lazyRouteComponent(
-  () => import('@/me/subPages'),
+  () => import('@/settings/subPages'),
   'AppearancePage',
 )
 const NotificationSettingsPage = lazyRouteComponent(
@@ -75,7 +78,7 @@ const NotificationSettingsPage = lazyRouteComponent(
   'NotificationSettingsPage',
 )
 const InstancePage = lazyRouteComponent(
-  () => import('@/me/subPages'),
+  () => import('@/settings/subPages'),
   'InstancePage',
 )
 const BabiesIndexPage = lazyRouteComponent(
@@ -296,7 +299,7 @@ function AuthedGate() {
   return <Outlet />
 }
 
-function requireRole(min: Role, to: '/' | '/me' = '/') {
+function requireRole(min: Role, to: '/' | '/settings' = '/') {
   return ({ context }: { context: { me?: User } }) => {
     if (context.me && !hasRole(context.me, min)) {
       throw redirect({ to, replace: true })
@@ -450,53 +453,53 @@ const familyRoute = createRoute({
   component: FamilyPage,
 })
 
-const meRoute = createRoute({
+const settingsRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: '/me',
-  component: MePage,
+  path: '/settings',
+  component: SettingsPage,
 })
 
-const meProfileRoute = createRoute({
+const settingsProfileRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: '/me/profile',
+  path: '/settings/profile',
   component: ProfilePage,
 })
 
-const mePasswordRoute = createRoute({
+const settingsPasswordRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: '/me/password',
+  path: '/settings/password',
   component: PasswordPage,
 })
 
-const meDevicesRoute = createRoute({
+const settingsDevicesRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: '/me/devices',
+  path: '/settings/devices',
   component: DevicesPage,
 })
 
-const meAppearanceRoute = createRoute({
+const settingsAppearanceRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: '/me/appearance',
+  path: '/settings/appearance',
   component: AppearancePage,
 })
 
-const meNotificationsRoute = createRoute({
+const settingsNotificationsRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: '/me/notifications',
+  path: '/settings/notifications',
   component: NotificationSettingsPage,
 })
 
-const meInstanceRoute = createRoute({
+const settingsGeneralRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: '/me/instance',
-  beforeLoad: requireRole('owner', '/me'),
+  path: '/settings/general',
+  beforeLoad: requireRole('owner', '/settings'),
   component: InstancePage,
 })
 
-const meBackupRoute = createRoute({
+const settingsBackupRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: '/me/backup',
-  beforeLoad: requireRole('owner', '/me'),
+  path: '/settings/backup',
+  beforeLoad: requireRole('owner', '/settings'),
   component: BackupPage,
 })
 
@@ -535,8 +538,8 @@ const notificationsRoute = createRoute({
 
 const trashRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: '/me/trash',
-  beforeLoad: requireRole('guardian', '/me'),
+  path: '/settings/trash',
+  beforeLoad: requireRole('guardian', '/settings'),
   component: TrashPage,
 })
 
@@ -571,7 +574,18 @@ const legacyUploadRoute = createRoute({
 // 경로 리터럴 유지(라우터 주소 타입 검사).
 function legacyRoute<P extends string>(
   path: P,
-  to: '/family' | '/me' | '/me/trash' | '/albums/favorites',
+  to:
+    | '/family'
+    | '/settings'
+    | '/settings/profile'
+    | '/settings/password'
+    | '/settings/devices'
+    | '/settings/notifications'
+    | '/settings/appearance'
+    | '/settings/trash'
+    | '/settings/backup'
+    | '/settings/general'
+    | '/albums/favorites',
 ) {
   return createRoute({
     getParentRoute: () => rootRoute,
@@ -589,10 +603,18 @@ const routeTree = rootRoute.addChildren([
   resetRoute,
   legacyPhotoRoute,
   legacyRoute('/members', '/family'),
-  legacyRoute('/settings', '/me'),
   legacyUploadRoute,
-  legacyRoute('/trash', '/me/trash'),
+  legacyRoute('/trash', '/settings/trash'),
   legacyRoute('/me/favorites', '/albums/favorites'),
+  legacyRoute('/me', '/settings'),
+  legacyRoute('/me/profile', '/settings/profile'),
+  legacyRoute('/me/password', '/settings/password'),
+  legacyRoute('/me/devices', '/settings/devices'),
+  legacyRoute('/me/notifications', '/settings/notifications'),
+  legacyRoute('/me/appearance', '/settings/appearance'),
+  legacyRoute('/me/trash', '/settings/trash'),
+  legacyRoute('/me/backup', '/settings/backup'),
+  legacyRoute('/me/instance', '/settings/general'),
   authedRoute.addChildren([
     shellRoute.addChildren([
       homeRoute,
@@ -607,14 +629,14 @@ const routeTree = rootRoute.addChildren([
       storyEditRoute,
       milestoneRoute,
       familyRoute,
-      meRoute,
-      meProfileRoute,
-      mePasswordRoute,
-      meDevicesRoute,
-      meNotificationsRoute,
-      meAppearanceRoute,
-      meInstanceRoute,
-      meBackupRoute,
+      settingsRoute,
+      settingsProfileRoute,
+      settingsPasswordRoute,
+      settingsDevicesRoute,
+      settingsNotificationsRoute,
+      settingsAppearanceRoute,
+      settingsGeneralRoute,
+      settingsBackupRoute,
       albumsRoute,
       favoritesRoute,
       videosRoute,

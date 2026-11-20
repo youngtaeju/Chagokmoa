@@ -93,7 +93,7 @@ function renderBackup(
     },
     ...extra(state),
   })
-  return { ...renderApp('/me/backup'), state }
+  return { ...renderApp('/settings/backup'), state }
 }
 
 describe('backup setup', () => {

@@ -10,7 +10,7 @@ import { PasswordSection } from '@/settings/PasswordSection'
 import { ProfileSection } from '@/settings/ProfileSection'
 import { SessionsSection } from '@/settings/SessionsSection'
 import { useSettingsQuery } from '@/settings/useSettings'
-import { MeSubPage } from './MeSubPage'
+import { SubPage } from '@/components/SubPage'
 
 function Body({ children }: { children: ReactNode }) {
   return <div className="mx-auto w-full max-w-xl">{children}</div>
@@ -52,35 +52,35 @@ export function ProfilePage() {
   const { t } = useTranslation()
   const me = useQuery(meQuery)
   return (
-    <MeSubPage title={t('me.profile')}>
+    <SubPage title={t('me.profile')}>
       <Body>
         <Loaded query={{ ...me, data: me.data ?? undefined }}>
           {(user) => <ProfileSection user={user} />}
         </Loaded>
       </Body>
-    </MeSubPage>
+    </SubPage>
   )
 }
 
 export function PasswordPage() {
   const { t } = useTranslation()
   return (
-    <MeSubPage title={t('me.password')}>
+    <SubPage title={t('me.password')}>
       <Body>
         <PasswordSection />
       </Body>
-    </MeSubPage>
+    </SubPage>
   )
 }
 
 export function DevicesPage() {
   const { t } = useTranslation()
   return (
-    <MeSubPage title={t('me.devices')}>
+    <SubPage title={t('me.devices')}>
       <Body>
         <SessionsSection />
       </Body>
-    </MeSubPage>
+    </SubPage>
   )
 }
 
@@ -88,13 +88,13 @@ export function AppearancePage() {
   const { t } = useTranslation()
   const me = useQuery(meQuery)
   return (
-    <MeSubPage title={t('me.appearance')}>
+    <SubPage title={t('me.appearance')}>
       <Body>
         <Loaded query={{ ...me, data: me.data ?? undefined }}>
           {(user) => <AppearanceSection user={user} />}
         </Loaded>
       </Body>
-    </MeSubPage>
+    </SubPage>
   )
 }
 
@@ -102,12 +102,12 @@ export function InstancePage() {
   const { t } = useTranslation()
   const settings = useSettingsQuery()
   return (
-    <MeSubPage title={t('me.instance')}>
+    <SubPage title={t('me.instance')}>
       <Body>
         <Loaded query={settings}>
           {(s) => <InstanceSection settings={s} />}
         </Loaded>
       </Body>
-    </MeSubPage>
+    </SubPage>
   )
 }

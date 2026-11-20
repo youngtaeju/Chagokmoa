@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { MeSubPage } from '@/me/MeSubPage'
+import { SubPage } from '@/components/SubPage'
 import { useSettings } from '@/settings/useSettings'
 import { AssetGrid } from '@/timeline/AssetGrid'
 import { useTimeline } from '@/timeline/useTimeline'
@@ -10,13 +10,13 @@ export function VideosPage() {
   const timezone = useSettings()?.timezone
   const videos = useTimeline(undefined, { kind: 'video' })
   return (
-    <MeSubPage title={t('albums.videos')} backTo="/albums">
+    <SubPage title={t('albums.videos')} backTo="/albums">
       <AssetGrid
         {...videos}
         timezone={timezone}
         linkSearch={{ from: 'videos' }}
         empty={t('albums.videosEmpty')}
       />
-    </MeSubPage>
+    </SubPage>
   )
 }

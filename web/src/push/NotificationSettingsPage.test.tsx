@@ -51,7 +51,7 @@ function render(
     'GET /api/push/key': () => json(200, { public_key: 'AAAA' }),
     ...extra,
   })
-  return { patches, ...renderApp('/me/notifications') }
+  return { patches, ...renderApp('/settings/notifications') }
 }
 
 const deviceSwitch = () =>
