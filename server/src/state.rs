@@ -7,6 +7,7 @@ use crate::{
     backup::run::DbSteps,
     config::Config,
     error::AppResult,
+    mail::MAIL_TIMEOUT,
     media::locks::DerivativeLocks,
     push::vapid::{self, Vapid},
     uploads::{UPLOAD_IDLE_TIMEOUT, locks::UploadLocks},
@@ -21,6 +22,8 @@ pub struct AppState {
     pub derivative_locks: Arc<DerivativeLocks>,
     /// PATCH 본문 무수신 한도. 기본 `UPLOAD_IDLE_TIMEOUT`, 테스트에서 단축.
     pub upload_idle_timeout: Duration,
+    /// 메일 1통 발송 한도. 기본 `MAIL_TIMEOUT`, 테스트에서 단축.
+    pub mail_timeout: Duration,
     /// 작업 enqueue 커밋 후 `notify_one`. 대기 중 워커 즉시 깨움.
     pub jobs_wake: Arc<Notify>,
     /// 첫 사용 시 로드 또는 생성. 기동 시 `vapid()` 1회 호출.
@@ -41,6 +44,7 @@ impl AppState {
             upload_locks: Arc::new(UploadLocks::default()),
             derivative_locks: Arc::new(DerivativeLocks::default()),
             upload_idle_timeout: UPLOAD_IDLE_TIMEOUT,
+            mail_timeout: MAIL_TIMEOUT,
             jobs_wake: Arc::new(Notify::new()),
             vapid: Arc::new(OnceCell::new()),
             push_wake: Arc::new(Notify::new()),

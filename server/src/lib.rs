@@ -13,6 +13,7 @@ pub mod growth;
 pub mod invites;
 pub mod jobs;
 pub mod links;
+pub mod mail;
 pub mod maintenance;
 pub mod media;
 pub mod memories;
