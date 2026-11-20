@@ -11,7 +11,7 @@ export type NotificationLink =
   | { to: '/days/$date'; params: { date: string } }
   | { to: '/stories/$id'; params: { id: string } }
   | { to: '/milestones/$id'; params: { id: string } }
-  | { to: '/me/backup' }
+  | { to: '/settings/backup' }
 
 // 스펙 §6 이동 표. 대상 요약 없음(서버가 휴지통 등으로 비움)이면 null.
 export function notificationLink(n: AppNotification): NotificationLink | null {
@@ -39,7 +39,7 @@ export function notificationLink(n: AppNotification): NotificationLink | null {
         ? { to: '/milestones/$id', params: { id: n.milestone.id } }
         : null
     case 'backup':
-      return { to: '/me/backup' }
+      return { to: '/settings/backup' }
   }
 }
 

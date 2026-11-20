@@ -6,7 +6,6 @@ import { json, mockFetch } from '@/test/fetch'
 import {
   apiError,
   babyFixture,
-  backupStatusFixture,
   emptyFeedRoutes,
   settingsFixture,
   userFixture,
@@ -42,7 +41,7 @@ function renderPage(
   {
     role = 'guardian',
     settings = settingsFixture,
-    path = '/me/profile',
+    path = '/settings/profile',
   }: { role?: Role; settings?: Settings; path?: string } = {},
 ) {
   mockFetch({
@@ -55,14 +54,14 @@ function renderPage(
   return renderApp(path)
 }
 
-describe('me sub pages', () => {
+describe('settings sub pages', () => {
   it('wrong_current_password_stays_logged_in', async () => {
     const { user, router } = renderPage(
       {
         'POST /api/users/me/password': () =>
           apiError(401, 'auth.invalidCredentials'),
       },
-      { path: '/me/password' },
+      { path: '/settings/password' },
     )
     await user.type(await screen.findByLabelText('현재 비밀번호'), 'wrong-pass')
     await user.type(screen.getByLabelText('새 비밀번호'), 'new-password-1')
@@ -71,13 +70,13 @@ describe('me sub pages', () => {
     expect(
       await screen.findByText('현재 비밀번호가 맞지 않아요.'),
     ).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/me/password')
+    expect(router.state.location.pathname).toBe('/settings/password')
   })
 
   it('password_change_invalidates_sessions', async () => {
     const { user, queryClient } = renderPage(
       { 'POST /api/users/me/password': () => json(204, null) },
-      { path: '/me/password' },
+      { path: '/settings/password' },
     )
     // 서버가 다른 세션을 지우므로 목록 캐시 무효화.
     queryClient.setQueryData(['sessions'], { sessions: [CURRENT, OTHER] })
@@ -96,7 +95,7 @@ describe('me sub pages', () => {
     const spy = vi.spyOn(Intl, 'supportedValuesOf').mockImplementation(() => {
       throw new RangeError('unsupported')
     })
-    renderPage({}, { role: 'owner', path: '/me/instance' })
+    renderPage({}, { role: 'owner', path: '/settings/general' })
     const select = await screen.findByLabelText('시간대')
     expect(within(select).getAllByRole('option')).toHaveLength(1)
     spy.mockRestore()
@@ -113,7 +112,7 @@ describe('me sub pages', () => {
           })
         },
       },
-      { path: '/me/appearance' },
+      { path: '/settings/appearance' },
     )
     const group = await screen.findByRole('radiogroup', { name: '언어' })
     expect(within(group).getByRole('radio', { name: '한국어' })).toBeChecked()
@@ -125,7 +124,7 @@ describe('me sub pages', () => {
   })
 
   it('theme_change_applies', async () => {
-    const { user } = renderPage({}, { path: '/me/appearance' })
+    const { user } = renderPage({}, { path: '/settings/appearance' })
     const group = await screen.findByRole('radiogroup', { name: '테마' })
     expect(
       within(group)
@@ -159,14 +158,54 @@ describe('me sub pages', () => {
     })
   })
 
-  it('instance_page_renders_for_owner', async () => {
-    renderPage({}, { role: 'owner', path: '/me/instance' })
+  it('general_title_has_section', async () => {
+    renderPage({}, { role: 'owner', path: '/settings/general' })
+    const heading = await screen.findByRole('heading', {
+      level: 1,
+      name: '시스템 일반',
+    })
     expect(
-      await screen.findByRole('heading', { name: '우리 집 설정' }),
-    ).toBeInTheDocument()
+      within(heading).getByText('›').closest('[aria-hidden]'),
+    ).not.toBeNull()
   })
 
-  it('instance_patch_sends_changed_fields_only', async () => {
+  it('general_fields', async () => {
+    renderPage({}, { role: 'owner', path: '/settings/general' })
+    expect(await screen.findByLabelText('우리 집 이름')).toBeInTheDocument()
+    expect(screen.getByLabelText('시간대')).toBeInTheDocument()
+    expect(screen.getByLabelText('새 멤버 기본 언어')).toBeInTheDocument()
+    expect(screen.queryByLabelText('AVIF 파생물도 만들기')).toBeNull()
+    expect(screen.queryByLabelText('휴지통 보관 일수')).toBeNull()
+  })
+
+  it('media_saves_changed_fields_only', async () => {
+    const bodies: unknown[] = []
+    const { user } = renderPage(
+      {
+        'PATCH /api/settings': async (req) => {
+          bodies.push(await req.json())
+          return json(200, { ...settingsFixture, derivatives_avif: true })
+        },
+        'GET /api/derivatives/regenerate': () =>
+          json(200, { remaining: 0, failed: 0 }),
+      },
+      { role: 'owner', path: '/settings/media' },
+    )
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: '시스템 사진 처리',
+      }),
+    ).toBeInTheDocument()
+    await user.click(await screen.findByLabelText('AVIF 파생물도 만들기'))
+    await user.click(screen.getByRole('button', { name: '저장' }))
+    await waitFor(() => {
+      expect(bodies).toEqual([{ derivatives_avif: true }])
+    })
+    expect(await screen.findByText('설정을 저장했어요')).toBeInTheDocument()
+  })
+
+  it('media_trash_retention_patch', async () => {
     const bodies: unknown[] = []
     const { user } = renderPage(
       {
@@ -174,10 +213,12 @@ describe('me sub pages', () => {
           bodies.push(await req.json())
           return json(200, { ...settingsFixture, trash_retention_days: 30 })
         },
+        'GET /api/derivatives/regenerate': () =>
+          json(200, { remaining: 0, failed: 0 }),
       },
       {
         role: 'owner',
-        path: '/me/instance',
+        path: '/settings/media',
         settings: { ...settingsFixture, trash_retention_days: 14 },
       },
     )
@@ -200,9 +241,9 @@ describe('me sub pages', () => {
     // 아기 1명: 고르기 없음.
     const one = renderPage(
       { 'GET /api/babies': () => json(200, [SKY]) },
-      { role: 'owner', path: '/me/instance' },
+      { role: 'owner', path: '/settings/general' },
     )
-    await screen.findByLabelText('휴지통 보관 일수')
+    await screen.findByLabelText('우리 집 이름')
     await waitFor(() => {
       expect(one.queryClient.getQueryData(['babies'])).toEqual([SKY])
     })
@@ -226,7 +267,7 @@ describe('me sub pages', () => {
           return json(200, current)
         },
       },
-      { role: 'owner', path: '/me/instance' },
+      { role: 'owner', path: '/settings/general' },
     )
     const picker = await screen.findByLabelText('대표 아기')
     expect(picker).toHaveValue(SKY.id)
@@ -258,18 +299,18 @@ describe('me sub pages', () => {
         'GET /api/babies': () => json(200, [SKY, SEA]),
         'PATCH /api/settings': async (req) => {
           bodies.push(await req.json())
-          return json(200, { ...settingsFixture, trash_retention_days: 7 })
+          return json(200, { ...settingsFixture, instance_name: '새 이름' })
         },
       },
-      { role: 'owner', path: '/me/instance' },
+      { role: 'owner', path: '/settings/general' },
     )
     await screen.findByLabelText('대표 아기')
-    const input = screen.getByLabelText('휴지통 보관 일수')
+    const input = screen.getByLabelText('우리 집 이름')
     await user.clear(input)
-    await user.type(input, '7')
+    await user.type(input, '새 이름')
     await user.click(screen.getByRole('button', { name: '저장' }))
     await waitFor(() => {
-      expect(bodies).toEqual([{ trash_retention_days: 7 }])
+      expect(bodies).toEqual([{ instance_name: '새 이름' }])
     })
   })
 
@@ -281,7 +322,7 @@ describe('me sub pages', () => {
         'GET /api/auth/sessions': () =>
           json(200, { sessions: [CURRENT, A, B] }),
       },
-      { path: '/me/devices' },
+      { path: '/settings/devices' },
     )
     const buttons = await screen.findAllByRole('button', {
       name: /^Firefox 로그아웃/,
@@ -304,7 +345,7 @@ describe('me sub pages', () => {
           return json(204, null)
         },
       },
-      { path: '/me/devices' },
+      { path: '/settings/devices' },
     )
     await screen.findByText('Chrome')
     expect(
@@ -317,13 +358,12 @@ describe('me sub pages', () => {
   })
 })
 
-describe('backup page', () => {
+describe('media page regen', () => {
   it('regen_flow_posts_and_polls_until_done', async () => {
     let posted: unknown = null
     let polls = 0
     const { user } = renderPage(
       {
-        'GET /api/backup': () => json(200, backupStatusFixture()),
         'GET /api/derivatives/regenerate': () => {
           polls += 1
           return json(200, {
@@ -336,7 +376,7 @@ describe('backup page', () => {
           return json(200, { queued: 2 })
         },
       },
-      { role: 'owner', path: '/me/backup' },
+      { role: 'owner', path: '/settings/media' },
     )
     await user.click(await screen.findByRole('button', { name: '다시 만들기' }))
     const dialog = await screen.findByRole('alertdialog')
@@ -354,7 +394,6 @@ describe('backup page', () => {
     let polls = 0
     const { user } = renderPage(
       {
-        'GET /api/backup': () => json(200, backupStatusFixture()),
         'GET /api/derivatives/regenerate': () => {
           polls += 1
           return json(200, {
@@ -364,7 +403,7 @@ describe('backup page', () => {
         },
         'POST /api/derivatives/regenerate': () => json(200, { queued: 2 }),
       },
-      { role: 'owner', path: '/me/backup' },
+      { role: 'owner', path: '/settings/media' },
     )
     await user.click(await screen.findByRole('button', { name: '다시 만들기' }))
     const dialog = await screen.findByRole('alertdialog')
@@ -379,7 +418,6 @@ describe('backup page', () => {
     let posted: unknown = null
     const { user } = renderPage(
       {
-        'GET /api/backup': () => json(200, backupStatusFixture()),
         'GET /api/derivatives/regenerate': () =>
           json(200, { remaining: 0, failed: 0 }),
         'POST /api/derivatives/regenerate': async (req) => {
@@ -387,7 +425,7 @@ describe('backup page', () => {
           return json(200, { queued: 0 })
         },
       },
-      { role: 'owner', path: '/me/backup' },
+      { role: 'owner', path: '/settings/media' },
     )
     await user.click(await screen.findByRole('button', { name: '다시 만들기' }))
     await user.click(await screen.findByRole('button', { name: '취소' }))

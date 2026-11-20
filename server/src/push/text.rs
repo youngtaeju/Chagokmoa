@@ -205,7 +205,7 @@ pub fn url(n: &Notification, delta: i32) -> Option<String> {
             .milestone
             .as_ref()
             .map(|m| format!("/milestones/{}", m.id)),
-        NotificationKind::Backup => Some("/me/backup".to_string()),
+        NotificationKind::Backup => Some("/settings/backup".to_string()),
     }
 }
 
@@ -407,7 +407,7 @@ mod tests {
             body(Locale::En, &n, 1, me, &names),
             "Backup failed 3 times today. Check the backup screen"
         );
-        assert_eq!(url(&n, 1), Some("/me/backup".to_string()));
+        assert_eq!(url(&n, 1), Some("/settings/backup".to_string()));
     }
 
     #[test]

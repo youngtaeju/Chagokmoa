@@ -156,18 +156,18 @@ describe('login', () => {
 describe('guards', () => {
   it('protected_route_redirects_to_login', async () => {
     mockFetch(authRoutes({ me: null }))
-    const { router } = renderApp('/me')
+    const { router } = renderApp('/settings')
     await waitFor(() => {
-      expect(router.state.location.href).toBe('/login?redirect=%2Fme')
+      expect(router.state.location.href).toBe('/login?redirect=%2Fsettings')
     })
     await screen.findByLabelText(ko.auth.username)
   })
 
   it('role_too_low_redirects_home', async () => {
     mockFetch(authRoutes({ me: userFixture('family') }))
-    const { router } = renderApp('/me/trash')
+    const { router } = renderApp('/settings/trash')
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/me')
+      expect(router.state.location.pathname).toBe('/settings')
     })
     await screen.findAllByText(settingsFixture.instance_name)
   })
@@ -179,9 +179,9 @@ describe('guards', () => {
         throw new TypeError('Failed to fetch')
       },
     })
-    const { router } = renderApp('/me')
+    const { router } = renderApp('/settings')
     await screen.findByText(ko.offline.screen)
-    expect(router.state.location.href).toBe('/me')
+    expect(router.state.location.href).toBe('/settings')
   })
 
   // 병렬 401 여러 개에도 로그인 이동은 한 번. 캐시는 비우고 me 는 null.
@@ -192,7 +192,7 @@ describe('guards', () => {
       'GET /api/babies': () => apiError(401, 'auth.required'),
       'GET /api/auth/sessions': () => json(200, { sessions: [] }),
     })
-    const { router, queryClient } = renderApp('/me')
+    const { router, queryClient } = renderApp('/settings')
     await screen.findAllByText(settingsFixture.instance_name)
     const before = router.history.length
 
@@ -204,7 +204,7 @@ describe('guards', () => {
     ])
 
     await waitFor(() => {
-      expect(router.state.location.href).toBe('/login?redirect=%2Fme')
+      expect(router.state.location.href).toBe('/login?redirect=%2Fsettings')
     })
     expect(router.history.length).toBe(before + 1)
     expect(queryClient.getQueryData(['stale'])).toBeUndefined()

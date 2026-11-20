@@ -185,7 +185,7 @@ function MonthAlbums({ id }: { id: string }) {
   )
 }
 
-// 구역 위 실선(나 화면 규칙). 휴대폰은 화면 끝까지, 넓은 화면은 가운데 열 폭.
+// 구역 위 실선(설정 화면 규칙). 휴대폰은 화면 끝까지, 넓은 화면은 가운데 열 폭.
 function Divided({ children }: { children: ReactNode }) {
   return (
     <div className="-mx-4 border-t border-border px-4 py-4 sm:mx-0 sm:px-0">

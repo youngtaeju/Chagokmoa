@@ -7,7 +7,7 @@ import type { User } from '@/api/types'
 import { hasRole, useMe } from '@/auth/session'
 import { FormError } from '@/components/Field'
 import { Button } from '@/components/ui/button'
-import { MeSubPage } from '@/me/MeSubPage'
+import { SubPage } from '@/components/SubPage'
 import { useUsers } from '@/members/useUsers'
 import { useSettings } from '@/settings/useSettings'
 import { formatInZone } from '@/viewer/zoned'
@@ -183,7 +183,7 @@ export function FamilyPage() {
   )
 
   return (
-    <MeSubPage title={t('me.family')} actions={invite}>
+    <SubPage title={t('me.family')} actions={invite}>
       <div className="mx-auto grid w-full max-w-xl gap-6">
         <section aria-label={t('members.usersTitle')} className="grid gap-2">
           <FormError error={users.error} />
@@ -233,6 +233,6 @@ export function FamilyPage() {
           />
         )}
       </div>
-    </MeSubPage>
+    </SubPage>
   )
 }

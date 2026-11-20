@@ -325,7 +325,7 @@ test('invite_family_cannot_upload', async ({
       '달력',
       '아기',
       '앨범',
-      '나',
+      '설정',
     ])
     await expect(guest.getByRole('button', { name: '추가하기' })).toHaveCount(0)
     await expect(
@@ -1008,19 +1008,19 @@ test('tabs_navigation', async ({ ownerPage: page }) => {
   await expect(
     page.getByRole('heading', { level: 1, name: '앨범' }),
   ).toBeVisible()
-  await nav.getByRole('link', { name: '나' }).click()
-  await expect(page).toHaveURL(/\/me$/)
+  await nav.getByRole('link', { name: '설정' }).click()
+  await expect(page).toHaveURL(/\/settings$/)
   await nav.getByRole('link', { name: '홈' }).click()
   await expect(page).toHaveURL(/\/$/)
 
-  // 나 → 우리 집 → 가족. 나 탭이 계속 선택.
-  await nav.getByRole('link', { name: '나' }).click()
+  // 설정 → 우리 집 → 가족. 설정 탭이 계속 선택.
+  await nav.getByRole('link', { name: '설정' }).click()
   await page.getByRole('link', { name: '가족', exact: true }).click()
   await expect(page).toHaveURL(/\/family$/)
   await expect(
     page.getByRole('heading', { name: '가족', level: 1 }),
   ).toBeVisible()
-  await expect(nav.getByRole('link', { name: '나' })).toHaveAttribute(
+  await expect(nav.getByRole('link', { name: '설정' })).toHaveAttribute(
     'aria-current',
     'page',
   )
@@ -1089,8 +1089,8 @@ test('security_headers_and_no_csp_violations', async ({ ownerPage: page }) => {
     await expect(page).toHaveURL(url)
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible()
   }
-  // 가족은 나 탭 우리 집에서. 뒤로 가기로 나 화면 복귀.
-  await nav.getByRole('link', { name: '나' }).click()
+  // 가족은 설정 탭 우리 집에서. 뒤로 가기로 설정 화면 복귀.
+  await nav.getByRole('link', { name: '설정' }).click()
   await page
     .getByRole('main')
     .getByRole('link', { name: '가족', exact: true })
@@ -1099,12 +1099,12 @@ test('security_headers_and_no_csp_violations', async ({ ownerPage: page }) => {
     page.getByRole('heading', { name: '가족', level: 1 }),
   ).toBeVisible()
   await page.getByRole('button', { name: '뒤로' }).click()
-  await expect(page).toHaveURL(/\/me$/)
-  await nav.getByRole('link', { name: '나' }).click()
+  await expect(page).toHaveURL(/\/settings$/)
+  await nav.getByRole('link', { name: '설정' }).click()
   await expect(
     page.getByRole('heading', { name: OWNER.displayName }),
   ).toBeVisible()
-  // 휴지통은 나 화면에서.
+  // 휴지통은 설정 화면 우리 집에서.
   await page.getByRole('main').getByRole('link', { name: '휴지통' }).click()
   await expect(
     page.getByRole('heading', { name: '휴지통' }).first(),
@@ -1200,9 +1200,9 @@ test('notifications_flow', async ({
 })
 
 test('push_settings_flow', async ({ ownerPage: page }) => {
-  await page.goto('/me')
+  await page.goto('/settings')
   await page.getByRole('link', { name: '알림 설정' }).click()
-  await expect(page).toHaveURL(/\/me\/notifications$/)
+  await expect(page).toHaveURL(/\/settings\/notifications$/)
 
   const mention = page.getByRole('switch', { name: '멘션' })
   await expect(mention).toHaveAttribute('aria-checked', 'true')
@@ -1321,7 +1321,7 @@ test('password_reset_link', async ({
 })
 
 test('backup_enable_and_run', async ({ ownerPage: page }) => {
-  await page.goto('/me/backup')
+  await page.goto('/settings/backup')
   // 이미 켜진 상태(재시도)면 키 만들기 단계 생략.
   const createKey = page.getByRole('button', { name: '복구 키 만들기' })
   const runNow = page.getByRole('button', { name: '지금 백업' })

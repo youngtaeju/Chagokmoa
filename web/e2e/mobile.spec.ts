@@ -89,7 +89,7 @@ test('screens_fit_width', async ({ ownerPage: page }) => {
   await expect(tiles(page)).toHaveCount(2)
   await expectNoHorizontalOverflow(page)
 
-  await page.goto('/me/trash')
+  await page.goto('/settings/trash')
   await expect(page.getByRole('heading', { name: '휴지통' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
@@ -103,17 +103,24 @@ test('screens_fit_width', async ({ ownerPage: page }) => {
   await expect(page.getByText(OWNER.displayName).first()).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
-  await page.goto('/me')
+  await page.goto('/settings')
   await expect(
     page.getByRole('heading', { name: OWNER.displayName }),
   ).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
-  await page.goto('/me/instance')
+  await page.goto('/settings/general')
   await expect(
-    page.getByRole('heading', { name: '우리 집 설정' }),
+    page.getByRole('heading', { level: 1, name: '시스템 일반' }),
   ).toBeVisible()
   await expect(page.getByLabel('시간대')).toBeVisible()
+  await expectNoHorizontalOverflow(page)
+
+  await page.goto('/settings/media')
+  await expect(
+    page.getByRole('heading', { level: 1, name: '시스템 사진 처리' }),
+  ).toBeVisible()
+  await expect(page.getByRole('button', { name: '다시 만들기' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 })
 
@@ -257,7 +264,7 @@ test('family_tab_bar_fits_width', async ({ page, request }) => {
     '달력',
     '아기',
     '앨범',
-    '나',
+    '설정',
   ])
   await expect(page.getByRole('button', { name: '추가하기' })).toHaveCount(0)
   await expectThumbnailsLoaded(page, 3)
@@ -392,7 +399,7 @@ test('fab_and_pill_fit', async ({ ownerPage: page }) => {
     expect(contentBottom, path).toBeLessThanOrEqual(fabBox.y)
   }
   for (const path of [
-    '/me',
+    '/settings',
     '/albums/favorites',
     `/babies/${baby.id}/growth`,
   ]) {

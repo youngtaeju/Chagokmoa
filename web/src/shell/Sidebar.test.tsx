@@ -84,13 +84,13 @@ describe('Sidebar', () => {
     expect(more.getByRole('link', { name: ko.nav.trash })).toBeInTheDocument()
     expect(more.getByRole('link', { name: ko.nav.trash })).toHaveAttribute(
       'href',
-      '/me/trash',
+      '/settings/trash',
     )
   })
 
-  // 보조 메뉴 주소에서는 그 항목만 선택(나 표시 없음).
+  // 보조 메뉴 주소에서는 그 항목만 선택(설정 표시 없음).
   it('sidebar_single_current_on_secondary', async () => {
-    const { router } = renderShell('guardian', '/me/trash')
+    const { router } = renderShell('guardian', '/settings/trash')
     const { root } = await sidebar()
     await screen.findByRole('heading', { level: 1, name: ko.nav.trash })
     await waitFor(() => {

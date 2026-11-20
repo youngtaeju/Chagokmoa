@@ -86,7 +86,7 @@ describe('TabBar', () => {
           ko.nav.albums,
           ko.nav.me,
         ].map((name) => tabs.getByRole('link', { name }).getAttribute('href')),
-      ).toEqual(['/', '/calendar', '/babies', '/albums', '/me'])
+      ).toEqual(['/', '/calendar', '/babies', '/albums', '/settings'])
       expect(tabs.queryByRole('button')).toBeNull()
     },
   )
@@ -98,7 +98,7 @@ describe('TabBar', () => {
     ['guardian', `/babies/${SKY.id}/growth`, ko.nav.babies],
     ['guardian', '/family', ko.nav.me],
     ['family', '/family', ko.nav.me],
-    ['family', '/me', ko.nav.me],
+    ['family', '/settings', ko.nav.me],
   ] as const)('baby_tab_selected_all_roles %s %s', async (role, path, name) => {
     const { router } = renderShell(role, path)
     const tabs = await tabBar()
@@ -127,15 +127,24 @@ describe('TabBar', () => {
     )
   })
 
-  // 홈만 정확히 일치. 가족 화면은 나 탭.
+  it('settings_tab_named', async () => {
+    renderShell('family', '/settings')
+    const tabs = await tabBar()
+    expect(tabs.getByRole('link', { name: '설정' })).toHaveAttribute(
+      'href',
+      '/settings',
+    )
+  })
+
+  // 홈만 정확히 일치. 가족 화면은 설정 탭.
   it.each([
     ['/', ko.nav.home],
     ['/?baby=x', ko.nav.home],
     ['/calendar', ko.nav.calendar],
     ['/albums', ko.nav.albums],
     ['/albums/favorites', ko.nav.albums],
-    ['/me', ko.nav.me],
-    ['/me/devices', ko.nav.me],
+    ['/settings', ko.nav.me],
+    ['/settings/devices', ko.nav.me],
     [`/babies/${SKY.id}`, ko.nav.babies],
     ['/family', ko.nav.me],
   ])('selected_tab %s', async (path, name) => {

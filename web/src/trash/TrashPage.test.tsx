@@ -42,7 +42,7 @@ function renderTrash(
     ...emptyFeedRoutes,
     ...extra,
   })
-  return renderApp('/me/trash')
+  return renderApp('/settings/trash')
 }
 
 // 이야기, 마일스톤 상세와 아기별 마일스톤 목록(뷰어와 같은 범위).
@@ -172,7 +172,7 @@ describe('TrashPage', () => {
   it('family_redirected', async () => {
     const { router } = renderTrash([], {}, { role: 'family' })
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/me')
+      expect(router.state.location.pathname).toBe('/settings')
     })
   })
 })

@@ -76,7 +76,7 @@ describe('AddFab', () => {
     ['guardian', '/albums/favorites', false],
     ['guardian', `/babies/${SKY.id}/growth`, false],
     ['guardian', '/days/2024-05-01', false],
-    ['guardian', '/me', false],
+    ['guardian', '/settings', false],
     ['guardian', '/family', false],
   ] as const)('fab_visibility %s %s', async (role, path, shown) => {
     const { router } = await renderShell(role, path)

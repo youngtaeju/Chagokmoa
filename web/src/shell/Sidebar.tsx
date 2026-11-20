@@ -11,10 +11,10 @@ import { cn } from '@/lib/utils'
 import { formatBadge, useUnreadCount } from '@/notifications/useUnreadCount'
 import { isNavActive, useNavItems } from './navItems'
 
-// 보조 메뉴(탭에 없는 목적지). 휴지통은 업로드 권한 있는 사람만, 알림은 모두. 여기 있는 주소에서는 주 메뉴 "나" 선택 표시 안 함.
+// 보조 메뉴(탭에 없는 목적지). 휴지통은 업로드 권한 있는 사람만, 알림은 모두. 여기 있는 주소에서는 주 메뉴 "설정" 선택 표시 안 함.
 const MORE = [
   {
-    to: '/me/trash',
+    to: '/settings/trash',
     label: 'nav.trash',
     icon: IconTrash,
     activeIcon: IconTrashFill,

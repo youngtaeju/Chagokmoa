@@ -4,13 +4,15 @@ import { useTranslation } from 'react-i18next'
 import { meQuery } from '@/auth/session'
 import { FormError } from '@/components/Field'
 import { Button } from '@/components/ui/button'
+import { RegenSection } from '@/backup/RegenSection'
 import { AppearanceSection } from '@/settings/AppearanceSection'
-import { InstanceSection } from '@/settings/InstanceSection'
+import { GeneralSection } from '@/settings/GeneralSection'
+import { MediaSection } from '@/settings/MediaSection'
 import { PasswordSection } from '@/settings/PasswordSection'
 import { ProfileSection } from '@/settings/ProfileSection'
 import { SessionsSection } from '@/settings/SessionsSection'
 import { useSettingsQuery } from '@/settings/useSettings'
-import { MeSubPage } from './MeSubPage'
+import { SubPage } from '@/components/SubPage'
 
 function Body({ children }: { children: ReactNode }) {
   return <div className="mx-auto w-full max-w-xl">{children}</div>
@@ -52,35 +54,35 @@ export function ProfilePage() {
   const { t } = useTranslation()
   const me = useQuery(meQuery)
   return (
-    <MeSubPage title={t('me.profile')}>
+    <SubPage title={t('me.profile')}>
       <Body>
         <Loaded query={{ ...me, data: me.data ?? undefined }}>
           {(user) => <ProfileSection user={user} />}
         </Loaded>
       </Body>
-    </MeSubPage>
+    </SubPage>
   )
 }
 
 export function PasswordPage() {
   const { t } = useTranslation()
   return (
-    <MeSubPage title={t('me.password')}>
+    <SubPage title={t('me.password')}>
       <Body>
         <PasswordSection />
       </Body>
-    </MeSubPage>
+    </SubPage>
   )
 }
 
 export function DevicesPage() {
   const { t } = useTranslation()
   return (
-    <MeSubPage title={t('me.devices')}>
+    <SubPage title={t('me.devices')}>
       <Body>
         <SessionsSection />
       </Body>
-    </MeSubPage>
+    </SubPage>
   )
 }
 
@@ -88,26 +90,43 @@ export function AppearancePage() {
   const { t } = useTranslation()
   const me = useQuery(meQuery)
   return (
-    <MeSubPage title={t('me.appearance')}>
+    <SubPage title={t('me.appearance')}>
       <Body>
         <Loaded query={{ ...me, data: me.data ?? undefined }}>
           {(user) => <AppearanceSection user={user} />}
         </Loaded>
       </Body>
-    </MeSubPage>
+    </SubPage>
   )
 }
 
-export function InstancePage() {
+export function GeneralPage() {
   const { t } = useTranslation()
   const settings = useSettingsQuery()
   return (
-    <MeSubPage title={t('me.instance')}>
+    <SubPage section={t('me.system')} title={t('me.general')}>
       <Body>
         <Loaded query={settings}>
-          {(s) => <InstanceSection settings={s} />}
+          {(s) => <GeneralSection settings={s} />}
         </Loaded>
       </Body>
-    </MeSubPage>
+    </SubPage>
+  )
+}
+
+export function MediaPage() {
+  const { t } = useTranslation()
+  const settings = useSettingsQuery()
+  return (
+    <SubPage section={t('me.system')} title={t('me.media')}>
+      <Body>
+        <div className="grid gap-6">
+          <Loaded query={settings}>
+            {(s) => <MediaSection settings={s} />}
+          </Loaded>
+          <RegenSection />
+        </div>
+      </Body>
+    </SubPage>
   )
 }

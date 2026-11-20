@@ -1,9 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { FormError } from '@/components/Field'
-import { MeSubPage } from '@/me/MeSubPage'
+import { SubPage } from '@/components/SubPage'
 import { EnableFlow } from './EnableFlow'
 import { KeySection } from './KeySection'
-import { RegenSection } from './RegenSection'
 import { RemoteSection } from './RemoteSection'
 import { SettingsSection } from './SettingsSection'
 import { StatusSection } from './StatusSection'
@@ -13,7 +12,7 @@ export function BackupPage() {
   const { t } = useTranslation()
   const { data: status, error } = useBackupStatus()
   return (
-    <MeSubPage title={t('me.backup')}>
+    <SubPage section={t('me.system')} title={t('me.backup')}>
       <div className="mx-auto grid w-full max-w-xl gap-6">
         <FormError error={error} />
         {status &&
@@ -27,8 +26,7 @@ export function BackupPage() {
           ) : (
             <EnableFlow status={status} />
           ))}
-        <RegenSection />
       </div>
-    </MeSubPage>
+    </SubPage>
   )
 }

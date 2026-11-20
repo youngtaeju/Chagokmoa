@@ -13,7 +13,7 @@ beforeEach(() => {
 
 afterEach(cleanup)
 
-function renderMe(role: Role, path = '/me') {
+function renderMe(role: Role, path = '/settings') {
   mockFetch({
     'GET /api/auth/me': () => json(200, { user: userFixture(role) }),
     'GET /api/settings': () => json(200, settingsFixture),
@@ -25,26 +25,22 @@ function renderMe(role: Role, path = '/me') {
   return renderApp(path)
 }
 
-describe('MePage', () => {
-  // 내 사진(휴지통), 우리 집(가족, 설정), 계정, 앱. 즐겨찾기는 앨범 탭, 아기는 아기 탭으로만.
+describe('SettingsPage', () => {
+  // 내 계정, 앱, 우리 집(가족, 휴지통), 시스템(owner). 즐겨찾기는 앨범 탭, 아기는 아기 탭으로만.
   it('groups_by_role', async () => {
+    const account = [
+      ko.me.account,
+      [ko.me.profile, ko.me.password, ko.me.devices],
+    ]
+    const app = [ko.me.app, [ko.me.notifications, ko.me.appearance]]
     const expected = {
-      family: [
-        [ko.me.home, [ko.me.family]],
-        [ko.me.account, [ko.me.profile, ko.me.password, ko.me.devices]],
-        [ko.me.app, [ko.me.notifications, ko.me.appearance]],
-      ],
-      guardian: [
-        [ko.me.photos, [ko.me.trash]],
-        [ko.me.home, [ko.me.family]],
-        [ko.me.account, [ko.me.profile, ko.me.password, ko.me.devices]],
-        [ko.me.app, [ko.me.notifications, ko.me.appearance]],
-      ],
+      family: [account, app, [ko.me.home, [ko.me.family]]],
+      guardian: [account, app, [ko.me.home, [ko.me.family, ko.me.trash]]],
       owner: [
-        [ko.me.photos, [ko.me.trash]],
-        [ko.me.home, [ko.me.family, ko.me.instance, ko.me.backup]],
-        [ko.me.account, [ko.me.profile, ko.me.password, ko.me.devices]],
-        [ko.me.app, [ko.me.notifications, ko.me.appearance]],
+        account,
+        app,
+        [ko.me.home, [ko.me.family, ko.me.trash]],
+        [ko.me.system, [ko.me.general, ko.me.media, ko.me.backup]],
       ],
     } as const
     for (const role of ['family', 'guardian', 'owner'] as const) {
@@ -119,11 +115,11 @@ describe('MePage', () => {
     expect(await screen.findByText(/^앱 버전 \d+\.\d+\.\d+/)).toBeVisible()
   })
 
-  it('sub_page_back_returns_to_me', async () => {
-    const { user, router } = renderMe('family', '/me/devices')
+  it('subpage_back_without_history', async () => {
+    const { user, router } = renderMe('family', '/settings/devices')
     await user.click(await screen.findByRole('button', { name: '뒤로' }))
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/me')
+      expect(router.state.location.pathname).toBe('/settings')
     })
   })
 
@@ -134,22 +130,18 @@ describe('MePage', () => {
     const length = window.history.length
     await user.click(screen.getByRole('button', { name: '뒤로' }))
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/me')
+      expect(router.state.location.pathname).toBe('/settings')
     })
     expect(window.history.length).toBe(length)
   })
 
-  it('backup_page_owner_only', async () => {
-    const { router } = renderMe('guardian', '/me/backup')
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/me')
-    })
-  })
-
-  it('instance_page_owner_only', async () => {
-    const { router } = renderMe('guardian', '/me/instance')
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/me')
-    })
-  })
+  it.each(['/settings/backup', '/settings/general', '/settings/media'])(
+    'system_pages_owner_only %s',
+    async (path) => {
+      const { router } = renderMe('guardian', path)
+      await waitFor(() => {
+        expect(router.state.location.pathname).toBe('/settings')
+      })
+    },
+  )
 })

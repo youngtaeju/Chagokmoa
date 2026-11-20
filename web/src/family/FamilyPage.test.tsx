@@ -96,7 +96,7 @@ describe('FamilyPage', () => {
     ).not.toBeInTheDocument()
   })
 
-  // 나 탭 하위 화면. 직접 진입이면 뒤로 = 나 화면, 초대 버튼은 머리글 오른쪽.
+  // 설정 탭 하위 화면. 직접 진입이면 뒤로 = 설정 화면, 초대 버튼은 머리글 오른쪽.
   it('header_back_and_invite', async () => {
     const { user, router } = renderMembers({}, { users: [OWNER, DAD] })
     const header = (
@@ -108,7 +108,7 @@ describe('FamilyPage', () => {
     ).toBeInTheDocument()
     await user.click(within(header).getByRole('button', { name: '뒤로' }))
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/me')
+      expect(router.state.location.pathname).toBe('/settings')
     })
   })
 

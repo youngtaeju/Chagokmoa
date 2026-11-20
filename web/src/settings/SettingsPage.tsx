@@ -7,14 +7,15 @@ import { useSignOut } from '@/auth/useSignOut'
 import { cn } from '@/lib/utils'
 
 type RowPath =
-  | '/me/profile'
-  | '/me/password'
-  | '/me/devices'
-  | '/me/notifications'
-  | '/me/appearance'
-  | '/me/trash'
-  | '/me/instance'
-  | '/me/backup'
+  | '/settings/profile'
+  | '/settings/password'
+  | '/settings/devices'
+  | '/settings/notifications'
+  | '/settings/appearance'
+  | '/settings/trash'
+  | '/settings/general'
+  | '/settings/media'
+  | '/settings/backup'
   | '/family'
 
 const ROW =
@@ -43,7 +44,7 @@ function NavRow({ to, label }: { to: RowPath; label: string }) {
   )
 }
 
-export function MePage() {
+export function SettingsPage() {
   const { t } = useTranslation()
   const { user } = useMe()
   const signOut = useSignOut()
@@ -53,7 +54,7 @@ export function MePage() {
     // 휴대폰은 실선이 화면 끝까지(-mx-4), 넓은 화면은 가운데 열.
     <div className="-mx-4 grid sm:mx-auto sm:max-w-xl">
       {user && (
-        <Link to="/me/profile" className={cn(ROW, 'mb-3 min-h-20 gap-4')}>
+        <Link to="/settings/profile" className={cn(ROW, 'mb-3 min-h-20 gap-4')}>
           <span
             aria-hidden
             className="inline-flex size-12 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xl font-bold text-accent-ink"
@@ -72,29 +73,28 @@ export function MePage() {
           <IconChevron aria-hidden className="size-6 text-muted-foreground" />
         </Link>
       )}
-      {hasRole(user, 'guardian') && (
-        <Group title={t('me.photos')}>
-          <NavRow to="/me/trash" label={t('me.trash')} />
-        </Group>
-      )}
-      <Group title={t('me.home')}>
-        <NavRow to="/family" label={t('me.family')} />
-        {hasRole(user, 'owner') && (
-          <NavRow to="/me/instance" label={t('me.instance')} />
-        )}
-        {hasRole(user, 'owner') && (
-          <NavRow to="/me/backup" label={t('me.backup')} />
-        )}
-      </Group>
       <Group title={t('me.account')}>
-        <NavRow to="/me/profile" label={t('me.profile')} />
-        <NavRow to="/me/password" label={t('me.password')} />
-        <NavRow to="/me/devices" label={t('me.devices')} />
+        <NavRow to="/settings/profile" label={t('me.profile')} />
+        <NavRow to="/settings/password" label={t('me.password')} />
+        <NavRow to="/settings/devices" label={t('me.devices')} />
       </Group>
       <Group title={t('me.app')}>
-        <NavRow to="/me/notifications" label={t('me.notifications')} />
-        <NavRow to="/me/appearance" label={t('me.appearance')} />
+        <NavRow to="/settings/notifications" label={t('me.notifications')} />
+        <NavRow to="/settings/appearance" label={t('me.appearance')} />
       </Group>
+      <Group title={t('me.home')}>
+        <NavRow to="/family" label={t('me.family')} />
+        {hasRole(user, 'guardian') && (
+          <NavRow to="/settings/trash" label={t('me.trash')} />
+        )}
+      </Group>
+      {hasRole(user, 'owner') && (
+        <Group title={t('me.system')}>
+          <NavRow to="/settings/general" label={t('me.general')} />
+          <NavRow to="/settings/media" label={t('me.media')} />
+          <NavRow to="/settings/backup" label={t('me.backup')} />
+        </Group>
+      )}
       <section className="grid gap-3 border-t border-border pt-2">
         <button
           type="button"

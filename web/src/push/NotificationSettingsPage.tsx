@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useMe } from '@/auth/session'
 import { FormError } from '@/components/Field'
 import { Switch } from '@/components/ui/switch'
-import { MeSubPage } from '@/me/MeSubPage'
+import { SubPage } from '@/components/SubPage'
 import { usePushDevice } from './usePushDevice'
 import { useSetPushPref, usePushPrefs, type PushKind } from './usePushPrefs'
 
@@ -13,7 +13,7 @@ const OWNER_KINDS: PushKind[] = [...KINDS, 'backup']
 
 const ROW = 'flex min-h-14 items-center gap-3 px-4 text-[15px]'
 
-// 나 화면과 같은 규칙: 그룹 위 실선, 진한 라벨.
+// 설정 화면과 같은 규칙: 그룹 위 실선, 진한 라벨.
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="border-t border-border pt-3 pb-2">
@@ -119,12 +119,12 @@ function KindsGroup() {
 export function NotificationSettingsPage() {
   const { t } = useTranslation()
   return (
-    <MeSubPage title={t('push.title')}>
+    <SubPage title={t('push.title')}>
       {/* 휴대폰은 실선이 화면 끝까지(-mx-4), 넓은 화면은 가운데 열. */}
       <div className="-mx-4 grid sm:mx-auto sm:max-w-xl">
         <DeviceGroup />
         <KindsGroup />
       </div>
-    </MeSubPage>
+    </SubPage>
   )
 }
