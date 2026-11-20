@@ -4,15 +4,23 @@ use axum::http::StatusCode;
 use axum_test::{TestResponse, TestServer};
 use chagokmoa::{auth::session, users::Role};
 use chrono::{DateTime, Duration, Utc};
-use common::{PASSWORD, XRW, XRW_VALUE, assert_error, server_as};
+use common::{
+    PASSWORD, XRW, XRW_VALUE, assert_error, server_as,
+    smtp::{self, Mode, Receiver},
+};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use uuid::Uuid;
 
 async fn create_link(server: &TestServer, user_id: Uuid) -> TestResponse {
+    create_link_with(server, user_id, json!({})).await
+}
+
+async fn create_link_with(server: &TestServer, user_id: Uuid, body: Value) -> TestResponse {
     server
         .post(&format!("/api/users/{user_id}/password-reset"))
         .add_header(XRW, XRW_VALUE)
+        .json(&body)
         .await
 }
 
@@ -118,6 +126,7 @@ async fn create_returns_reset_url(pool: PgPool) {
             .expect("url")
             .starts_with("http://localhost/reset/")
     );
+    assert!(body["mail_sent"].is_null());
     let expires: DateTime<Utc> = serde_json::from_value(body["expires_at"].clone()).expect("ts");
     let diff = (expires - (Utc::now() + Duration::hours(24)))
         .num_seconds()
@@ -297,4 +306,42 @@ async fn accept_short_password(pool: PgPool) {
     accept(&guest, &raw, "brand-new-pass")
         .await
         .assert_status_ok();
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn reset_mail_sent_in_target_locale(pool: PgPool) {
+    let receiver = Receiver::start(Mode::Accept).await;
+    let (owner, _, dad_id) = setup(&pool).await;
+    smtp::configure(&pool, receiver.port).await;
+    sqlx::query("UPDATE users SET email = $1, locale = 'en' WHERE id = $2")
+        .bind("dad@example.com")
+        .bind(dad_id)
+        .execute(&pool)
+        .await
+        .expect("set email");
+
+    let res = create_link_with(&owner, dad_id, json!({ "send_email": true })).await;
+    res.assert_status(StatusCode::CREATED);
+    let body: Value = res.json();
+    assert_eq!(body["mail_sent"], true);
+    let mails = receiver.messages();
+    assert_eq!(mails.len(), 1);
+    assert_eq!(mails[0].to, vec!["dad@example.com".to_owned()]);
+    let text = mails[0].body();
+    assert!(text.contains(body["url"].as_str().expect("url")), "{text}");
+    assert!(text.contains("dad"), "{text}");
+    assert!(text.contains("24 hours"), "{text}");
+    assert!(text.contains("password"), "{text}");
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn reset_mail_no_target_email(pool: PgPool) {
+    let receiver = Receiver::start(Mode::Accept).await;
+    let (owner, _, dad_id) = setup(&pool).await;
+    smtp::configure(&pool, receiver.port).await;
+
+    let res = create_link_with(&owner, dad_id, json!({ "send_email": true })).await;
+    res.assert_status(StatusCode::CREATED);
+    assert_eq!(res.json::<Value>()["mail_sent"], false);
+    assert!(receiver.messages().is_empty());
 }

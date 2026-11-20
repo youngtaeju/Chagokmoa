@@ -1,11 +1,16 @@
 mod common;
 
+use std::time::{Duration as StdDuration, Instant};
+
 use axum::http::StatusCode;
 use axum_extra::extract::cookie::Cookie;
 use axum_test::{TestResponse, TestServer};
 use chagokmoa::{auth::session, users::Role};
 use chrono::{DateTime, Duration, Utc};
-use common::{XRW, XRW_VALUE, assert_error, server_as, signup};
+use common::{
+    XRW, XRW_VALUE, assert_error, media_app, server_as, signup,
+    smtp::{self, Mode, Receiver},
+};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -553,4 +558,111 @@ async fn preview_has_inviter_name(pool: PgPool) {
     let res = preview(&guest, &raw).await;
     res.assert_status_ok();
     assert_eq!(res.json::<Value>()["inviter_display_name"], "엄마");
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn invite_mail_sent(pool: PgPool) {
+    let receiver = Receiver::start(Mode::Accept).await;
+    let owner = owner_server(&pool).await;
+    smtp::configure(&pool, receiver.port).await;
+
+    let res = create_invite(
+        &owner,
+        json!({ "role": "family", "email": " dad@example.com " }),
+    )
+    .await;
+    res.assert_status(StatusCode::CREATED);
+    let body: Value = res.json();
+    assert_eq!(body["mail_sent"], true);
+    let mails = receiver.messages();
+    assert_eq!(mails.len(), 1);
+    assert_eq!(mails[0].to, vec!["dad@example.com".to_owned()]);
+    let text = mails[0].body();
+    assert!(text.contains(body["url"].as_str().expect("url")), "{text}");
+    assert!(text.contains("우리집"), "{text}");
+    assert!(text.contains("72시간"), "{text}");
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn invite_without_email_has_no_mail(pool: PgPool) {
+    let receiver = Receiver::start(Mode::Accept).await;
+    let owner = owner_server(&pool).await;
+    smtp::configure(&pool, receiver.port).await;
+
+    for body in [
+        json!({ "role": "family" }),
+        json!({ "role": "family", "email": "  " }),
+    ] {
+        let res = create_invite(&owner, body).await;
+        res.assert_status(StatusCode::CREATED);
+        assert!(res.json::<Value>()["mail_sent"].is_null());
+    }
+    assert!(receiver.messages().is_empty());
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn invite_mail_failure_still_creates(pool: PgPool) {
+    let receiver = Receiver::start(Mode::Reject(550, "mailbox unavailable".into())).await;
+    let owner = owner_server(&pool).await;
+    smtp::configure(&pool, receiver.port).await;
+
+    let res = create_invite(
+        &owner,
+        json!({ "role": "family", "email": "dad@example.com" }),
+    )
+    .await;
+    res.assert_status(StatusCode::CREATED);
+    let body: Value = res.json();
+    assert_eq!(body["mail_sent"], false);
+    assert_eq!(status_of(&owner, &body["invite"]["id"]).await, "active");
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn invite_mail_unconfigured_still_creates(pool: PgPool) {
+    let owner = owner_server(&pool).await;
+    let res = create_invite(
+        &owner,
+        json!({ "role": "family", "email": "dad@example.com" }),
+    )
+    .await;
+    res.assert_status(StatusCode::CREATED);
+    let body: Value = res.json();
+    assert_eq!(body["mail_sent"], false);
+    assert_eq!(status_of(&owner, &body["invite"]["id"]).await, "active");
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn invite_mail_timeout_still_creates(pool: PgPool) {
+    let receiver = Receiver::start(Mode::Hang).await;
+    let mut app = media_app(&pool, Role::Owner).await;
+    app.state.mail_timeout = StdDuration::from_secs(1);
+    let (server, _) = app.login_as("dad", Role::Owner).await;
+    smtp::configure(&pool, receiver.port).await;
+
+    let started = Instant::now();
+    let res = create_invite(
+        &server,
+        json!({ "role": "family", "email": "a@example.com" }),
+    )
+    .await;
+    res.assert_status(StatusCode::CREATED);
+    let body: Value = res.json();
+    assert_eq!(body["mail_sent"], false);
+    assert!(started.elapsed() < StdDuration::from_secs(5));
+    assert_eq!(status_of(&server, &body["invite"]["id"]).await, "active");
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn invite_invalid_email_rejected(pool: PgPool) {
+    let receiver = Receiver::start(Mode::Accept).await;
+    let owner = owner_server(&pool).await;
+    smtp::configure(&pool, receiver.port).await;
+
+    assert_error(
+        &create_invite(&owner, json!({ "role": "family", "email": "nope" })).await,
+        StatusCode::BAD_REQUEST,
+        "mail.invalidAddress",
+    );
+    assert!(list(&owner).await.is_empty());
+    assert!(receiver.messages().is_empty());
 }

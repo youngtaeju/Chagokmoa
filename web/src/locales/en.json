@@ -669,7 +669,11 @@
     "resetShareTitle": "Reset your {{instance}} password",
     "resetShareTitleGeneric": "Reset password",
     "resetShareText": "Choose a new password for {{instance}}.",
-    "resetShareTextGeneric": "Choose a new password with this link."
+    "resetShareTextGeneric": "Choose a new password with this link.",
+    "inviteEmail": "Also send by email (optional)",
+    "resetSendEmail": "Send to {{email}}",
+    "mailSent": "Sent to {{email}}.",
+    "mailFailed": "Couldn't send the email. Please share the link yourself."
   },
   "settings": {
     "displayName": "Display name",

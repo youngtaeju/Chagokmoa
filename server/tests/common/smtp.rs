@@ -6,6 +6,8 @@ use std::{
 };
 
 use base64::{Engine, engine::general_purpose::STANDARD};
+use chagokmoa::mail::{MailConfig, MailSecurity, settings};
+use sqlx::PgPool;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
     net::{TcpListener, TcpStream, tcp::OwnedWriteHalf},
@@ -29,6 +31,60 @@ pub struct ReceivedMail {
     pub data: String,
     /// `AUTH` 로 받은 (사용자 이름, 비밀번호).
     pub auth: Option<(String, String)>,
+}
+
+impl ReceivedMail {
+    /// 헤더 뒤 본문. `Content-Transfer-Encoding` 에 따라 복원.
+    pub fn body(&self) -> String {
+        let (headers, body) = self.data.split_once("\r\n\r\n").expect("header end");
+        let encoding = headers
+            .lines()
+            .find_map(|l| l.strip_prefix("Content-Transfer-Encoding:"))
+            .map_or("7bit", str::trim)
+            .to_ascii_lowercase();
+        match encoding.as_str() {
+            "7bit" | "8bit" => body.to_owned(),
+            "base64" => decode(&body.replace("\r\n", "")),
+            "quoted-printable" => quoted_printable(body),
+            other => panic!("unsupported encoding {other}"),
+        }
+    }
+}
+
+/// 소프트 줄바꿈 제거 후 `=XX` 복원.
+fn quoted_printable(text: &str) -> String {
+    let joined = text.replace("=\r\n", "");
+    let bytes = joined.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'=' && i + 2 < bytes.len() {
+            let hex = std::str::from_utf8(&bytes[i + 1..i + 3]).expect("qp hex");
+            out.push(u8::from_str_radix(hex, 16).expect("qp hex"));
+            i += 3;
+        } else {
+            out.push(bytes[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8(out).expect("utf8")
+}
+
+/// 수신기로 보내는 메일 설정 저장. 암호화, 인증 없음.
+pub async fn configure(pool: &PgPool, port: u16) {
+    settings::save(
+        pool,
+        &MailConfig {
+            host: "127.0.0.1".into(),
+            port,
+            security: MailSecurity::None,
+            username: None,
+            password: None,
+            from_address: "noreply@example.com".into(),
+        },
+    )
+    .await
+    .expect("save mail settings");
 }
 
 pub struct Receiver {

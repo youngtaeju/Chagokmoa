@@ -668,7 +668,11 @@
     "resetShareTitle": "{{instance}} 비밀번호 재설정",
     "resetShareTitleGeneric": "비밀번호 재설정",
     "resetShareText": "{{instance}}의 새 비밀번호를 정해 주세요.",
-    "resetShareTextGeneric": "링크에서 새 비밀번호를 정해 주세요."
+    "resetShareTextGeneric": "링크에서 새 비밀번호를 정해 주세요.",
+    "inviteEmail": "이메일로도 보내기(선택)",
+    "resetSendEmail": "{{email}}로 보내기",
+    "mailSent": "{{email}}로 보냈어요.",
+    "mailFailed": "메일을 보내지 못했어요. 링크를 직접 공유해 주세요."
   },
   "settings": {
     "displayName": "표시 이름",

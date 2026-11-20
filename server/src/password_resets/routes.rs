@@ -16,10 +16,15 @@ use crate::{
         extract::CurrentUser, password, routes::UserResponse, session, validate::validate_password,
     },
     error::{AppError, AppResult, ErrorBody},
+    mail::{self, MailOutcome},
     request::{Json, Path},
+    settings,
     state::AppState,
     users::{self, Role, User},
 };
+
+/// 관리자 링크 유효 시간. `queries::create` 의 interval 과 같은 값.
+const ADMIN_LINK_HOURS: u32 = 24;
 
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
@@ -28,11 +33,21 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(accept_password_reset))
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct CreatePasswordResetRequest {
+    /// 대상 이메일로 링크 발송. 기본 false.
+    #[serde(default)]
+    send_email: bool,
+}
+
 #[derive(Serialize, ToSchema)]
 pub struct CreatePasswordResetResponse {
     /// `{PUBLIC_URL}/reset/{원문 토큰}`. 원문 토큰은 이 응답에서만 노출.
     url: String,
     expires_at: DateTime<Utc>,
+    /// 메일 발송 결과. 요청 안 했으면 null. 미설정, 대상 이메일 없음, 실패는 false.
+    #[schema(required = true)]
+    mail_sent: Option<bool>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -66,9 +81,10 @@ async fn find_active(conn: &mut sqlx::PgConnection, raw: &str) -> AppResult<(Pas
     post,
     path = "/api/users/{id}/password-reset",
     params(("id" = Uuid, Path, description = "대상 사용자 ID")),
+    request_body = CreatePasswordResetRequest,
     responses(
         (status = 201, description = "재설정 링크 발급 (이전 링크는 회수)", body = CreatePasswordResetResponse),
-        (status = 400, description = "자기 자신 또는 잘못된 ID 형식", body = ErrorBody),
+        (status = 400, description = "본문 형식 오류, 자기 자신 또는 잘못된 ID 형식", body = ErrorBody),
         (status = 401, description = "인증 필요", body = ErrorBody),
         (status = 403, description = "owner 아님 또는 CSRF 헤더 누락", body = ErrorBody),
         (status = 404, description = "사용자 없음", body = ErrorBody),
@@ -79,11 +95,18 @@ async fn create_password_reset(
     State(state): State<AppState>,
     current: CurrentUser,
     Path(id): Path<Uuid>,
+    Json(req): Json<CreatePasswordResetRequest>,
 ) -> AppResult<(StatusCode, AxumJson<CreatePasswordResetResponse>)> {
     current.require(Role::Owner)?;
     if id == current.user.id {
         return Err(AppError::bad_request("passwordReset.self"));
     }
+    // 생성 뒤 조회 실패로 만든 링크를 잃지 않게 미리.
+    let instance_name = if req.send_email {
+        Some(settings::queries::load(&state.pool).await?.instance_name)
+    } else {
+        None
+    };
     let mut tx = state.pool.begin().await?;
     let target = users::queries::find_by_id(&mut *tx, id)
         .await?
@@ -93,11 +116,27 @@ async fn create_password_reset(
     }
     let (raw, expires_at) = queries::create(&mut tx, target.id, current.user.id).await?;
     tx.commit().await?;
+    let url = format!("{}/reset/{raw}", state.config.public_url);
+    let mail_sent = match (instance_name, target.email.as_deref()) {
+        (None, _) => None,
+        (Some(_), None) => Some(false),
+        (Some(instance), Some(to)) => {
+            let text = mail::text::reset(
+                &target.locale,
+                &instance,
+                &target.username,
+                &url,
+                ADMIN_LINK_HOURS,
+            );
+            Some(mail::send_now(&state, to, text).await == MailOutcome::Sent)
+        }
+    };
     Ok((
         StatusCode::CREATED,
         AxumJson(CreatePasswordResetResponse {
-            url: format!("{}/reset/{raw}", state.config.public_url),
+            url,
             expires_at,
+            mail_sent,
         }),
     ))
 }
