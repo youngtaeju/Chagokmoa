@@ -2160,7 +2160,7 @@
         "operationId": "status",
         "responses": {
           "200": {
-            "description": "가입 가능 여부",
+            "description": "가입 가능 여부와 메일 사용 가능 여부",
             "content": {
               "application/json": {
                 "schema": {
@@ -4177,6 +4177,186 @@
           },
           "410": {
             "description": "만료, 사용됨, 회수됨",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mail": {
+      "get": {
+        "operationId": "get_mail_settings",
+        "responses": {
+          "200": {
+            "description": "메일 설정. 비밀번호는 설정 여부만",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailSettingsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "update_mail_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MailSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "저장 후 설정. 연결 시험은 하지 않음",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "본문 형식 오류, `mail.hostRequired`, `mail.invalidPort`, `mail.invalidAddress`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_mail_settings",
+        "responses": {
+          "204": {
+            "description": "메일 설정 삭제. 메일 기능 꺼짐"
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mail/test": {
+      "post": {
+        "operationId": "send_test_mail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestMailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "저장된 설정으로 발송 성공"
+          },
+          "400": {
+            "description": "본문 형식 오류, `mail.invalidAddress`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`mail.notConfigured`, `mail.sendFailed`(`message`, 비밀번호 제거 후)",
             "content": {
               "application/json": {
                 "schema": {
@@ -8225,6 +8405,112 @@
           }
         }
       },
+      "MailConfigView": {
+        "type": "object",
+        "required": [
+          "host",
+          "port",
+          "security",
+          "username",
+          "password_set",
+          "from_address"
+        ],
+        "properties": {
+          "from_address": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "password_set": {
+            "type": "boolean",
+            "description": "비밀번호 저장됨. 값은 응답하지 않음."
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "security": {
+            "$ref": "#/components/schemas/MailSecurity"
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "없으면 인증 없음."
+          }
+        }
+      },
+      "MailSecurity": {
+        "type": "string",
+        "enum": [
+          "starttls",
+          "tls",
+          "none"
+        ]
+      },
+      "MailSettingsRequest": {
+        "type": "object",
+        "description": "문자열은 앞뒤 공백 제거.",
+        "required": [
+          "host",
+          "port",
+          "security",
+          "from_address"
+        ],
+        "properties": {
+          "from_address": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "password": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "비었거나 없으면 저장된 값 유지."
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "1~65535.",
+            "minimum": 0
+          },
+          "security": {
+            "$ref": "#/components/schemas/MailSecurity"
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "비었거나 없으면 인증 없음. 저장된 비밀번호도 삭제."
+          }
+        }
+      },
+      "MailSettingsResponse": {
+        "type": "object",
+        "required": [
+          "config"
+        ],
+        "properties": {
+          "config": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MailConfigView",
+                "description": "미설정이면 null."
+              }
+            ]
+          }
+        }
+      },
       "MediaTokenResponse": {
         "type": "object",
         "required": [
@@ -9790,9 +10076,14 @@
       "StatusResponse": {
         "type": "object",
         "required": [
-          "signup_open"
+          "signup_open",
+          "mail_enabled"
         ],
         "properties": {
+          "mail_enabled": {
+            "type": "boolean",
+            "description": "메일 설정됨. 비밀번호 찾기 화면 분기."
+          },
           "signup_open": {
             "type": "boolean"
           }
@@ -9952,6 +10243,18 @@
           "import",
           "manual"
         ]
+      },
+      "TestMailRequest": {
+        "type": "object",
+        "required": [
+          "to"
+        ],
+        "properties": {
+          "to": {
+            "type": "string",
+            "description": "받는 주소."
+          }
+        }
       },
       "TrashItem": {
         "allOf": [

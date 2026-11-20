@@ -19,6 +19,7 @@ use super::{
 };
 use crate::{
     error::{AppError, AppResult, ErrorBody},
+    mail,
     request::{Json, Path},
     settings,
     state::AppState,
@@ -70,6 +71,8 @@ pub struct MediaTokenResponse {
 #[derive(Serialize, ToSchema)]
 pub struct StatusResponse {
     signup_open: bool,
+    /// 메일 설정됨. 비밀번호 찾기 화면 분기.
+    mail_enabled: bool,
 }
 
 #[utoipa::path(
@@ -132,11 +135,15 @@ async fn signup(
 #[utoipa::path(
     get,
     path = "/api/auth/status",
-    responses((status = 200, description = "가입 가능 여부", body = StatusResponse))
+    responses((status = 200, description = "가입 가능 여부와 메일 사용 가능 여부", body = StatusResponse))
 )]
 async fn status(State(state): State<AppState>) -> AppResult<AxumJson<StatusResponse>> {
     let signup_open = users::queries::count(&state.pool).await? == 0;
-    Ok(AxumJson(StatusResponse { signup_open }))
+    let mail_enabled = mail::is_configured(&state.pool).await?;
+    Ok(AxumJson(StatusResponse {
+        signup_open,
+        mail_enabled,
+    }))
 }
 
 #[utoipa::path(

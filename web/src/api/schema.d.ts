@@ -804,6 +804,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/mail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_mail_settings"];
+        put: operations["update_mail_settings"];
+        post?: never;
+        delete: operations["delete_mail_settings"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mail/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["send_test_mail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/memories": {
         parameters: {
             query?: never;
@@ -1779,6 +1811,37 @@ export interface components {
             password: string;
             username: string;
         };
+        MailConfigView: {
+            from_address: string;
+            host: string;
+            /** @description 비밀번호 저장됨. 값은 응답하지 않음. */
+            password_set: boolean;
+            /** Format: int32 */
+            port: number;
+            security: components["schemas"]["MailSecurity"];
+            /** @description 없으면 인증 없음. */
+            username: string | null;
+        };
+        /** @enum {string} */
+        MailSecurity: "starttls" | "tls" | "none";
+        /** @description 문자열은 앞뒤 공백 제거. */
+        MailSettingsRequest: {
+            from_address: string;
+            host: string;
+            /** @description 비었거나 없으면 저장된 값 유지. */
+            password?: string | null;
+            /**
+             * Format: int32
+             * @description 1~65535.
+             */
+            port: number;
+            security: components["schemas"]["MailSecurity"];
+            /** @description 비었거나 없으면 인증 없음. 저장된 비밀번호도 삭제. */
+            username?: string | null;
+        };
+        MailSettingsResponse: {
+            config: null | components["schemas"]["MailConfigView"];
+        };
         MediaTokenResponse: {
             /** Format: date-time */
             expires_at: string;
@@ -2271,6 +2334,8 @@ export interface components {
             username: string;
         };
         StatusResponse: {
+            /** @description 메일 설정됨. 비밀번호 찾기 화면 분기. */
+            mail_enabled: boolean;
             signup_open: boolean;
         };
         /** @description 이야기 상세. */
@@ -2332,6 +2397,10 @@ export interface components {
          * @enum {string}
          */
         TakenAtSource: "exif" | "video_meta" | "file_mtime" | "upload_time" | "import" | "manual";
+        TestMailRequest: {
+            /** @description 받는 주소. */
+            to: string;
+        };
         /** @description 휴지통 목록 항목. */
         TrashItem: components["schemas"]["AssetSummary"] & {
             /**
@@ -4280,7 +4349,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 가입 가능 여부 */
+            /** @description 가입 가능 여부와 메일 사용 가능 여부 */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -6046,6 +6115,189 @@ export interface operations {
             };
             /** @description 만료, 사용됨, 회수됨 */
             410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_mail_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 메일 설정. 비밀번호는 설정 여부만 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailSettingsResponse"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    update_mail_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MailSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description 저장 후 설정. 연결 시험은 하지 않음 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailSettingsResponse"];
+                };
+            };
+            /** @description 본문 형식 오류, `mail.hostRequired`, `mail.invalidPort`, `mail.invalidAddress` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    delete_mail_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 메일 설정 삭제. 메일 기능 꺼짐 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    send_test_mail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestMailRequest"];
+            };
+        };
+        responses: {
+            /** @description 저장된 설정으로 발송 성공 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 본문 형식 오류, `mail.invalidAddress` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description `mail.notConfigured`, `mail.sendFailed`(`message`, 비밀번호 제거 후) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

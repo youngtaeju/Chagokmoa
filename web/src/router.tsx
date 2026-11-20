@@ -65,6 +65,7 @@ const BackupPage = lazyRouteComponent(
   () => import('@/backup/BackupPage'),
   'BackupPage',
 )
+const MailPage = lazyRouteComponent(() => import('@/mail/MailPage'), 'MailPage')
 const DevicesPage = lazyRouteComponent(
   () => import('@/settings/subPages'),
   'DevicesPage',
@@ -507,6 +508,13 @@ const settingsMediaRoute = createRoute({
   component: MediaPage,
 })
 
+const settingsMailRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/settings/mail',
+  beforeLoad: requireRole('owner', '/settings'),
+  component: MailPage,
+})
+
 const settingsBackupRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: '/settings/backup',
@@ -649,6 +657,7 @@ const routeTree = rootRoute.addChildren([
       settingsGeneralRoute,
       settingsMediaRoute,
       settingsBackupRoute,
+      settingsMailRoute,
       albumsRoute,
       favoritesRoute,
       videosRoute,

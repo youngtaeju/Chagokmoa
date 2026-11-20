@@ -16,6 +16,7 @@ type RowPath =
   | '/settings/general'
   | '/settings/media'
   | '/settings/backup'
+  | '/settings/mail'
   | '/family'
 
 const ROW =
@@ -93,6 +94,7 @@ export function SettingsPage() {
           <NavRow to="/settings/general" label={t('me.general')} />
           <NavRow to="/settings/media" label={t('me.media')} />
           <NavRow to="/settings/backup" label={t('me.backup')} />
+          <NavRow to="/settings/mail" label={t('me.mail')} />
         </Group>
       )}
       <section className="grid gap-3 border-t border-border pt-2">

@@ -1341,3 +1341,26 @@ test('backup_enable_and_run', async ({ ownerPage: page }) => {
   await expect(runs).toHaveCount(before + 1, { timeout: 60_000 })
   await expect(runs.first()).toContainText('성공', { timeout: 60_000 })
 })
+
+test('mail_settings_save', async ({ ownerPage: page }) => {
+  await page.goto('/settings/mail')
+  await page.getByLabel('SMTP 서버').fill('127.0.0.1')
+  await page.getByLabel('포트').fill('2525')
+  await page.getByLabel('보안').selectOption({ label: '없음' })
+  await page.getByLabel('보내는 주소').fill('family@example.com')
+  await page.getByRole('button', { name: '저장' }).click()
+  await expect(page.getByText('메일 설정을 저장했어요')).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByLabel('SMTP 서버')).toHaveValue('127.0.0.1')
+  await expect(page.getByLabel('포트')).toHaveValue('2525')
+  await expect(page.getByLabel('보안')).toHaveValue('none')
+  await expect(page.getByLabel('보내는 주소')).toHaveValue('family@example.com')
+
+  await page.getByRole('button', { name: '메일 설정 지우기' }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: '지우기' })
+    .click()
+  await expect(page.getByLabel('SMTP 서버')).toHaveValue('')
+})

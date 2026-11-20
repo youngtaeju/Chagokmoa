@@ -39,7 +39,7 @@ async fn first_signup_creates_owner(pool: sqlx::PgPool) {
 
     let status = server.get("/api/auth/status").await;
     status.assert_status_ok();
-    status.assert_json(&json!({ "signup_open": false }));
+    status.assert_json(&json!({ "signup_open": false, "mail_enabled": false }));
 
     let name: Value = sqlx::query_scalar!("SELECT value FROM settings WHERE key = 'instance_name'")
         .fetch_one(&pool)
@@ -58,7 +58,7 @@ async fn status_is_open_before_signup(pool: sqlx::PgPool) {
     let server = common::test_server(pool).await;
     let res = server.get("/api/auth/status").await;
     res.assert_status_ok();
-    res.assert_json(&json!({ "signup_open": true }));
+    res.assert_json(&json!({ "signup_open": true, "mail_enabled": false }));
 }
 
 #[sqlx::test(migrations = "./migrations")]

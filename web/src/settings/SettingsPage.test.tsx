@@ -40,7 +40,7 @@ describe('SettingsPage', () => {
         account,
         app,
         [ko.me.home, [ko.me.family, ko.me.trash]],
-        [ko.me.system, [ko.me.general, ko.me.media, ko.me.backup]],
+        [ko.me.system, [ko.me.general, ko.me.media, ko.me.backup, ko.me.mail]],
       ],
     } as const
     for (const role of ['family', 'guardian', 'owner'] as const) {

@@ -1,6 +1,8 @@
 // 테스트 바이너리마다 쓰는 헬퍼가 달라 미사용 경고 허용.
 #![allow(dead_code)]
 
+pub mod smtp;
+
 use axum::http::{HeaderName, HeaderValue, StatusCode, header};
 use axum_extra::extract::cookie::Cookie;
 use axum_test::{TestResponse, TestServer};
