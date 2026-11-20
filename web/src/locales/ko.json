@@ -55,7 +55,10 @@
       "toSignup": "첫 계정 만들기",
       "forgot": "비밀번호를 잊었어요",
       "forgotTitle": "비밀번호를 잊었어요",
-      "forgotAskAdmin": "관리자에게 비밀번호 재설정을 요청해 주세요."
+      "forgotAskAdmin": "관리자에게 비밀번호 재설정을 요청해 주세요.",
+      "forgotLogin": "아이디 또는 이메일",
+      "forgotSend": "재설정 링크 받기",
+      "forgotDone": "등록된 이메일이 있으면 재설정 링크를 보냈어요. 메일이 오지 않으면 관리자에게 요청해 주세요."
     },
     "invite": {
       "title": "{{inviter}}님이 {{instance}}에 초대했어요",
@@ -677,7 +680,7 @@
   "settings": {
     "displayName": "표시 이름",
     "email": "이메일",
-    "emailHint": "비워 두면 이메일을 지워요.",
+    "emailHint": "비밀번호를 잊었을 때 재설정 링크를 받을 주소예요. 비워 두면 지워요.",
     "localeEn": "English",
     "profileSaved": "프로필을 저장했어요",
     "currentPassword": "현재 비밀번호",

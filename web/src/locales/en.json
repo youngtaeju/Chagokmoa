@@ -55,7 +55,10 @@
       "toSignup": "Create the first account",
       "forgot": "I forgot my password",
       "forgotTitle": "I forgot my password",
-      "forgotAskAdmin": "Ask an administrator to reset your password."
+      "forgotAskAdmin": "Ask an administrator to reset your password.",
+      "forgotLogin": "Username or email",
+      "forgotSend": "Send reset link",
+      "forgotDone": "If an email is registered, we sent a reset link. If nothing arrives, ask an administrator."
     },
     "invite": {
       "title": "{{inviter}} invited you to {{instance}}",
@@ -678,7 +681,7 @@
   "settings": {
     "displayName": "Display name",
     "email": "Email",
-    "emailHint": "Leave empty to remove your email.",
+    "emailHint": "Used to send you a reset link if you forget your password. Leave empty to remove it.",
     "localeEn": "English",
     "profileSaved": "Profile saved",
     "currentPassword": "Current password",
