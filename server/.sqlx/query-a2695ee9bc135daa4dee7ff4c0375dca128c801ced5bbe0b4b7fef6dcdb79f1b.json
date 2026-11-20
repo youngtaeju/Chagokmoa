@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM jobs\n         WHERE kind = 'send_reset_mail' AND status = 'failed' AND payload ->> 'user_id' = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a2695ee9bc135daa4dee7ff4c0375dca128c801ced5bbe0b4b7fef6dcdb79f1b"
+}

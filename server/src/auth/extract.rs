@@ -141,6 +141,7 @@ impl FromRequestParts<AppState> for MediaUser {
 const CSRF_EXEMPT: &[&str] = &[
     "/api/auth/login",
     "/api/auth/signup",
+    "/api/auth/forgot-password",
     "/api/invites/{raw}/accept",
 ];
 const CSRF_HEADER_VALUE: HeaderValue = HeaderValue::from_static("Chagokmoa");

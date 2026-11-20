@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS(\n               SELECT 1 FROM jobs\n               WHERE kind = 'send_reset_mail' AND status IN ('queued', 'running')\n                 AND payload ->> 'user_id' = $1\n           ) AS \"pending!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pending!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "65131c097b7343a63feda905d371b350c2f3ec94b205b4f50b760a434e671bff"
+}

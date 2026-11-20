@@ -21,6 +21,10 @@ pub enum Job {
     SendPush {
         notification_id: Uuid,
     },
+    /// 셀프 비밀번호 재설정 메일. 원문 토큰은 작업이 생성(페이로드에 미포함).
+    SendResetMail {
+        user_id: Uuid,
+    },
 }
 
 #[derive(Deserialize)]
@@ -33,6 +37,11 @@ struct NotificationPayload {
     notification_id: Uuid,
 }
 
+#[derive(Deserialize)]
+struct UserPayload {
+    user_id: Uuid,
+}
+
 impl Job {
     /// `jobs.kind` 값.
     pub fn kind(&self) -> &'static str {
@@ -40,6 +49,7 @@ impl Job {
             Job::ProcessAsset { .. } => "process_asset",
             Job::RegenerateDerivatives { .. } => "regenerate_derivatives",
             Job::SendPush { .. } => "send_push",
+            Job::SendResetMail { .. } => "send_reset_mail",
         }
     }
 
@@ -50,6 +60,7 @@ impl Job {
                 json!({ "asset_id": asset_id })
             }
             Job::SendPush { notification_id } => json!({ "notification_id": notification_id }),
+            Job::SendResetMail { user_id } => json!({ "user_id": user_id }),
         }
     }
 
@@ -72,6 +83,10 @@ impl Job {
                 Ok(Job::SendPush {
                     notification_id: p.notification_id,
                 })
+            }
+            "send_reset_mail" => {
+                let p: UserPayload = serde_json::from_value(payload)?;
+                Ok(Job::SendResetMail { user_id: p.user_id })
             }
             other => anyhow::bail!("unknown job kind: {other}"),
         }
@@ -96,6 +111,54 @@ pub async fn delete_for_asset(exec: impl PgExecutor<'_>, asset_id: Uuid) -> AppR
     sqlx::query!(
         "DELETE FROM jobs WHERE payload ->> 'asset_id' = $1",
         asset_id.to_string()
+    )
+    .execute(exec)
+    .await?;
+    Ok(())
+}
+
+/// 사용자의 대기, 실행 중 재설정 메일 작업 존재 여부. 비로그인 요청의 작업 누적 방지.
+pub async fn reset_mail_pending(exec: impl PgExecutor<'_>, user_id: Uuid) -> AppResult<bool> {
+    let pending = sqlx::query_scalar!(
+        r#"SELECT EXISTS(
+               SELECT 1 FROM jobs
+               WHERE kind = 'send_reset_mail' AND status IN ('queued', 'running')
+                 AND payload ->> 'user_id' = $1
+           ) AS "pending!""#,
+        user_id.to_string()
+    )
+    .fetch_one(exec)
+    .await?;
+    Ok(pending)
+}
+
+/// 사용자의 재설정 메일 작업이 최근 `within_secs` 초 안에 실패했는지. 실패 시각은 집은 시각(`locked_at`).
+pub async fn reset_mail_failed_within(
+    exec: impl PgExecutor<'_>,
+    user_id: Uuid,
+    within_secs: i64,
+) -> AppResult<bool> {
+    let recent = sqlx::query_scalar!(
+        r#"SELECT EXISTS(
+               SELECT 1 FROM jobs
+               WHERE kind = 'send_reset_mail' AND status = 'failed'
+                 AND payload ->> 'user_id' = $1
+                 AND locked_at > now() - make_interval(secs => $2::float8)
+           ) AS "recent!""#,
+        user_id.to_string(),
+        within_secs as f64
+    )
+    .fetch_one(exec)
+    .await?;
+    Ok(recent)
+}
+
+/// 사용자의 실패한 재설정 메일 작업 삭제. 새 작업 등록 전, 실패 행 사용자당 최대 1개.
+pub async fn delete_failed_reset_mail(exec: impl PgExecutor<'_>, user_id: Uuid) -> AppResult<()> {
+    sqlx::query!(
+        "DELETE FROM jobs
+         WHERE kind = 'send_reset_mail' AND status = 'failed' AND payload ->> 'user_id' = $1",
+        user_id.to_string()
     )
     .execute(exec)
     .await?;
@@ -196,5 +259,12 @@ mod tests {
         assert_eq!(push.kind(), "send_push");
         assert_eq!(Job::parse(push.kind(), push.payload()).unwrap(), push);
         assert!(Job::parse("send_push", json!({})).is_err());
+
+        let reset = Job::SendResetMail {
+            user_id: Uuid::now_v7(),
+        };
+        assert_eq!(reset.kind(), "send_reset_mail");
+        assert_eq!(Job::parse(reset.kind(), reset.payload()).unwrap(), reset);
+        assert!(Job::parse("send_reset_mail", json!({})).is_err());
     }
 }

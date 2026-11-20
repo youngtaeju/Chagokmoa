@@ -1,4 +1,4 @@
-//! 웹푸시 발송 잡과 전용 워커.
+//! 웹푸시 발송 잡과 알림 발송 워커(웹푸시, 재설정 메일).
 
 use std::{collections::HashMap, sync::LazyLock, time::Duration};
 
@@ -18,6 +18,7 @@ use super::{
 use crate::{
     error::AppResult,
     jobs::{self, ClaimedJob, Job, worker::catch_panic},
+    mail,
     notifications::{self, NotificationKind},
     settings,
     state::AppState,
@@ -180,28 +181,37 @@ fn build_request(
     Ok(reqwest::Request::try_from(request)?)
 }
 
-/// 푸시 잡 1개 처리. 큐가 비었으면 `false`.
-/// 발송 결과와 무관하게 잡 삭제. DB 오류와 패닉만 `failed` 기록, 재시도 없음.
+/// 알림 발송 잡 1개 처리. 큐가 비었으면 `false`. 재시도 없음.
+/// 푸시: 발송 결과와 무관하게 잡 삭제, DB 오류와 패닉만 `failed`.
+/// 재설정 메일: 발송 실패도 `failed`.
 async fn run_next(state: &AppState) -> AppResult<bool> {
-    let Some(ClaimedJob { id, job, .. }) = jobs::claim(&state.pool, &["send_push"]).await? else {
+    let Some(ClaimedJob { id, job, .. }) =
+        jobs::claim(&state.pool, &["send_push", "send_reset_mail"]).await?
+    else {
         return Ok(false);
     };
-    let Job::SendPush { notification_id } = job else {
+    let result = match job.clone() {
+        Job::SendPush { notification_id } => {
+            catch_panic(async { Ok(run(state, notification_id).await?) }).await
+        }
+        Job::SendResetMail { user_id } => catch_panic(mail::reset_job::run(state, user_id)).await,
         // `claim` 종류 필터로 도달 불가. 방어용.
-        jobs::fail(&state.pool, id, "unexpected job kind").await?;
-        return Ok(true);
+        Job::ProcessAsset { .. } | Job::RegenerateDerivatives { .. } => {
+            jobs::fail(&state.pool, id, "unexpected job kind").await?;
+            return Ok(true);
+        }
     };
-    match catch_panic(async { Ok(run(state, notification_id).await?) }).await {
+    match result {
         Ok(()) => jobs::finish(&state.pool, id).await?,
         Err(err) => {
-            tracing::error!(%notification_id, job_id = %id, error = ?err, "send_push job failed");
+            tracing::error!(?job, job_id = %id, error = ?err, "notification job failed");
             jobs::fail(&state.pool, id, &format!("{err:#}")).await?;
         }
     }
     Ok(true)
 }
 
-/// 푸시 전용 워커 1개. 대기 구조는 `jobs::worker::spawn` 과 같고 깨움은 `push_wake`.
+/// 알림 발송 워커 1개(웹푸시, 재설정 메일). 대기 구조는 `jobs::worker::spawn` 과 같고 깨움은 `push_wake`.
 pub fn spawn_worker(state: AppState, mut shutdown: watch::Receiver<bool>) -> JoinHandle<()> {
     tokio::spawn(async move {
         while !*shutdown.borrow() {

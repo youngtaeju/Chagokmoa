@@ -1878,6 +1878,36 @@
         }
       }
     },
+    "/api/auth/forgot-password": {
+      "post": {
+        "operationId": "forgot_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "대상 유무, 메일 설정 여부와 무관하게 같은 응답. 대상마다 재설정 메일 작업 등록"
+          },
+          "400": {
+            "description": "본문 형식 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/login": {
       "post": {
         "operationId": "login",
@@ -8214,6 +8244,18 @@
             ],
             "format": "date-time",
             "description": "클라이언트 파일 수정 시각. 촬영 메타데이터 없을 때 촬영일 후보."
+          }
+        }
+      },
+      "ForgotPasswordRequest": {
+        "type": "object",
+        "required": [
+          "login"
+        ],
+        "properties": {
+          "login": {
+            "type": "string",
+            "description": "아이디 또는 이메일(`@` 포함). 앞뒤 공백 무시, 이메일은 대소문자 무시."
           }
         }
       },

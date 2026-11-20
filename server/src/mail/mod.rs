@@ -1,5 +1,6 @@
 //! SMTP 메일 발송. 설정은 `settings` 키 `mail`, 미설정이면 메일 기능 없음.
 
+pub mod reset_job;
 pub mod routes;
 pub mod settings;
 pub mod text;

@@ -292,6 +292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["forgot_password"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login": {
         parameters: {
             query?: never;
@@ -1744,6 +1760,10 @@ export interface components {
              * @description 클라이언트 파일 수정 시각. 촬영 메타데이터 없을 때 촬영일 후보.
              */
             file_modified_at?: string | null;
+        };
+        ForgotPasswordRequest: {
+            /** @description 아이디 또는 이메일(`@` 포함). 앞뒤 공백 무시, 이메일은 대소문자 무시. */
+            login: string;
         };
         GrowthRecord: {
             /** Format: uuid */
@@ -4068,6 +4088,37 @@ export interface operations {
             };
             /** @description 자산 없음, family 에게 휴지통 자산 (`asset.notFound`), 허용 외 이름이거나 해당 파생물 없음 (`asset.fileNotFound`) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    forgot_password: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description 대상 유무, 메일 설정 여부와 무관하게 같은 응답. 대상마다 재설정 메일 작업 등록 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 본문 형식 오류 */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
