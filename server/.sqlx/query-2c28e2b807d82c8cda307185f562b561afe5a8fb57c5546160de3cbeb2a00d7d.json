@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS(\n               SELECT 1 FROM jobs\n               WHERE kind = 'send_reset_mail' AND status = 'failed'\n                 AND payload ->> 'user_id' = $1\n                 AND locked_at > now() - make_interval(secs => $2::float8)\n           ) AS \"recent!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "recent!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "2c28e2b807d82c8cda307185f562b561afe5a8fb57c5546160de3cbeb2a00d7d"
+}

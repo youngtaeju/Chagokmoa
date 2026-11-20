@@ -1878,6 +1878,36 @@
         }
       }
     },
+    "/api/auth/forgot-password": {
+      "post": {
+        "operationId": "forgot_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "대상 유무, 메일 설정 여부와 무관하게 같은 응답. 대상마다 재설정 메일 작업 등록"
+          },
+          "400": {
+            "description": "본문 형식 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/login": {
       "post": {
         "operationId": "login",
@@ -3958,7 +3988,7 @@
             }
           },
           "400": {
-            "description": "본문 형식 오류, owner 역할 지정, 만료 시간 범위 밖",
+            "description": "본문 형식 오류, owner 역할 지정, 만료 시간 범위 밖, `mail.invalidAddress`",
             "content": {
               "application/json": {
                 "schema": {
@@ -6790,6 +6820,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePasswordResetRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "201": {
             "description": "재설정 링크 발급 (이전 링크는 회수)",
@@ -6802,7 +6842,7 @@
             }
           },
           "400": {
-            "description": "자기 자신 또는 잘못된 ID 형식",
+            "description": "본문 형식 오류, 자기 자신 또는 잘못된 ID 형식",
             "content": {
               "application/json": {
                 "schema": {
@@ -7738,6 +7778,13 @@
           "role"
         ],
         "properties": {
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "초대 링크를 함께 보낼 주소. 앞뒤 공백 제거, 비면 보내지 않음. 저장하지 않음."
+          },
           "expires_in_hours": {
             "type": [
               "integer",
@@ -7758,11 +7805,19 @@
         "type": "object",
         "required": [
           "invite",
-          "url"
+          "url",
+          "mail_sent"
         ],
         "properties": {
           "invite": {
             "$ref": "#/components/schemas/Invite"
+          },
+          "mail_sent": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "메일 발송 결과. `email` 없으면 null. 미설정, 실패, 시간 초과는 false."
           },
           "url": {
             "type": "string",
@@ -7813,16 +7868,33 @@
           }
         }
       },
+      "CreatePasswordResetRequest": {
+        "type": "object",
+        "properties": {
+          "send_email": {
+            "type": "boolean",
+            "description": "대상 이메일로 링크 발송. 기본 false."
+          }
+        }
+      },
       "CreatePasswordResetResponse": {
         "type": "object",
         "required": [
           "url",
-          "expires_at"
+          "expires_at",
+          "mail_sent"
         ],
         "properties": {
           "expires_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "mail_sent": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "메일 발송 결과. 요청 안 했으면 null. 미설정, 대상 이메일 없음, 실패는 false."
           },
           "url": {
             "type": "string",
@@ -8172,6 +8244,18 @@
             ],
             "format": "date-time",
             "description": "클라이언트 파일 수정 시각. 촬영 메타데이터 없을 때 촬영일 후보."
+          }
+        }
+      },
+      "ForgotPasswordRequest": {
+        "type": "object",
+        "required": [
+          "login"
+        ],
+        "properties": {
+          "login": {
+            "type": "string",
+            "description": "아이디 또는 이메일(`@` 포함). 앞뒤 공백 무시, 이메일은 대소문자 무시."
           }
         }
       },

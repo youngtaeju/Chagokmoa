@@ -5,6 +5,7 @@
 - 서버: Rust (axum, sqlx, PostgreSQL)
 - 웹: React + TypeScript SPA, PWA
 - 앱: Capacitor (후속 단계)
+- 메일(선택): SMTP 로 초대, 재설정 링크, 비밀번호 찾기 메일을 보냅니다([메일](docs/operations.md#메일)).
 
 ## 설치
 

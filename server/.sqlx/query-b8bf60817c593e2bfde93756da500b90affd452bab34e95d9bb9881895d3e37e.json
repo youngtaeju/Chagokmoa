@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE password_resets SET revoked_at = now()\n         WHERE user_id = $1 AND created_by = $1 AND id <> $2\n           AND used_at IS NULL AND revoked_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b8bf60817c593e2bfde93756da500b90affd452bab34e95d9bb9881895d3e37e"
+}

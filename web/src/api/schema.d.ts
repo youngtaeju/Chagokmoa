@@ -292,6 +292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["forgot_password"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login": {
         parameters: {
             query?: never;
@@ -1572,6 +1588,8 @@ export interface components {
             weight_kg?: number | null;
         };
         CreateInviteRequest: {
+            /** @description 초대 링크를 함께 보낼 주소. 앞뒤 공백 제거, 비면 보내지 않음. 저장하지 않음. */
+            email?: string | null;
             /**
              * Format: int32
              * @description 기본 72, 1~720.
@@ -1582,6 +1600,8 @@ export interface components {
         };
         CreateInviteResponse: {
             invite: components["schemas"]["Invite"];
+            /** @description 메일 발송 결과. `email` 없으면 null. 미설정, 실패, 시간 초과는 false. */
+            mail_sent: boolean | null;
             /** @description `{PUBLIC_URL}/invite/{원문 토큰}`. 원문 토큰은 이 응답에서만 노출. */
             url: string;
         };
@@ -1600,9 +1620,15 @@ export interface components {
             /** @description 미리 정한 항목 키. `custom_label` 과 정확히 하나. 아기당 한 번. */
             preset_key?: string | null;
         };
+        CreatePasswordResetRequest: {
+            /** @description 대상 이메일로 링크 발송. 기본 false. */
+            send_email?: boolean;
+        };
         CreatePasswordResetResponse: {
             /** Format: date-time */
             expires_at: string;
+            /** @description 메일 발송 결과. 요청 안 했으면 null. 미설정, 대상 이메일 없음, 실패는 false. */
+            mail_sent: boolean | null;
             /** @description `{PUBLIC_URL}/reset/{원문 토큰}`. 원문 토큰은 이 응답에서만 노출. */
             url: string;
         };
@@ -1734,6 +1760,10 @@ export interface components {
              * @description 클라이언트 파일 수정 시각. 촬영 메타데이터 없을 때 촬영일 후보.
              */
             file_modified_at?: string | null;
+        };
+        ForgotPasswordRequest: {
+            /** @description 아이디 또는 이메일(`@` 포함). 앞뒤 공백 무시, 이메일은 대소문자 무시. */
+            login: string;
         };
         GrowthRecord: {
             /** Format: uuid */
@@ -4067,6 +4097,37 @@ export interface operations {
             };
         };
     };
+    forgot_password: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description 대상 유무, 메일 설정 여부와 무관하게 같은 응답. 대상마다 재설정 메일 작업 등록 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 본문 형식 오류 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -5925,7 +5986,7 @@ export interface operations {
                     "application/json": components["schemas"]["CreateInviteResponse"];
                 };
             };
-            /** @description 본문 형식 오류, owner 역할 지정, 만료 시간 범위 밖 */
+            /** @description 본문 형식 오류, owner 역할 지정, 만료 시간 범위 밖, `mail.invalidAddress` */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -8380,7 +8441,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePasswordResetRequest"];
+            };
+        };
         responses: {
             /** @description 재설정 링크 발급 (이전 링크는 회수) */
             201: {
@@ -8391,7 +8456,7 @@ export interface operations {
                     "application/json": components["schemas"]["CreatePasswordResetResponse"];
                 };
             };
-            /** @description 자기 자신 또는 잘못된 ID 형식 */
+            /** @description 본문 형식 오류, 자기 자신 또는 잘못된 ID 형식 */
             400: {
                 headers: {
                     [name: string]: unknown;

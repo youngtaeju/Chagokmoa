@@ -77,3 +77,13 @@ export function LinkShareBox({
     </div>
   )
 }
+
+// 링크와 함께 메일 발송 결과 한 줄. 실패해도 링크는 그대로 공유 가능.
+export function MailResult({ email, sent }: { email: string; sent: boolean }) {
+  const { t } = useTranslation()
+  return (
+    <p role="status" className={sent ? 'text-sm' : 'text-sm text-destructive'}>
+      {sent ? t('members.mailSent', { email }) : t('members.mailFailed')}
+    </p>
+  )
+}

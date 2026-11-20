@@ -21,6 +21,7 @@ use crate::{
         validate::{validate_credentials, validate_display_name},
     },
     error::{AppError, AppResult, ErrorBody},
+    mail::{self, MailOutcome},
     request::{Json, Path},
     settings,
     state::AppState,
@@ -45,6 +46,8 @@ pub struct CreateInviteRequest {
     /// 기본 72, 1~720.
     #[schema(minimum = 1, maximum = 720)]
     expires_in_hours: Option<u32>,
+    /// 초대 링크를 함께 보낼 주소. 앞뒤 공백 제거, 비면 보내지 않음. 저장하지 않음.
+    email: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -52,6 +55,9 @@ pub struct CreateInviteResponse {
     invite: Invite,
     /// `{PUBLIC_URL}/invite/{원문 토큰}`. 원문 토큰은 이 응답에서만 노출.
     url: String,
+    /// 메일 발송 결과. `email` 없으면 null. 미설정, 실패, 시간 초과는 false.
+    #[schema(required = true)]
+    mail_sent: Option<bool>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -90,7 +96,7 @@ async fn find_active(pool: &PgPool, raw: &str) -> AppResult<Invite> {
     request_body = CreateInviteRequest,
     responses(
         (status = 201, description = "초대 발급", body = CreateInviteResponse),
-        (status = 400, description = "본문 형식 오류, owner 역할 지정, 만료 시간 범위 밖", body = ErrorBody),
+        (status = 400, description = "본문 형식 오류, owner 역할 지정, 만료 시간 범위 밖, `mail.invalidAddress`", body = ErrorBody),
         (status = 401, description = "인증 필요", body = ErrorBody),
         (status = 403, description = "owner 아님 또는 CSRF 헤더 누락", body = ErrorBody),
     )
@@ -108,6 +114,19 @@ async fn create_invite(
     if !(1..=MAX_EXPIRY_HOURS).contains(&hours) {
         return Err(AppError::bad_request("invite.invalidExpiry"));
     }
+    let email = req
+        .email
+        .as_deref()
+        .map(str::trim)
+        .filter(|e| !e.is_empty());
+    if email.is_some_and(|e| !mail::valid_address(e)) {
+        return Err(AppError::bad_request("mail.invalidAddress"));
+    }
+    // 생성 뒤 조회 실패로 만든 초대 링크를 잃지 않게 미리.
+    let mail_to = match email {
+        Some(to) => Some((to, settings::queries::load(&state.pool).await?)),
+        None => None,
+    };
 
     let (raw, invite) = queries::create(
         &state.pool,
@@ -119,9 +138,26 @@ async fn create_invite(
     )
     .await?;
     let url = format!("{}/invite/{raw}", state.config.public_url);
+    // 원문 토큰은 저장하지 않으므로 이 요청 안에서 발송.
+    let mail_sent = match mail_to {
+        Some((to, instance)) => {
+            let text = mail::text::invite(
+                &instance.default_locale,
+                &instance.instance_name,
+                &url,
+                hours,
+            );
+            Some(mail::send_now(&state, to, text).await == MailOutcome::Sent)
+        }
+        None => None,
+    };
     Ok((
         StatusCode::CREATED,
-        AxumJson(CreateInviteResponse { invite, url }),
+        AxumJson(CreateInviteResponse {
+            invite,
+            url,
+            mail_sent,
+        }),
     ))
 }
 

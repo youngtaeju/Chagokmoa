@@ -63,9 +63,16 @@ function renderMembers(
     'GET /api/settings': () => json(200, settingsFixture),
     'GET /api/users': () => json(200, { users }),
     'GET /api/invites': () => json(200, { invites: [] }),
+    'GET /api/auth/status': () =>
+      json(200, { signup_open: false, mail_enabled: false }),
     ...extra,
   })
   return renderApp('/family')
+}
+
+const mailOn = {
+  'GET /api/auth/status': () =>
+    json(200, { signup_open: false, mail_enabled: true }),
 }
 
 describe('FamilyPage', () => {
@@ -139,11 +146,78 @@ describe('FamilyPage', () => {
     return bodies
   }
 
-  const createRoute = (bodies: unknown[]) => ({
+  const createRoute = (bodies: unknown[], mailSent: boolean | null = null) => ({
     'POST /api/invites': async (req: Request) => {
       bodies.push(await req.json())
-      return json(201, { url: 'http://x/invite/r', invite: invite() })
+      return json(201, {
+        url: 'http://x/invite/r',
+        invite: invite(),
+        mail_sent: mailSent,
+      })
     },
+  })
+
+  async function openInvite(user: ReturnType<typeof renderMembers>['user']) {
+    await user.click(
+      await screen.findByRole('button', { name: '가족 초대하기' }),
+    )
+    return screen.findByRole('dialog')
+  }
+
+  it('email_field_only_when_mail_enabled', async () => {
+    const off: unknown[] = []
+    const first = renderMembers(createRoute(off))
+    let sheet = await openInvite(first.user)
+    await waitFor(() => {
+      expect(first.queryClient.getQueryData(['auth', 'status'])).toBeDefined()
+    })
+    expect(within(sheet).queryByLabelText('이메일로도 보내기(선택)')).toBeNull()
+    await first.user.click(
+      within(sheet).getByRole('button', { name: '초대 링크 만들기' }),
+    )
+    await screen.findByDisplayValue('http://x/invite/r')
+    expect(off).toEqual([{ role: 'family', expires_in_hours: 72 }])
+    cleanup()
+
+    const on: unknown[] = []
+    const { user } = renderMembers({ ...mailOn, ...createRoute(on, true) })
+    sheet = await openInvite(user)
+    await user.type(
+      await within(sheet).findByLabelText('이메일로도 보내기(선택)'),
+      'dad@x.test',
+    )
+    await user.click(
+      within(sheet).getByRole('button', { name: '초대 링크 만들기' }),
+    )
+    await screen.findByDisplayValue('http://x/invite/r')
+    expect(on).toEqual([
+      { role: 'family', expires_in_hours: 72, email: 'dad@x.test' },
+    ])
+  })
+
+  it('invite_mail_result_line', async () => {
+    for (const sent of [true, false]) {
+      const { user } = renderMembers({ ...mailOn, ...createRoute([], sent) })
+      const sheet = await openInvite(user)
+      await user.type(
+        await within(sheet).findByLabelText('이메일로도 보내기(선택)'),
+        'dad@x.test',
+      )
+      await user.click(
+        within(sheet).getByRole('button', { name: '초대 링크 만들기' }),
+      )
+      expect(
+        await screen.findByDisplayValue('http://x/invite/r'),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          sent
+            ? 'dad@x.test로 보냈어요.'
+            : '메일을 보내지 못했어요. 링크를 직접 공유해 주세요.',
+        ),
+      ).toBeInTheDocument()
+      cleanup()
+    }
   })
 
   it('share_used_when_available', async () => {

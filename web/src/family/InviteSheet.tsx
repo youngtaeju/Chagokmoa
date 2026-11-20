@@ -1,12 +1,13 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, call } from '@/api/client'
 import type { Role } from '@/api/types'
-import { FormError } from '@/components/Field'
+import { authStatusQuery } from '@/auth/session'
+import { Field, FormError, formText } from '@/components/Field'
 import { SelectField } from '@/components/NativeSelect'
 import { Button } from '@/components/ui/button'
-import { LinkShareBox } from './LinkShareBox'
+import { LinkShareBox, MailResult } from './LinkShareBox'
 import { useSettings } from '@/settings/useSettings'
 import { AdaptiveSheet } from '@/upload/AdaptiveSheet'
 
@@ -22,13 +23,21 @@ export function InviteSheet({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const instance = useSettings()?.instance_name
-  const [url, setUrl] = useState<string | null>(null)
+  const mailEnabled = useQuery(authStatusQuery).data?.mail_enabled === true
+  const [created, setCreated] = useState<{
+    url: string
+    email?: string
+    mailSent: boolean | null
+  } | null>(null)
 
   const create = useMutation({
-    mutationFn: (body: { role: Role; expires_in_hours: number }) =>
-      call(api.POST('/api/invites', { body })),
-    onSuccess: (res) => {
-      setUrl(res.url)
+    mutationFn: (body: {
+      role: Role
+      expires_in_hours: number
+      email?: string
+    }) => call(api.POST('/api/invites', { body })),
+    onSuccess: (res, body) => {
+      setCreated({ url: res.url, email: body.email, mailSent: res.mail_sent })
       void qc.invalidateQueries({ queryKey: invitesKey })
     },
   })
@@ -43,8 +52,13 @@ export function InviteSheet({ onClose }: { onClose: () => void }) {
             const form = new FormData(e.currentTarget)
             const role = form.get('role')
             const hours = Number(form.get('hours'))
+            const email = formText(form, 'email').trim()
             if (typeof role === 'string' && isInviteRole(role)) {
-              create.mutate({ role, expires_in_hours: hours })
+              create.mutate({
+                role,
+                expires_in_hours: hours,
+                ...(email && { email }),
+              })
             }
           }}
         >
@@ -70,14 +84,25 @@ export function InviteSheet({ onClose }: { onClose: () => void }) {
               </option>
             ))}
           </SelectField>
+          {mailEnabled && (
+            <Field
+              label={t('members.inviteEmail')}
+              name="email"
+              type="email"
+              autoComplete="off"
+            />
+          )}
           <Button type="submit" disabled={create.isPending}>
             {t('members.createInvite')}
           </Button>
         </form>
         <FormError error={create.error} />
-        {url !== null && (
+        {created?.email && created.mailSent !== null && (
+          <MailResult email={created.email} sent={created.mailSent} />
+        )}
+        {created && (
           <LinkShareBox
-            url={url}
+            url={created.url}
             label={t('members.inviteUrl')}
             shareTitle={
               instance

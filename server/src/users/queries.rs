@@ -76,6 +76,20 @@ pub async fn find_by_id(exec: impl PgExecutor<'_>, id: Uuid) -> AppResult<Option
     Ok(user)
 }
 
+/// 대소문자 무시 일치. 이메일은 사용자 간 유일하지 않음.
+pub async fn find_by_email(exec: impl PgExecutor<'_>, email: &str) -> AppResult<Vec<User>> {
+    let users = sqlx::query_as!(
+        User,
+        r#"SELECT id, username, display_name, role AS "role: Role", email, locale,
+                  created_at, disabled_at
+           FROM users WHERE lower(email) = lower($1) ORDER BY created_at, id"#,
+        email,
+    )
+    .fetch_all(exec)
+    .await?;
+    Ok(users)
+}
+
 pub async fn list(exec: impl PgExecutor<'_>) -> AppResult<Vec<User>> {
     let users = sqlx::query_as!(
         User,

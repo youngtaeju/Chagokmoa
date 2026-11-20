@@ -61,7 +61,9 @@ pub async fn run_next(state: &AppState) -> AppResult<bool> {
             }
         }
         // `claim` 종류 필터로 도달 불가. 방어용.
-        Job::SendPush { .. } => super::fail(&state.pool, id, "unexpected job kind").await?,
+        Job::SendPush { .. } | Job::SendResetMail { .. } => {
+            super::fail(&state.pool, id, "unexpected job kind").await?
+        }
     }
     Ok(true)
 }

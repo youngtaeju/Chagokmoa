@@ -1,7 +1,9 @@
 //! SMTP 메일 발송. 설정은 `settings` 키 `mail`, 미설정이면 메일 기능 없음.
 
+pub mod reset_job;
 pub mod routes;
 pub mod settings;
+pub mod text;
 
 use std::time::Duration;
 
@@ -98,6 +100,41 @@ pub async fn send(state: &AppState, cfg: &MailConfig, msg: Outgoing) -> Result<(
         Ok(Ok(_)) => Ok(()),
         Ok(Err(e)) => Err(fail(&e)),
         Err(_) => Err(MailError::Send("timed out".to_owned())),
+    }
+}
+
+/// 요청 안 즉시 발송 결과. 실패해도 원래 작업은 성공 처리.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MailOutcome {
+    Sent,
+    Failed,
+}
+
+/// 미설정, 발송 실패, 내부 오류 모두 `Failed`. 경고 문구는 비밀번호 제거된 오류만.
+pub async fn send_now(
+    state: &AppState,
+    to: &str,
+    (subject, body): (String, String),
+) -> MailOutcome {
+    let config = match settings::load(&state.pool).await {
+        Ok(Some(config)) => config,
+        Ok(None) => return MailOutcome::Failed,
+        Err(e) => {
+            tracing::warn!(error = %e, "mail settings load failed");
+            return MailOutcome::Failed;
+        }
+    };
+    let msg = Outgoing {
+        to: to.to_owned(),
+        subject,
+        body,
+    };
+    match send(state, &config, msg).await {
+        Ok(()) => MailOutcome::Sent,
+        Err(e) => {
+            tracing::warn!(error = %e, "mail send failed");
+            MailOutcome::Failed
+        }
     }
 }
 
