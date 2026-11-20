@@ -14,6 +14,7 @@ type RowPath =
   | '/settings/appearance'
   | '/settings/trash'
   | '/settings/general'
+  | '/settings/media'
   | '/settings/backup'
   | '/family'
 
@@ -72,20 +73,6 @@ export function SettingsPage() {
           <IconChevron aria-hidden className="size-6 text-muted-foreground" />
         </Link>
       )}
-      {hasRole(user, 'guardian') && (
-        <Group title={t('me.photos')}>
-          <NavRow to="/settings/trash" label={t('me.trash')} />
-        </Group>
-      )}
-      <Group title={t('me.home')}>
-        <NavRow to="/family" label={t('me.family')} />
-        {hasRole(user, 'owner') && (
-          <NavRow to="/settings/general" label={t('me.instance')} />
-        )}
-        {hasRole(user, 'owner') && (
-          <NavRow to="/settings/backup" label={t('me.backup')} />
-        )}
-      </Group>
       <Group title={t('me.account')}>
         <NavRow to="/settings/profile" label={t('me.profile')} />
         <NavRow to="/settings/password" label={t('me.password')} />
@@ -95,6 +82,19 @@ export function SettingsPage() {
         <NavRow to="/settings/notifications" label={t('me.notifications')} />
         <NavRow to="/settings/appearance" label={t('me.appearance')} />
       </Group>
+      <Group title={t('me.home')}>
+        <NavRow to="/family" label={t('me.family')} />
+        {hasRole(user, 'guardian') && (
+          <NavRow to="/settings/trash" label={t('me.trash')} />
+        )}
+      </Group>
+      {hasRole(user, 'owner') && (
+        <Group title={t('me.system')}>
+          <NavRow to="/settings/general" label={t('me.general')} />
+          <NavRow to="/settings/media" label={t('me.media')} />
+          <NavRow to="/settings/backup" label={t('me.backup')} />
+        </Group>
+      )}
       <section className="grid gap-3 border-t border-border pt-2">
         <button
           type="button"

@@ -26,25 +26,21 @@ function renderMe(role: Role, path = '/settings') {
 }
 
 describe('SettingsPage', () => {
-  // 내 사진(휴지통), 우리 집(가족, 설정), 계정, 앱. 즐겨찾기는 앨범 탭, 아기는 아기 탭으로만.
+  // 내 계정, 앱, 우리 집(가족, 휴지통), 시스템(owner). 즐겨찾기는 앨범 탭, 아기는 아기 탭으로만.
   it('groups_by_role', async () => {
+    const account = [
+      ko.me.account,
+      [ko.me.profile, ko.me.password, ko.me.devices],
+    ]
+    const app = [ko.me.app, [ko.me.notifications, ko.me.appearance]]
     const expected = {
-      family: [
-        [ko.me.home, [ko.me.family]],
-        [ko.me.account, [ko.me.profile, ko.me.password, ko.me.devices]],
-        [ko.me.app, [ko.me.notifications, ko.me.appearance]],
-      ],
-      guardian: [
-        [ko.me.photos, [ko.me.trash]],
-        [ko.me.home, [ko.me.family]],
-        [ko.me.account, [ko.me.profile, ko.me.password, ko.me.devices]],
-        [ko.me.app, [ko.me.notifications, ko.me.appearance]],
-      ],
+      family: [account, app, [ko.me.home, [ko.me.family]]],
+      guardian: [account, app, [ko.me.home, [ko.me.family, ko.me.trash]]],
       owner: [
-        [ko.me.photos, [ko.me.trash]],
-        [ko.me.home, [ko.me.family, ko.me.instance, ko.me.backup]],
-        [ko.me.account, [ko.me.profile, ko.me.password, ko.me.devices]],
-        [ko.me.app, [ko.me.notifications, ko.me.appearance]],
+        account,
+        app,
+        [ko.me.home, [ko.me.family, ko.me.trash]],
+        [ko.me.system, [ko.me.general, ko.me.media, ko.me.backup]],
       ],
     } as const
     for (const role of ['family', 'guardian', 'owner'] as const) {
@@ -139,7 +135,7 @@ describe('SettingsPage', () => {
     expect(window.history.length).toBe(length)
   })
 
-  it.each(['/settings/backup', '/settings/general'])(
+  it.each(['/settings/backup', '/settings/general', '/settings/media'])(
     'system_pages_owner_only %s',
     async (path) => {
       const { router } = renderMe('guardian', path)

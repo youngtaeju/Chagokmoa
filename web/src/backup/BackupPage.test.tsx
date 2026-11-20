@@ -97,6 +97,15 @@ function renderBackup(
 }
 
 describe('backup setup', () => {
+  // 파생물 다시 만들기는 시스템 › 사진 처리로 이동.
+  it('no_regen_on_backup', async () => {
+    renderBackup(backupStatusFixture())
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '시스템 백업' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '다시 만들기' })).toBeNull()
+  })
+
   it('not_mounted_shows_compose_guidance', async () => {
     renderBackup(backupStatusFixture({ mounted: false, repo_state: null }))
     expect(await screen.findByText(ko.backup.mountTitle)).toBeInTheDocument()

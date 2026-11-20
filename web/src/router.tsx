@@ -77,9 +77,13 @@ const NotificationSettingsPage = lazyRouteComponent(
   () => import('@/push/NotificationSettingsPage'),
   'NotificationSettingsPage',
 )
-const InstancePage = lazyRouteComponent(
+const GeneralPage = lazyRouteComponent(
   () => import('@/settings/subPages'),
-  'InstancePage',
+  'GeneralPage',
+)
+const MediaPage = lazyRouteComponent(
+  () => import('@/settings/subPages'),
+  'MediaPage',
 )
 const BabiesIndexPage = lazyRouteComponent(
   () => import('@/babies/BabiesIndexPage'),
@@ -493,7 +497,14 @@ const settingsGeneralRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: '/settings/general',
   beforeLoad: requireRole('owner', '/settings'),
-  component: InstancePage,
+  component: GeneralPage,
+})
+
+const settingsMediaRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/settings/media',
+  beforeLoad: requireRole('owner', '/settings'),
+  component: MediaPage,
 })
 
 const settingsBackupRoute = createRoute({
@@ -636,6 +647,7 @@ const routeTree = rootRoute.addChildren([
       settingsNotificationsRoute,
       settingsAppearanceRoute,
       settingsGeneralRoute,
+      settingsMediaRoute,
       settingsBackupRoute,
       albumsRoute,
       favoritesRoute,

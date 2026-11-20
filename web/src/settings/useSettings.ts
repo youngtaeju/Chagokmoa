@@ -1,5 +1,12 @@
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { api, call } from '@/api/client'
 import type { Settings } from '@/api/types'
 import { todayInZone } from '@/viewer/zoned'
@@ -41,6 +48,29 @@ export function useSettingsQuery() {
 
 export function useSettings(): Settings | undefined {
   return useSettingsQuery().data
+}
+
+// 시스템 › 일반, 사진 처리 공용. 바뀐 필드만 PATCH.
+export function useSaveSettings() {
+  const { t } = useTranslation()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: Partial<Settings>) =>
+      call(api.PATCH('/api/settings', { body })),
+    onSuccess: async (updated, body) => {
+      qc.setQueryData(settingsQueryKey, updated)
+      const stale = [qc.invalidateQueries({ queryKey: settingsQueryKey })]
+      // 시간대가 바뀌면 서버 local_date 가 달라짐.
+      if (body.timezone !== undefined) {
+        stale.push(
+          qc.invalidateQueries({ queryKey: ['assets'] }),
+          qc.invalidateQueries({ queryKey: ['days'] }),
+        )
+      }
+      await Promise.all(stale)
+      toast(t('settings.instanceSaved'))
+    },
+  })
 }
 
 // 날짜 바뀜 확인 주기(ms). 백그라운드 탭 타이머 지연에도 복귀 직후 갱신.

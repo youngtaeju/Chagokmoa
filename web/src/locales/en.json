@@ -695,7 +695,7 @@
     "trashRetentionHint": "0 never empties the trash automatically. Up to 3650 days.",
     "primaryBaby": "Main baby",
     "primaryBabyHint": "Used for day counts on Home and Calendar.",
-    "instanceSaved": "Home settings saved",
+    "instanceSaved": "Settings saved",
     "language": "Language",
     "localeKo": "한국어"
   },
@@ -830,7 +830,6 @@
   "me": {
     "account": "Account",
     "app": "App",
-    "photos": "My photos",
     "home": "Our home",
     "family": "Family",
     "profile": "Profile",
@@ -839,7 +838,9 @@
     "notifications": "Notifications",
     "appearance": "Display & language",
     "trash": "Trash",
-    "instance": "Home settings",
+    "system": "System",
+    "general": "General",
+    "media": "Media processing",
     "backup": "Backup",
     "logout": "Sign out",
     "version": "App version {{version}}",

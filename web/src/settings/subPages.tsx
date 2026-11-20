@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next'
 import { meQuery } from '@/auth/session'
 import { FormError } from '@/components/Field'
 import { Button } from '@/components/ui/button'
+import { RegenSection } from '@/backup/RegenSection'
 import { AppearanceSection } from '@/settings/AppearanceSection'
-import { InstanceSection } from '@/settings/InstanceSection'
+import { GeneralSection } from '@/settings/GeneralSection'
+import { MediaSection } from '@/settings/MediaSection'
 import { PasswordSection } from '@/settings/PasswordSection'
 import { ProfileSection } from '@/settings/ProfileSection'
 import { SessionsSection } from '@/settings/SessionsSection'
@@ -98,15 +100,32 @@ export function AppearancePage() {
   )
 }
 
-export function InstancePage() {
+export function GeneralPage() {
   const { t } = useTranslation()
   const settings = useSettingsQuery()
   return (
-    <SubPage title={t('me.instance')}>
+    <SubPage section={t('me.system')} title={t('me.general')}>
       <Body>
         <Loaded query={settings}>
-          {(s) => <InstanceSection settings={s} />}
+          {(s) => <GeneralSection settings={s} />}
         </Loaded>
+      </Body>
+    </SubPage>
+  )
+}
+
+export function MediaPage() {
+  const { t } = useTranslation()
+  const settings = useSettingsQuery()
+  return (
+    <SubPage section={t('me.system')} title={t('me.media')}>
+      <Body>
+        <div className="grid gap-6">
+          <Loaded query={settings}>
+            {(s) => <MediaSection settings={s} />}
+          </Loaded>
+          <RegenSection />
+        </div>
       </Body>
     </SubPage>
   )
