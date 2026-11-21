@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Role, SessionInfo, Settings } from '@/api/types'
 import { initI18n } from '@/i18n'
@@ -10,6 +10,7 @@ import {
   settingsFixture,
   userFixture,
 } from '@/test/fixtures'
+import { REGEN_POLL_MS } from '@/backup/RegenSection'
 import { renderApp } from '@/test/router'
 
 beforeEach(() => {
@@ -420,7 +421,22 @@ describe('settings sub pages', () => {
   })
 })
 
+// 폴링 간격(3초)을 실제로 기다리지 않음. 부하 시 시간 초과 방지.
+// 시작 직후 남은 수 표시 → 다음 조회 2개 → 그다음 조회 0개, 간격 두 번.
+async function pollUntilDone() {
+  await act(() => vi.advanceTimersByTimeAsync(REGEN_POLL_MS))
+  await act(() => vi.advanceTimersByTimeAsync(REGEN_POLL_MS))
+}
+
 describe('media page regen', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('regen_flow_posts_and_polls_until_done', async () => {
     let posted: unknown = null
     let polls = 0
@@ -447,10 +463,9 @@ describe('media page regen', () => {
       await screen.findByText('남은 항목 2개를 만드는 중이에요.'),
     ).toBeInTheDocument()
     expect(posted).toEqual({ missing_only: true })
-    expect(
-      await screen.findByText('모두 만들었어요.', {}, { timeout: 6000 }),
-    ).toBeInTheDocument()
-  }, 15_000)
+    await pollUntilDone()
+    expect(await screen.findByText('모두 만들었어요.')).toBeInTheDocument()
+  })
 
   it('regen_shows_failed_count_when_done', async () => {
     let polls = 0
@@ -471,10 +486,14 @@ describe('media page regen', () => {
     const dialog = await screen.findByRole('alertdialog')
     await user.click(within(dialog).getByRole('button', { name: '없는 것만' }))
     expect(
-      await screen.findByText('1개는 만들지 못했어요.', {}, { timeout: 6000 }),
+      await screen.findByText('남은 항목 2개를 만드는 중이에요.'),
+    ).toBeInTheDocument()
+    await pollUntilDone()
+    expect(
+      await screen.findByText('1개는 만들지 못했어요.'),
     ).toBeInTheDocument()
     expect(screen.queryByText('모두 만들었어요.')).toBeNull()
-  }, 15_000)
+  })
 
   it('regen_all_sends_missing_only_false_and_cancel_closes', async () => {
     let posted: unknown = null
