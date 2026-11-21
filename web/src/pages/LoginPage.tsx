@@ -7,6 +7,7 @@ import { authStatusQuery, setSignedIn } from '@/auth/session'
 import { Field, FormError, formText } from '@/components/Field'
 import { PasswordField } from '@/components/PasswordField'
 import { Button } from '@/components/ui/button'
+import { OidcErrorNotice, useOidcError } from '@/oidc/useOidcError'
 import IconLock from '~icons/material-symbols/lock-outline-rounded'
 import IconLogin from '~icons/material-symbols/login-rounded'
 import IconPerson from '~icons/material-symbols/person-outline-rounded'
@@ -70,6 +71,7 @@ function Tagline() {
 export function LoginPage() {
   const { t } = useTranslation()
   const { redirect } = useSearch({ from: '/login' })
+  const oidcError = useOidcError()
   const navigate = useNavigate()
   const qc = useQueryClient()
   const status = useQuery(authStatusQuery)
@@ -91,6 +93,7 @@ export function LoginPage() {
 
   return (
     <AuthLayout intro={<Tagline />}>
+      <OidcErrorNotice message={oidcError} />
       <form
         className="grid gap-4"
         onSubmit={(e) => {
@@ -125,6 +128,29 @@ export function LoginPage() {
           {t('auth.login.submit')}
         </Button>
       </form>
+      {status.data?.oidc && (
+        <div className="grid gap-4">
+          <div
+            role="separator"
+            className="flex items-center gap-3 text-sm text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border"
+          >
+            {t('auth.login.or')}
+          </div>
+          <Button
+            asChild
+            variant="outline"
+            className="h-[52px] text-[17px] font-bold"
+          >
+            <a
+              href={`/api/auth/oidc/start?purpose=login${
+                redirect ? `&redirect=${encodeURIComponent(redirect)}` : ''
+              }`}
+            >
+              {t('auth.login.oidc', { label: status.data.oidc.label })}
+            </a>
+          </Button>
+        </div>
+      )}
       <div className="-mt-3 flex flex-col items-center gap-0.5">
         <ForgotPasswordSheet />
         {status.data?.signup_open && (

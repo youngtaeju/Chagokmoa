@@ -13,11 +13,15 @@ beforeEach(() => {
 
 afterEach(cleanup)
 
-function renderMe(role: Role, path = '/settings') {
+function renderMe(
+  role: Role,
+  path = '/settings',
+  oidc: { label: string } | null = null,
+) {
   mockFetch({
     'GET /api/auth/me': () => json(200, { user: userFixture(role) }),
     'GET /api/settings': () => json(200, settingsFixture),
-    'GET /api/auth/status': () => json(200, { signup_open: false }),
+    'GET /api/auth/status': () => json(200, { signup_open: false, oidc }),
     'GET /api/auth/sessions': () => json(200, { sessions: [] }),
     'POST /api/auth/logout': () => json(204, null),
     ...emptyFeedRoutes,
@@ -26,6 +30,27 @@ function renderMe(role: Role, path = '/settings') {
 }
 
 describe('SettingsPage', () => {
+  it('login_method_row_only_when_oidc', async () => {
+    renderMe('family')
+    await screen.findByRole('heading', { name: ko.me.account })
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: ko.me.devices })).toBeVisible()
+    })
+    expect(screen.queryByRole('link', { name: ko.me.loginMethod })).toBeNull()
+    cleanup()
+
+    renderMe('family', '/settings', { label: 'SSO' })
+    const row = await screen.findByRole('link', { name: ko.me.loginMethod })
+    expect(row).toHaveAttribute('href', '/settings/login-method')
+    const section = row.closest('section')
+    if (!section) throw new Error('그룹 없음')
+    expect(
+      within(section)
+        .getAllByRole('link')
+        .map((l) => l.textContent),
+    ).toEqual([ko.me.profile, ko.me.password, ko.me.devices, ko.me.loginMethod])
+  })
+
   // 내 계정, 앱, 우리 집(가족, 휴지통), 시스템(owner). 즐겨찾기는 앨범 탭, 아기는 아기 탭으로만.
   it('groups_by_role', async () => {
     const account = [

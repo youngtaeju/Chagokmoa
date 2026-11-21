@@ -67,6 +67,10 @@ const BackupPage = lazyRouteComponent(
 )
 const MailPage = lazyRouteComponent(() => import('@/mail/MailPage'), 'MailPage')
 const OidcPage = lazyRouteComponent(() => import('@/oidc/OidcPage'), 'OidcPage')
+const LoginMethodPage = lazyRouteComponent(
+  () => import('@/oidc/LoginMethodPage'),
+  'LoginMethodPage',
+)
 const DevicesPage = lazyRouteComponent(
   () => import('@/settings/subPages'),
   'DevicesPage',
@@ -169,6 +173,11 @@ function isAppPath(v: string): boolean {
   )
 }
 
+// 서버 callback 이 붙이는 오류 키. 문자열만 통과.
+function oidcErrorParam(v: unknown): string | undefined {
+  return typeof v === 'string' ? v : undefined
+}
+
 function safeRedirect(v: unknown): string | undefined {
   if (typeof v !== 'string' || !isAppPath(v)) return undefined
   try {
@@ -237,8 +246,11 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
   // 검증 결과에 없는 키는 원래 search 값이 남으므로 undefined 로 명시해 덮어씀.
-  validateSearch: (s: Record<string, unknown>): { redirect?: string } => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { redirect?: string; oidc_error?: string } => ({
     redirect: safeRedirect(s.redirect),
+    oidc_error: oidcErrorParam(s.oidc_error),
   }),
   beforeLoad: async ({ context }) => {
     if (await loadMe(context.queryClient)) throw redirect({ to: '/' })
@@ -262,6 +274,9 @@ const signupRoute = createRoute({
 const inviteRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/invite/$raw',
+  validateSearch: (s: Record<string, unknown>): { oidc_error?: string } => ({
+    oidc_error: oidcErrorParam(s.oidc_error),
+  }),
   beforeLoad: async ({ context }) => {
     if (await loadMe(context.queryClient)) throw redirect({ to: '/' })
   },
@@ -477,6 +492,15 @@ const settingsPasswordRoute = createRoute({
   component: PasswordPage,
 })
 
+const settingsLoginMethodRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/settings/login-method',
+  validateSearch: (s: Record<string, unknown>): { oidc_error?: string } => ({
+    oidc_error: oidcErrorParam(s.oidc_error),
+  }),
+  component: LoginMethodPage,
+})
+
 const settingsDevicesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: '/settings/devices',
@@ -667,6 +691,7 @@ const routeTree = rootRoute.addChildren([
       settingsBackupRoute,
       settingsMailRoute,
       settingsLoginRoute,
+      settingsLoginMethodRoute,
       albumsRoute,
       favoritesRoute,
       videosRoute,

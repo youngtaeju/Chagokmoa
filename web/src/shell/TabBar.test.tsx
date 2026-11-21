@@ -29,6 +29,7 @@ function renderShell(role: Role, path = '/', babies: Baby[] = [SKY]) {
   mockFetch({
     ...emptyFeedRoutes,
     'GET /api/auth/me': () => json(200, { user: userFixture(role) }),
+    'GET /api/auth/status': () => json(200, { signup_open: false, oidc: null }),
     'GET /api/settings': () => json(200, settingsFixture),
     'GET /api/babies': () => json(200, babies),
     'GET /api/invites': () => json(200, { invites: [] }),

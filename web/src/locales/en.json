@@ -58,7 +58,9 @@
       "forgotAskAdmin": "Ask an administrator to reset your password.",
       "forgotLogin": "Username or email",
       "forgotSend": "Send reset link",
-      "forgotDone": "If an email is registered, we sent a reset link. If nothing arrives, ask an administrator."
+      "forgotDone": "If an email is registered, we sent a reset link. If nothing arrives, ask an administrator.",
+      "oidc": "Sign in with {{label}}",
+      "or": "or"
     },
     "invite": {
       "title": "{{inviter}} invited you to {{instance}}",
@@ -84,7 +86,9 @@
         }
       },
       "next": "Next",
-      "welcome": "Welcome to {{instance}}."
+      "welcome": "Welcome to {{instance}}.",
+      "oidc": "Join with {{label}}",
+      "or": "or"
     },
     "wizard": {
       "stepOf": "Step {{step}} of {{total}}",
@@ -427,7 +431,14 @@
     },
     "oidc": {
       "clientIdRequired": "Enter the Client ID.",
-      "discoveryFailed": "Couldn't fetch the IdP info: {{message}}"
+      "discoveryFailed": "Couldn't fetch the IdP info: {{message}}",
+      "notLinked": "No account is linked. Sign in with your password, then link it in Settings.",
+      "alreadyLinked": "This account is already linked to another Chagokmoa account.",
+      "denied": "Sign-in was cancelled.",
+      "failed": "Couldn't sign in. Please try again. If you were signing up from an invite, open the invite link again.",
+      "disabled": "External sign-in is turned off.",
+      "sessionChanged": "Your sign-in status changed. Please try again.",
+      "needPassword": "Create a password first."
     },
     "mail": {
       "notConfigured": "Mail isn't set up yet.",
@@ -918,7 +929,8 @@
     "login": "Sign-in",
     "logout": "Sign out",
     "version": "App version {{version}}",
-    "back": "Back"
+    "back": "Back",
+    "loginMethod": "Sign-in method"
   },
   "reactions": {
     "like": "Heart",
@@ -1161,5 +1173,13 @@
     "banner": "Get updates as phone notifications",
     "bannerOn": "Turn on",
     "bannerClose": "Dismiss"
+  },
+  "loginMethod": {
+    "none": "Not linked",
+    "connect": "Link {{label}} account",
+    "linked": "Linked",
+    "unlink": "Unlink",
+    "unlinked": "Unlinked",
+    "stale": "Please link again"
   }
 }
