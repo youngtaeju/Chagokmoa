@@ -1364,3 +1364,14 @@ test('mail_settings_save', async ({ ownerPage: page }) => {
     .click()
   await expect(page.getByLabel('SMTP 서버')).toHaveValue('')
 })
+
+test('oidc_settings_screen', async ({ ownerPage: page }) => {
+  await page.goto('/settings/login')
+  await expect(page.getByLabel('IdP 에 등록할 callback 주소')).toHaveValue(
+    /\/api\/auth\/oidc\/callback$/,
+  )
+  await page.getByLabel('Issuer URL').fill('http://127.0.0.1:9/')
+  await page.getByLabel('Client ID').fill('chagokmoa')
+  await page.getByRole('button', { name: '저장' }).click()
+  await expect(page.getByText(/IdP 정보를 가져오지 못했어요/)).toBeVisible()
+})
