@@ -1010,6 +1010,9 @@ test('tabs_navigation', async ({ ownerPage: page }) => {
   ).toBeVisible()
   await nav.getByRole('link', { name: '설정' }).click()
   await expect(page).toHaveURL(/\/settings$/)
+  // 로그인(OIDC) 미설정 스택: 내 계정 묶음에 연결 줄 없음.
+  await expect(page.getByText('비밀번호 바꾸기')).toBeVisible()
+  await expect(page.getByText('로그인 연결')).toHaveCount(0)
   await nav.getByRole('link', { name: '홈' }).click()
   await expect(page).toHaveURL(/\/$/)
 
