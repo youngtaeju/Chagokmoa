@@ -406,6 +406,7 @@
     },
     "auth": {
       "csrf": "The request was rejected. Please refresh and try again.",
+      "currentPasswordRequired": "Enter your current password.",
       "disabled": "This account is disabled. Please contact your administrator.",
       "displayNameInvalid": "The display name is not valid.",
       "forbidden": "You don't have permission to do this.",
@@ -423,6 +424,10 @@
       "nameInvalid": "The baby's name is not valid.",
       "notFound": "The baby could not be found.",
       "orderMismatch": "The order doesn't match the current list. Please refresh."
+    },
+    "oidc": {
+      "clientIdRequired": "Enter the Client ID.",
+      "discoveryFailed": "Couldn't fetch the IdP info: {{message}}"
     },
     "mail": {
       "notConfigured": "Mail isn't set up yet.",
@@ -689,7 +694,9 @@
     "newPasswordHint": "At least 8 characters.",
     "currentPasswordWrong": "The current password is incorrect.",
     "changePassword": "Change password",
+    "createPassword": "Create password",
     "passwordChanged": "Password changed. Other devices signed out",
+    "passwordCreated": "Password created. Other devices signed out",
     "theme": "Theme",
     "themeSystem": "System",
     "themeLight": "Light",
@@ -756,6 +763,27 @@
     "deleteConfirm": "The saved SMTP server and password will be removed. Mail features stay off until you set them up again.",
     "deleteAction": "Delete",
     "deleted": "Mail settings deleted"
+  },
+  "oidc": {
+    "buttonLabel": "Sign-in button name",
+    "buttonLabelHint": "Leave empty for SSO",
+    "issuerUrl": "Issuer URL",
+    "clientId": "Client ID",
+    "clientSecret": "Client secret",
+    "secretSet": "Saved. Enter a new one to change it",
+    "secretHint": "Leave empty for a public client",
+    "secretHintSet": "Leave empty for a public client. To remove the stored secret, clear it below.",
+    "clearSecret": "Clear client secret",
+    "callbackUrl": "Callback address to register in the IdP",
+    "saved": "Saved sign-in settings",
+    "delete": "Delete OIDC settings",
+    "deleteTitle": "Delete OIDC settings?",
+    "deleteConfirm": "External sign-in will be turned off. Account links are kept.",
+    "deleteAction": "Delete",
+    "deleted": "Deleted OIDC settings",
+    "warn": "Of {{linked}} linked accounts, {{passwordless}} have no password and won't be able to sign in. Ask them to create one with a reset link.",
+    "changeIssuerTitle": "Change the issuer?",
+    "changeIssuerAction": "Change and save"
   },
   "backup": {
     "regenTitle": "Rebuild derivatives",
@@ -887,6 +915,7 @@
     "media": "Media processing",
     "backup": "Backup",
     "mail": "Mail",
+    "login": "Sign-in",
     "logout": "Sign out",
     "version": "App version {{version}}",
     "back": "Back"

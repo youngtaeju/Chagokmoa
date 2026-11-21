@@ -324,6 +324,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/login-method": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["login_method"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/logout": {
         parameters: {
             query?: never;
@@ -932,6 +948,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/oidc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_oidc_settings"];
+        put: operations["update_oidc_settings"];
+        post?: never;
+        delete: operations["delete_oidc_settings"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/password-resets/{raw}/accept": {
         parameters: {
             query?: never;
@@ -1530,7 +1562,8 @@ export interface components {
         /** Format: binary */
         BinaryBody: string;
         ChangePasswordRequest: {
-            current_password: string;
+            /** @description 비밀번호 있는 계정은 필수. 비밀번호 없는 계정은 무시. */
+            current_password?: string | null;
             /** @description 8자 이상. */
             new_password: string;
         };
@@ -1837,6 +1870,10 @@ export interface components {
             /** Format: uuid */
             user_id: string;
         };
+        LoginMethod: {
+            has_password: boolean;
+            oidc: components["schemas"]["OidcLinkState"];
+        };
         LoginRequest: {
             password: string;
             username: string;
@@ -1988,6 +2025,48 @@ export interface components {
             excerpt: string;
             /** Format: uuid */
             id: string;
+        };
+        OidcConfigView: {
+            button_label: string;
+            client_id: string;
+            /** @description discovery 문서의 issuer. */
+            issuer_url: string;
+            /** @description client secret 저장됨. 값은 응답하지 않음. */
+            secret_set: boolean;
+        };
+        /**
+         * @description 외부 IdP 계정 연결 상태.
+         * @enum {string}
+         */
+        OidcLinkState: "none" | "linked" | "stale";
+        /** @description 문자열은 앞뒤 공백 제거. */
+        OidcSettingsRequest: {
+            /** @description 비었거나 없으면 "SSO". */
+            button_label?: string | null;
+            client_id: string;
+            /** @description 없으면 저장된 값 유지(issuer 나 client_id 가 바뀌면 삭제). 빈 문자열이면 삭제(public client). */
+            client_secret?: string | null;
+            /** @description discovery 기준 주소. 저장 값은 discovery 문서의 issuer(끝 슬래시 하나 차이 허용). */
+            issuer_url: string;
+        };
+        OidcSettingsResponse: {
+            /** @description IdP 에 등록할 redirect URI. */
+            callback_url: string;
+            config: null | components["schemas"]["OidcConfigView"];
+            /**
+             * Format: int64
+             * @description 현재 설정 issuer 로 연결된 계정 수. 미설정이면 0.
+             */
+            linked: number;
+            /**
+             * Format: int64
+             * @description `linked` 중 비밀번호 없는 계정 수. 설정 삭제나 issuer 변경 시 로그인 불가.
+             */
+            passwordless: number;
+        };
+        OidcStatus: {
+            /** @description 로그인 버튼 이름. */
+            label: string;
         };
         /** @description 커서 페이지. */
         Page_AssetListItem: {
@@ -2366,6 +2445,7 @@ export interface components {
         StatusResponse: {
             /** @description 메일 설정됨. 비밀번호 찾기 화면 분기. */
             mail_enabled: boolean;
+            oidc: null | components["schemas"]["OidcStatus"];
             signup_open: boolean;
         };
         /** @description 이야기 상세. */
@@ -4170,6 +4250,35 @@ export interface operations {
             };
         };
     };
+    login_method: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 본인 로그인 수단(비밀번호 유무, OIDC 연결 상태) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginMethod"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
     logout: {
         parameters: {
             query?: never;
@@ -4410,7 +4519,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 가입 가능 여부와 메일 사용 가능 여부 */
+            /** @description 가입 가능 여부, 메일 사용 가능 여부, OIDC 로그인 버튼 */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -6696,6 +6805,131 @@ export interface operations {
             };
         };
     };
+    get_oidc_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OIDC 설정. client secret 은 설정 여부만 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OidcSettingsResponse"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    update_oidc_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OidcSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description discovery 확인 후 저장한 설정 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OidcSettingsResponse"];
+                };
+            };
+            /** @description 본문 형식 오류, `oidc.clientIdRequired`, `oidc.discoveryFailed`(`message`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    delete_oidc_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OIDC 설정 삭제. 외부 로그인 꺼짐, 사용자 연결 값은 유지 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
     accept_password_reset: {
         parameters: {
             query?: never;
@@ -8332,14 +8566,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 비밀번호 변경. 현재 세션 외 전부 삭제 */
+            /** @description 비밀번호 변경(비밀번호 없는 계정은 만들기). 현재 세션 외 전부 삭제 */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description 본문 형식 오류 또는 새 비밀번호 검증 실패 */
+            /** @description 본문 형식 오류, 새 비밀번호 검증 실패, 현재 비밀번호 누락(`auth.currentPasswordRequired`) */
             400: {
                 headers: {
                     [name: string]: unknown;

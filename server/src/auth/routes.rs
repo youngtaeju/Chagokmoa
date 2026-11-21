@@ -20,6 +20,7 @@ use super::{
 use crate::{
     error::{AppError, AppResult, ErrorBody},
     mail,
+    oidc::{self, OidcLinkState, oidc_link_state},
     request::{Json, Path},
     settings,
     state::AppState,
@@ -33,6 +34,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(login))
         .routes(routes!(logout))
         .routes(routes!(me))
+        .routes(routes!(login_method))
         .routes(routes!(list_sessions))
         .routes(routes!(revoke_session))
         .routes(routes!(media_token))
@@ -69,10 +71,25 @@ pub struct MediaTokenResponse {
 }
 
 #[derive(Serialize, ToSchema)]
+pub struct LoginMethod {
+    has_password: bool,
+    oidc: OidcLinkState,
+}
+
+#[derive(Serialize, ToSchema)]
 pub struct StatusResponse {
     signup_open: bool,
     /// 메일 설정됨. 비밀번호 찾기 화면 분기.
     mail_enabled: bool,
+    /// OIDC 설정됨이면 로그인 버튼 정보, 아니면 null.
+    #[schema(required = true)]
+    oidc: Option<OidcStatus>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct OidcStatus {
+    /// 로그인 버튼 이름.
+    label: String,
 }
 
 #[utoipa::path(
@@ -113,7 +130,7 @@ async fn signup(
         &mut *tx,
         NewUser {
             username,
-            password_hash,
+            password_hash: Some(password_hash),
             display_name,
             role: Role::Owner,
             email: None,
@@ -135,14 +152,25 @@ async fn signup(
 #[utoipa::path(
     get,
     path = "/api/auth/status",
-    responses((status = 200, description = "가입 가능 여부와 메일 사용 가능 여부", body = StatusResponse))
+    responses((status = 200, description = "가입 가능 여부, 메일 사용 가능 여부, OIDC 로그인 버튼", body = StatusResponse))
 )]
 async fn status(State(state): State<AppState>) -> AppResult<AxumJson<StatusResponse>> {
     let signup_open = users::queries::count(&state.pool).await? == 0;
     let mail_enabled = mail::is_configured(&state.pool).await?;
+    // 설정 값 손상이 비밀번호 로그인 화면까지 막지 않게 경고 후 꺼짐 취급.
+    let oidc = match oidc::settings::load(&state.pool).await {
+        Ok(config) => config.map(|c| OidcStatus {
+            label: c.button_label,
+        }),
+        Err(e) => {
+            tracing::warn!(error = %e, "oidc settings unreadable, hiding oidc login");
+            None
+        }
+    };
     Ok(AxumJson(StatusResponse {
         signup_open,
         mail_enabled,
+        oidc,
     }))
 }
 
@@ -163,8 +191,9 @@ async fn login(
     Json(req): Json<LoginRequest>,
 ) -> AppResult<(CookieJar, AxumJson<UserResponse>)> {
     let record = users::queries::find_by_username(&state.pool, &req.username).await?;
-    let password_ok = match &record {
-        Some(r) => password::verify_async(req.password, r.password_hash.clone()).await?,
+    // 비밀번호 없는 계정도 미존재 사용자와 같은 시간의 dummy 검증.
+    let password_ok = match record.as_ref().and_then(|r| r.password_hash.clone()) {
+        Some(hash) => password::verify_async(req.password, hash).await?,
         None => {
             password::verify_dummy_async(req.password).await?;
             false
@@ -222,6 +251,35 @@ async fn logout(
 )]
 async fn me(current: CurrentUser) -> AxumJson<UserResponse> {
     AxumJson(UserResponse { user: current.user })
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/auth/login-method",
+    responses(
+        (status = 200, description = "본인 로그인 수단(비밀번호 유무, OIDC 연결 상태)", body = LoginMethod),
+        (status = 401, description = "인증 필요", body = ErrorBody),
+    )
+)]
+async fn login_method(
+    State(state): State<AppState>,
+    current: CurrentUser,
+) -> AppResult<AxumJson<LoginMethod>> {
+    let (has_password, issuer) = users::queries::login_method(&state.pool, current.user.id)
+        .await?
+        .ok_or(AppError::Unauthorized("auth.required"))?;
+    // status 와 같이 설정 손상은 경고 후 설정 없음 취급.
+    let configured = oidc::settings::load(&state.pool).await.unwrap_or_else(|e| {
+        tracing::warn!(error = %e, "oidc settings unreadable, treating as unset");
+        None
+    });
+    Ok(AxumJson(LoginMethod {
+        has_password,
+        oidc: oidc_link_state(
+            configured.as_ref().map(|c| c.issuer_url.as_str()),
+            issuer.as_deref(),
+        ),
+    }))
 }
 
 #[utoipa::path(

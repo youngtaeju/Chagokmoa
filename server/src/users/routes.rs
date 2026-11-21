@@ -57,7 +57,8 @@ pub struct PatchMeRequest {
 
 #[derive(Deserialize, ToSchema)]
 pub struct ChangePasswordRequest {
-    current_password: String,
+    /// 비밀번호 있는 계정은 필수. 비밀번호 없는 계정은 무시.
+    current_password: Option<String>,
     /// 8자 이상.
     new_password: String,
 }
@@ -188,8 +189,8 @@ async fn patch_me(
     path = "/api/users/me/password",
     request_body = ChangePasswordRequest,
     responses(
-        (status = 204, description = "비밀번호 변경. 현재 세션 외 전부 삭제"),
-        (status = 400, description = "본문 형식 오류 또는 새 비밀번호 검증 실패", body = ErrorBody),
+        (status = 204, description = "비밀번호 변경(비밀번호 없는 계정은 만들기). 현재 세션 외 전부 삭제"),
+        (status = 400, description = "본문 형식 오류, 새 비밀번호 검증 실패, 현재 비밀번호 누락(`auth.currentPasswordRequired`)", body = ErrorBody),
         (status = 401, description = "인증 필요 또는 현재 비밀번호 불일치", body = ErrorBody),
         (status = 403, description = "CSRF 헤더 누락", body = ErrorBody),
     )
@@ -204,8 +205,14 @@ async fn change_password(
     let stored = queries::password_hash(&state.pool, user_id)
         .await?
         .ok_or(AppError::Unauthorized("auth.required"))?;
-    if !password::verify_async(req.current_password, stored).await? {
-        return Err(AppError::Unauthorized("auth.invalidCredentials"));
+    // 비밀번호 없는 계정: 현재 비밀번호 없이 만들기.
+    if let Some(stored) = stored {
+        let current_password = req
+            .current_password
+            .ok_or(AppError::bad_request("auth.currentPasswordRequired"))?;
+        if !password::verify_async(current_password, stored).await? {
+            return Err(AppError::Unauthorized("auth.invalidCredentials"));
+        }
     }
     let new_hash = password::hash_async(req.new_password).await?;
 

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { api, call } from '@/api/client'
@@ -7,18 +7,49 @@ import { Field, FormError, formText } from '@/components/Field'
 import { Button } from '@/components/ui/button'
 import { sessionsKey } from './SessionsSection'
 
+export const loginMethodKey = ['login-method'] as const
+
 export function PasswordSection() {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const method = useQuery({
+    queryKey: loginMethodKey,
+    queryFn: () => call(api.GET('/api/auth/login-method')),
+  })
   const change = useMutation({
-    mutationFn: (body: { current_password: string; new_password: string }) =>
+    mutationFn: (body: { current_password?: string; new_password: string }) =>
       call(api.POST('/api/users/me/password', { body })),
-    onSuccess: () => {
+    onSuccess: (_, body) => {
       // 서버가 다른 세션을 모두 삭제하므로 목록 재조회.
       void qc.invalidateQueries({ queryKey: sessionsKey })
-      toast(t('settings.passwordChanged'))
+      void qc.invalidateQueries({ queryKey: loginMethodKey })
+      toast(
+        t(
+          body.current_password === undefined
+            ? 'settings.passwordCreated'
+            : 'settings.passwordChanged',
+        ),
+      )
     },
   })
+
+  // 비밀번호 유무 확인 전에는 폼 숨김(잘못된 칸 노출 방지).
+  if (!method.data) {
+    return method.error ? (
+      <div className="grid justify-items-start gap-3">
+        <FormError error={method.error} />
+        <Button
+          variant="outline"
+          onClick={() => {
+            void method.refetch()
+          }}
+        >
+          {t('common.retry')}
+        </Button>
+      </div>
+    ) : null
+  }
+  const hasPassword = method.data.has_password
 
   return (
     <form
@@ -27,11 +58,14 @@ export function PasswordSection() {
         e.preventDefault()
         const form = e.currentTarget
         const data = new FormData(form)
+        const new_password = formText(data, 'new_password')
         change.mutate(
-          {
-            current_password: formText(data, 'current_password'),
-            new_password: formText(data, 'new_password'),
-          },
+          hasPassword
+            ? {
+                current_password: formText(data, 'current_password'),
+                new_password,
+              }
+            : { new_password },
           {
             onSuccess: () => {
               form.reset()
@@ -40,13 +74,15 @@ export function PasswordSection() {
         )
       }}
     >
-      <Field
-        label={t('settings.currentPassword')}
-        name="current_password"
-        type="password"
-        autoComplete="current-password"
-        required
-      />
+      {hasPassword && (
+        <Field
+          label={t('settings.currentPassword')}
+          name="current_password"
+          type="password"
+          autoComplete="current-password"
+          required
+        />
+      )}
       <Field
         label={t('settings.newPassword')}
         hint={t('settings.newPasswordHint')}
@@ -66,7 +102,9 @@ export function PasswordSection() {
       )}
       <div>
         <Button type="submit" disabled={change.isPending}>
-          {t('settings.changePassword')}
+          {t(
+            hasPassword ? 'settings.changePassword' : 'settings.createPassword',
+          )}
         </Button>
       </div>
     </form>

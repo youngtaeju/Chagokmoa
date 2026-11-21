@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET oidc_issuer = 'https://idp.test', oidc_subject = 'sub-1'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "fca0790e169cf7b6f3c1f76b674dadf8b5714ff2f263f1238919f74b7384ed4d"
+}

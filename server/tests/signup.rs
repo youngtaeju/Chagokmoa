@@ -39,7 +39,7 @@ async fn first_signup_creates_owner(pool: sqlx::PgPool) {
 
     let status = server.get("/api/auth/status").await;
     status.assert_status_ok();
-    status.assert_json(&json!({ "signup_open": false, "mail_enabled": false }));
+    status.assert_json(&json!({ "signup_open": false, "mail_enabled": false, "oidc": null }));
 
     let name: Value = sqlx::query_scalar!("SELECT value FROM settings WHERE key = 'instance_name'")
         .fetch_one(&pool)
@@ -58,7 +58,7 @@ async fn status_is_open_before_signup(pool: sqlx::PgPool) {
     let server = common::test_server(pool).await;
     let res = server.get("/api/auth/status").await;
     res.assert_status_ok();
-    res.assert_json(&json!({ "signup_open": true, "mail_enabled": false }));
+    res.assert_json(&json!({ "signup_open": true, "mail_enabled": false, "oidc": null }));
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -91,7 +91,7 @@ async fn username_case_insensitive_unique(pool: sqlx::PgPool) {
         &pool,
         NewUser {
             username: "MOM".to_string(),
-            password_hash: "x".to_string(),
+            password_hash: Some("x".to_string()),
             display_name: "다른 엄마".to_string(),
             role: Role::Family,
             email: None,
@@ -115,7 +115,7 @@ async fn update_role_reports_missing_user(pool: sqlx::PgPool) {
         &pool,
         NewUser {
             username: "dad".to_string(),
-            password_hash: "x".to_string(),
+            password_hash: Some("x".to_string()),
             display_name: "아빠".to_string(),
             role: Role::Family,
             email: None,

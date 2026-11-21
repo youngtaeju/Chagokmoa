@@ -1955,6 +1955,33 @@
         }
       }
     },
+    "/api/auth/login-method": {
+      "get": {
+        "operationId": "login_method",
+        "responses": {
+          "200": {
+            "description": "본인 로그인 수단(비밀번호 유무, OIDC 연결 상태)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginMethod"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/logout": {
       "post": {
         "operationId": "logout",
@@ -2190,7 +2217,7 @@
         "operationId": "status",
         "responses": {
           "200": {
-            "description": "가입 가능 여부와 메일 사용 가능 여부",
+            "description": "가입 가능 여부, 메일 사용 가능 여부, OIDC 로그인 버튼",
             "content": {
               "application/json": {
                 "schema": {
@@ -4775,6 +4802,126 @@
         }
       }
     },
+    "/api/oidc": {
+      "get": {
+        "operationId": "get_oidc_settings",
+        "responses": {
+          "200": {
+            "description": "OIDC 설정. client secret 은 설정 여부만",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OidcSettingsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "update_oidc_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OidcSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "discovery 확인 후 저장한 설정",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OidcSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "본문 형식 오류, `oidc.clientIdRequired`, `oidc.discoveryFailed`(`message`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_oidc_settings",
+        "responses": {
+          "204": {
+            "description": "OIDC 설정 삭제. 외부 로그인 꺼짐, 사용자 연결 값은 유지"
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "owner 아님 또는 CSRF 헤더 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/password-resets/{raw}/accept": {
       "post": {
         "operationId": "accept_password_reset",
@@ -6691,10 +6838,10 @@
         },
         "responses": {
           "204": {
-            "description": "비밀번호 변경. 현재 세션 외 전부 삭제"
+            "description": "비밀번호 변경(비밀번호 없는 계정은 만들기). 현재 세션 외 전부 삭제"
           },
           "400": {
-            "description": "본문 형식 오류 또는 새 비밀번호 검증 실패",
+            "description": "본문 형식 오류, 새 비밀번호 검증 실패, 현재 비밀번호 누락(`auth.currentPasswordRequired`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -7620,12 +7767,15 @@
       "ChangePasswordRequest": {
         "type": "object",
         "required": [
-          "current_password",
           "new_password"
         ],
         "properties": {
           "current_password": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "비밀번호 있는 계정은 필수. 비밀번호 없는 계정은 무시."
           },
           "new_password": {
             "type": "string",
@@ -8474,6 +8624,21 @@
           }
         }
       },
+      "LoginMethod": {
+        "type": "object",
+        "required": [
+          "has_password",
+          "oidc"
+        ],
+        "properties": {
+          "has_password": {
+            "type": "boolean"
+          },
+          "oidc": {
+            "$ref": "#/components/schemas/OidcLinkState"
+          }
+        }
+      },
       "LoginRequest": {
         "type": "object",
         "required": [
@@ -8972,6 +9137,119 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "OidcConfigView": {
+        "type": "object",
+        "required": [
+          "issuer_url",
+          "client_id",
+          "secret_set",
+          "button_label"
+        ],
+        "properties": {
+          "button_label": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "issuer_url": {
+            "type": "string",
+            "description": "discovery 문서의 issuer."
+          },
+          "secret_set": {
+            "type": "boolean",
+            "description": "client secret 저장됨. 값은 응답하지 않음."
+          }
+        }
+      },
+      "OidcLinkState": {
+        "type": "string",
+        "description": "외부 IdP 계정 연결 상태.",
+        "enum": [
+          "none",
+          "linked",
+          "stale"
+        ]
+      },
+      "OidcSettingsRequest": {
+        "type": "object",
+        "description": "문자열은 앞뒤 공백 제거.",
+        "required": [
+          "issuer_url",
+          "client_id"
+        ],
+        "properties": {
+          "button_label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "비었거나 없으면 \"SSO\"."
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "client_secret": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "없으면 저장된 값 유지(issuer 나 client_id 가 바뀌면 삭제). 빈 문자열이면 삭제(public client)."
+          },
+          "issuer_url": {
+            "type": "string",
+            "description": "discovery 기준 주소. 저장 값은 discovery 문서의 issuer(끝 슬래시 하나 차이 허용)."
+          }
+        }
+      },
+      "OidcSettingsResponse": {
+        "type": "object",
+        "required": [
+          "config",
+          "callback_url",
+          "linked",
+          "passwordless"
+        ],
+        "properties": {
+          "callback_url": {
+            "type": "string",
+            "description": "IdP 에 등록할 redirect URI."
+          },
+          "config": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OidcConfigView",
+                "description": "미설정이면 null."
+              }
+            ]
+          },
+          "linked": {
+            "type": "integer",
+            "format": "int64",
+            "description": "현재 설정 issuer 로 연결된 계정 수. 미설정이면 0."
+          },
+          "passwordless": {
+            "type": "integer",
+            "format": "int64",
+            "description": "`linked` 중 비밀번호 없는 계정 수. 설정 삭제나 issuer 변경 시 로그인 불가."
+          }
+        }
+      },
+      "OidcStatus": {
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "로그인 버튼 이름."
           }
         }
       },
@@ -10161,12 +10439,24 @@
         "type": "object",
         "required": [
           "signup_open",
-          "mail_enabled"
+          "mail_enabled",
+          "oidc"
         ],
         "properties": {
           "mail_enabled": {
             "type": "boolean",
             "description": "메일 설정됨. 비밀번호 찾기 화면 분기."
+          },
+          "oidc": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OidcStatus",
+                "description": "OIDC 설정됨이면 로그인 버튼 정보, 아니면 null."
+              }
+            ]
           },
           "signup_open": {
             "type": "boolean"

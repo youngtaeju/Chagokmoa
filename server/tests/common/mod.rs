@@ -1,6 +1,7 @@
 // 테스트 바이너리마다 쓰는 헬퍼가 달라 미사용 경고 허용.
 #![allow(dead_code)]
 
+pub mod oidc;
 pub mod smtp;
 
 use axum::http::{HeaderName, HeaderValue, StatusCode, header};
@@ -162,7 +163,7 @@ async fn create_user(pool: &PgPool, username: &str, role: Role) -> User {
         pool,
         NewUser {
             username: username.to_string(),
-            password_hash: password::hash(PASSWORD).expect("hash"),
+            password_hash: Some(password::hash(PASSWORD).expect("hash")),
             display_name: username.to_string(),
             role,
             email: None,
@@ -296,7 +297,7 @@ pub async fn server_as(pool: &PgPool, username: &str, role: Role) -> (TestServer
         pool,
         NewUser {
             username: username.to_string(),
-            password_hash: password::hash(PASSWORD).expect("hash"),
+            password_hash: Some(password::hash(PASSWORD).expect("hash")),
             display_name: username.to_string(),
             role,
             email: None,

@@ -48,6 +48,8 @@ function renderPage(
     'GET /api/auth/me': () => json(200, { user: userFixture(role) }),
     'GET /api/settings': () => json(200, settings),
     'GET /api/auth/sessions': () => json(200, { sessions: [CURRENT, OTHER] }),
+    'GET /api/auth/login-method': () =>
+      json(200, { has_password: true, oidc: 'none' }),
     ...emptyFeedRoutes,
     ...extra,
   })
@@ -101,6 +103,51 @@ describe('settings sub pages', () => {
     await waitFor(() => {
       expect(queryClient.getQueryState(['sessions'])?.isInvalidated).toBe(true)
     })
+  })
+
+  it('passwordless_shows_create', async () => {
+    const bodies: unknown[] = []
+    const { user } = renderPage(
+      {
+        'GET /api/auth/login-method': () =>
+          json(200, { has_password: false, oidc: 'linked' }),
+        'POST /api/users/me/password': async (req) => {
+          bodies.push(await req.json())
+          return json(204, null)
+        },
+      },
+      { path: '/settings/password' },
+    )
+    await user.type(
+      await screen.findByLabelText('새 비밀번호'),
+      'new-password-1',
+    )
+    expect(screen.queryByLabelText('현재 비밀번호')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: '비밀번호 바꾸기' }),
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '비밀번호 만들기' }))
+    await waitFor(() => {
+      expect(bodies).toEqual([{ new_password: 'new-password-1' }])
+    })
+  })
+
+  it('password_section_retry', async () => {
+    let calls = 0
+    const { user } = renderPage(
+      {
+        'GET /api/auth/login-method': () => {
+          calls += 1
+          return calls === 1
+            ? json(500, { error: 'server.internal', params: {} })
+            : json(200, { has_password: true, oidc: 'none' })
+        },
+      },
+      { path: '/settings/password' },
+    )
+    await user.click(await screen.findByRole('button', { name: '다시 시도' }))
+    expect(await screen.findByLabelText('현재 비밀번호')).toBeInTheDocument()
+    expect(calls).toBe(2)
   })
 
   it('timezone_list_falls_back_without_intl_support', async () => {

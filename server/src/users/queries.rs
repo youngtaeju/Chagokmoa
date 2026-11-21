@@ -152,11 +152,43 @@ pub async fn update_profile(
     Ok(user)
 }
 
-pub async fn password_hash(exec: impl PgExecutor<'_>, id: Uuid) -> AppResult<Option<String>> {
+/// 사용자 없음 → `None`, 비밀번호 없음 → `Some(None)`.
+pub async fn password_hash(
+    exec: impl PgExecutor<'_>,
+    id: Uuid,
+) -> AppResult<Option<Option<String>>> {
     let hash = sqlx::query_scalar!("SELECT password_hash FROM users WHERE id = $1", id)
         .fetch_optional(exec)
         .await?;
     Ok(hash)
+}
+
+/// 비밀번호 유무와 저장된 OIDC issuer. 사용자 없음 → `None`.
+pub async fn login_method(
+    exec: impl PgExecutor<'_>,
+    id: Uuid,
+) -> AppResult<Option<(bool, Option<String>)>> {
+    let row = sqlx::query!(
+        r#"SELECT password_hash IS NOT NULL AS "has_password!", oidc_issuer
+           FROM users WHERE id = $1"#,
+        id,
+    )
+    .fetch_optional(exec)
+    .await?;
+    Ok(row.map(|r| (r.has_password, r.oidc_issuer)))
+}
+
+/// `issuer` 로 연결된 사용자 수와 그중 비밀번호 없는 수. 정지 사용자 포함.
+pub async fn oidc_link_counts(exec: impl PgExecutor<'_>, issuer: &str) -> AppResult<(i64, i64)> {
+    let row = sqlx::query!(
+        r#"SELECT count(*) AS "linked!",
+                  count(*) FILTER (WHERE password_hash IS NULL) AS "passwordless!"
+           FROM users WHERE oidc_issuer = $1"#,
+        issuer,
+    )
+    .fetch_one(exec)
+    .await?;
+    Ok((row.linked, row.passwordless))
 }
 
 pub async fn update_password(
