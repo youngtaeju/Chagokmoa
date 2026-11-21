@@ -569,7 +569,12 @@ async fn reveal_key(
     let stored = users::queries::password_hash(&state.pool, current.user.id)
         .await?
         .ok_or(AppError::Unauthorized("auth.required"))?;
-    if !password::verify_async(req.password, stored).await? {
+    // 비밀번호 없는 계정은 확인 수단 없음 → 불일치와 같은 응답.
+    let ok = match stored {
+        Some(hash) => password::verify_async(req.password, hash).await?,
+        None => false,
+    };
+    if !ok {
         return Err(AppError::Unauthorized("auth.invalidCredentials"));
     }
     let key = settings::load(&state.pool)

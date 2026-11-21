@@ -443,7 +443,7 @@ async fn revoke_rejects_foreign_unknown_and_invalid_ids(pool: PgPool) {
         &pool,
         NewUser {
             username: "dad".to_string(),
-            password_hash: "x".to_string(),
+            password_hash: Some("x".to_string()),
             display_name: "아빠".to_string(),
             role: Role::Guardian,
             email: None,
@@ -547,4 +547,59 @@ async fn touch_extends_to_60_days(pool: PgPool) {
     .await
     .expect("expires_at");
     assert!(ok);
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn passwordless_login_fails(pool: PgPool) {
+    let server = common::test_server_without_cookies(pool.clone()).await;
+    signup(&server).await;
+    sqlx::query!("UPDATE users SET password_hash = NULL")
+        .execute(&pool)
+        .await
+        .expect("drop password");
+    let before = session_count(&pool).await;
+
+    for password in ["password123", "", "anything-else"] {
+        let res = server
+            .post("/api/auth/login")
+            .json(&login_body(password))
+            .await;
+        assert_error(&res, StatusCode::UNAUTHORIZED, "auth.invalidCredentials");
+        assert!(res.maybe_cookie(session::COOKIE_NAME).is_none());
+    }
+    assert_eq!(session_count(&pool).await, before);
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn login_method_reports_password(pool: PgPool) {
+    let server = common::test_server(pool.clone()).await;
+    signup(&server).await;
+
+    let res = server.get("/api/auth/login-method").await;
+    res.assert_status_ok();
+    res.assert_json(&json!({ "has_password": true, "oidc": "none" }));
+
+    sqlx::query!("UPDATE users SET password_hash = NULL")
+        .execute(&pool)
+        .await
+        .expect("drop password");
+    let res = server.get("/api/auth/login-method").await;
+    res.assert_status_ok();
+    res.assert_json(&json!({ "has_password": false, "oidc": "none" }));
+
+    // OIDC 설정 없음 → 남은 연결 값은 stale.
+    sqlx::query!("UPDATE users SET oidc_issuer = 'https://idp.test', oidc_subject = 'sub-1'")
+        .execute(&pool)
+        .await
+        .expect("link");
+    let res = server.get("/api/auth/login-method").await;
+    res.assert_status_ok();
+    res.assert_json(&json!({ "has_password": false, "oidc": "stale" }));
+
+    let anon = common::test_server_without_cookies(pool).await;
+    assert_error(
+        &anon.get("/api/auth/login-method").await,
+        StatusCode::UNAUTHORIZED,
+        "auth.required",
+    );
 }

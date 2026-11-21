@@ -324,6 +324,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/login-method": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["login_method"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/logout": {
         parameters: {
             query?: never;
@@ -1530,7 +1546,8 @@ export interface components {
         /** Format: binary */
         BinaryBody: string;
         ChangePasswordRequest: {
-            current_password: string;
+            /** @description 비밀번호 있는 계정은 필수. 비밀번호 없는 계정은 무시. */
+            current_password?: string | null;
             /** @description 8자 이상. */
             new_password: string;
         };
@@ -1837,6 +1854,10 @@ export interface components {
             /** Format: uuid */
             user_id: string;
         };
+        LoginMethod: {
+            has_password: boolean;
+            oidc: components["schemas"]["OidcLinkState"];
+        };
         LoginRequest: {
             password: string;
             username: string;
@@ -1989,6 +2010,11 @@ export interface components {
             /** Format: uuid */
             id: string;
         };
+        /**
+         * @description 외부 IdP 계정 연결 상태.
+         * @enum {string}
+         */
+        OidcLinkState: "none" | "linked" | "stale";
         /** @description 커서 페이지. */
         Page_AssetListItem: {
             items: (components["schemas"]["AssetSummary"] & {
@@ -4160,6 +4186,35 @@ export interface operations {
                 };
             };
             /** @description 자격 증명 불일치 또는 비활성 사용자 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    login_method: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 본인 로그인 수단(비밀번호 유무, OIDC 연결 상태) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginMethod"];
+                };
+            };
+            /** @description 인증 필요 */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -8332,14 +8387,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 비밀번호 변경. 현재 세션 외 전부 삭제 */
+            /** @description 비밀번호 변경(비밀번호 없는 계정은 만들기). 현재 세션 외 전부 삭제 */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description 본문 형식 오류 또는 새 비밀번호 검증 실패 */
+            /** @description 본문 형식 오류, 새 비밀번호 검증 실패, 현재 비밀번호 누락(`auth.currentPasswordRequired`) */
             400: {
                 headers: {
                     [name: string]: unknown;

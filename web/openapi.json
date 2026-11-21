@@ -1955,6 +1955,33 @@
         }
       }
     },
+    "/api/auth/login-method": {
+      "get": {
+        "operationId": "login_method",
+        "responses": {
+          "200": {
+            "description": "본인 로그인 수단(비밀번호 유무, OIDC 연결 상태)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginMethod"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/logout": {
       "post": {
         "operationId": "logout",
@@ -6691,10 +6718,10 @@
         },
         "responses": {
           "204": {
-            "description": "비밀번호 변경. 현재 세션 외 전부 삭제"
+            "description": "비밀번호 변경(비밀번호 없는 계정은 만들기). 현재 세션 외 전부 삭제"
           },
           "400": {
-            "description": "본문 형식 오류 또는 새 비밀번호 검증 실패",
+            "description": "본문 형식 오류, 새 비밀번호 검증 실패, 현재 비밀번호 누락(`auth.currentPasswordRequired`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -7620,12 +7647,15 @@
       "ChangePasswordRequest": {
         "type": "object",
         "required": [
-          "current_password",
           "new_password"
         ],
         "properties": {
           "current_password": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "비밀번호 있는 계정은 필수. 비밀번호 없는 계정은 무시."
           },
           "new_password": {
             "type": "string",
@@ -8474,6 +8504,21 @@
           }
         }
       },
+      "LoginMethod": {
+        "type": "object",
+        "required": [
+          "has_password",
+          "oidc"
+        ],
+        "properties": {
+          "has_password": {
+            "type": "boolean"
+          },
+          "oidc": {
+            "$ref": "#/components/schemas/OidcLinkState"
+          }
+        }
+      },
       "LoginRequest": {
         "type": "object",
         "required": [
@@ -8974,6 +9019,15 @@
             "format": "uuid"
           }
         }
+      },
+      "OidcLinkState": {
+        "type": "string",
+        "description": "외부 IdP 계정 연결 상태.",
+        "enum": [
+          "none",
+          "linked",
+          "stale"
+        ]
       },
       "Page_AssetListItem": {
         "type": "object",

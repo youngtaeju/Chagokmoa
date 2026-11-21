@@ -16,7 +16,7 @@ async fn create_user(pool: &PgPool, username: &str) {
         pool,
         NewUser {
             username: username.to_string(),
-            password_hash: password::hash(PASSWORD).expect("hash"),
+            password_hash: Some(password::hash(PASSWORD).expect("hash")),
             display_name: username.to_string(),
             role: Role::Owner,
             email: None,

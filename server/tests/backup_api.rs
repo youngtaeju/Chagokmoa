@@ -77,7 +77,7 @@ impl App {
             &self.state.pool,
             NewUser {
                 username: username.to_owned(),
-                password_hash: password::hash(PASSWORD).unwrap(),
+                password_hash: Some(password::hash(PASSWORD).unwrap()),
                 display_name: username.to_owned(),
                 role,
                 email: None,

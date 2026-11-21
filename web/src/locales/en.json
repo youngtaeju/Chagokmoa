@@ -406,6 +406,7 @@
     },
     "auth": {
       "csrf": "The request was rejected. Please refresh and try again.",
+      "currentPasswordRequired": "Enter your current password.",
       "disabled": "This account is disabled. Please contact your administrator.",
       "displayNameInvalid": "The display name is not valid.",
       "forbidden": "You don't have permission to do this.",
@@ -689,7 +690,9 @@
     "newPasswordHint": "At least 8 characters.",
     "currentPasswordWrong": "The current password is incorrect.",
     "changePassword": "Change password",
+    "createPassword": "Create password",
     "passwordChanged": "Password changed. Other devices signed out",
+    "passwordCreated": "Password created. Other devices signed out",
     "theme": "Theme",
     "themeSystem": "System",
     "themeLight": "Light",

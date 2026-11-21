@@ -264,7 +264,7 @@ async fn accept_invite(
         &mut *tx,
         NewUser {
             username,
-            password_hash,
+            password_hash: Some(password_hash),
             display_name,
             role: invite.role,
             email: None,

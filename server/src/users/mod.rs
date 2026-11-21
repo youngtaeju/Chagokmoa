@@ -34,12 +34,13 @@ pub struct User {
 #[derive(Debug, Clone)]
 pub struct UserRecord {
     pub user: User,
-    pub password_hash: String,
+    /// `None`: 비밀번호 없는 계정(외부 IdP 로그인 전용).
+    pub password_hash: Option<String>,
 }
 
 pub struct NewUser {
     pub username: String,
-    pub password_hash: String,
+    pub password_hash: Option<String>,
     pub display_name: String,
     pub role: Role,
     pub email: Option<String>,

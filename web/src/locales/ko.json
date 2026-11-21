@@ -406,6 +406,7 @@
     },
     "auth": {
       "csrf": "요청이 올바르지 않아요. 새로고침 후 다시 시도해 주세요.",
+      "currentPasswordRequired": "현재 비밀번호를 입력해 주세요.",
       "disabled": "비활성화된 계정이에요. 관리자에게 문의해 주세요.",
       "displayNameInvalid": "표시 이름이 올바르지 않아요.",
       "forbidden": "이 작업을 할 권한이 없어요.",
@@ -688,7 +689,9 @@
     "newPasswordHint": "8자 이상으로 정해 주세요.",
     "currentPasswordWrong": "현재 비밀번호가 맞지 않아요.",
     "changePassword": "비밀번호 바꾸기",
+    "createPassword": "비밀번호 만들기",
     "passwordChanged": "비밀번호를 바꿨어요. 다른 기기는 로그아웃했어요",
+    "passwordCreated": "비밀번호를 만들었어요. 다른 기기는 로그아웃했어요",
     "theme": "테마",
     "themeSystem": "시스템",
     "themeLight": "밝게",

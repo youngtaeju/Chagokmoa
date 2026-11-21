@@ -332,6 +332,61 @@ async fn change_password_rejects_wrong_current_or_short_new(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "./migrations")]
+async fn passwordless_can_create_password(pool: PgPool) {
+    let (current, mom) = server_as(&pool, "mom", Role::Owner).await;
+    let other = common::test_server(pool.clone()).await;
+    login(&other, "mom", PASSWORD).await.assert_status_ok();
+    sqlx::query!(
+        "UPDATE users SET password_hash = NULL WHERE id = $1",
+        mom.id
+    )
+    .execute(&pool)
+    .await
+    .expect("drop password");
+
+    // 해시 없는 계정은 current_password 를 보내도 무시.
+    let res = current
+        .post("/api/users/me/password")
+        .add_header(XRW, XRW_VALUE)
+        .json(&json!({ "current_password": "wrong-password", "new_password": "new-password-1" }))
+        .await;
+    res.assert_status(StatusCode::NO_CONTENT);
+
+    // 다른 세션 삭제는 기존 비밀번호 변경과 같음.
+    current.get("/api/auth/me").await.assert_status_ok();
+    assert_eq!(session_count(&pool, mom.id).await, 1);
+    login(&other, "mom", "new-password-1")
+        .await
+        .assert_status_ok();
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn password_change_still_requires_current(pool: PgPool) {
+    let (server, mom) = server_as(&pool, "mom", Role::Owner).await;
+    let other = common::test_server(pool.clone()).await;
+    login(&other, "mom", PASSWORD).await.assert_status_ok();
+
+    for body in [
+        json!({ "new_password": "new-password-1" }),
+        json!({ "current_password": null, "new_password": "new-password-1" }),
+    ] {
+        let res = server
+            .post("/api/users/me/password")
+            .add_header(XRW, XRW_VALUE)
+            .json(&body)
+            .await;
+        assert_error(
+            &res,
+            StatusCode::BAD_REQUEST,
+            "auth.currentPasswordRequired",
+        );
+    }
+
+    assert_eq!(session_count(&pool, mom.id).await, 2);
+    login(&other, "mom", PASSWORD).await.assert_status_ok();
+}
+
+#[sqlx::test(migrations = "./migrations")]
 async fn user_endpoints_require_auth(pool: PgPool) {
     let server = common::test_server(pool).await;
     assert_error(

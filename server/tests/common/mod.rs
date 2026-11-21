@@ -162,7 +162,7 @@ async fn create_user(pool: &PgPool, username: &str, role: Role) -> User {
         pool,
         NewUser {
             username: username.to_string(),
-            password_hash: password::hash(PASSWORD).expect("hash"),
+            password_hash: Some(password::hash(PASSWORD).expect("hash")),
             display_name: username.to_string(),
             role,
             email: None,
@@ -296,7 +296,7 @@ pub async fn server_as(pool: &PgPool, username: &str, role: Role) -> (TestServer
         pool,
         NewUser {
             username: username.to_string(),
-            password_hash: password::hash(PASSWORD).expect("hash"),
+            password_hash: Some(password::hash(PASSWORD).expect("hash")),
             display_name: username.to_string(),
             role,
             email: None,

@@ -33,6 +33,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(login))
         .routes(routes!(logout))
         .routes(routes!(me))
+        .routes(routes!(login_method))
         .routes(routes!(list_sessions))
         .routes(routes!(revoke_session))
         .routes(routes!(media_token))
@@ -66,6 +67,31 @@ pub struct SessionsResponse {
 pub struct MediaTokenResponse {
     token: String,
     expires_at: DateTime<Utc>,
+}
+
+/// 외부 IdP 계정 연결 상태.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum OidcLinkState {
+    None,
+    Linked,
+    /// 연결 값은 있으나 현재 설정 issuer 와 다름(설정 없음 포함). 로그인에 안 쓰임.
+    Stale,
+}
+
+/// 설정 issuer 와 사용자에 저장된 issuer 비교.
+pub fn oidc_link_state(configured: Option<&str>, stored: Option<&str>) -> OidcLinkState {
+    match (configured, stored) {
+        (_, None) => OidcLinkState::None,
+        (Some(c), Some(s)) if c == s => OidcLinkState::Linked,
+        _ => OidcLinkState::Stale,
+    }
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct LoginMethod {
+    has_password: bool,
+    oidc: OidcLinkState,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -113,7 +139,7 @@ async fn signup(
         &mut *tx,
         NewUser {
             username,
-            password_hash,
+            password_hash: Some(password_hash),
             display_name,
             role: Role::Owner,
             email: None,
@@ -163,8 +189,9 @@ async fn login(
     Json(req): Json<LoginRequest>,
 ) -> AppResult<(CookieJar, AxumJson<UserResponse>)> {
     let record = users::queries::find_by_username(&state.pool, &req.username).await?;
-    let password_ok = match &record {
-        Some(r) => password::verify_async(req.password, r.password_hash.clone()).await?,
+    // 비밀번호 없는 계정도 미존재 사용자와 같은 시간의 dummy 검증.
+    let password_ok = match record.as_ref().and_then(|r| r.password_hash.clone()) {
+        Some(hash) => password::verify_async(req.password, hash).await?,
         None => {
             password::verify_dummy_async(req.password).await?;
             false
@@ -226,6 +253,29 @@ async fn me(current: CurrentUser) -> AxumJson<UserResponse> {
 
 #[utoipa::path(
     get,
+    path = "/api/auth/login-method",
+    responses(
+        (status = 200, description = "본인 로그인 수단(비밀번호 유무, OIDC 연결 상태)", body = LoginMethod),
+        (status = 401, description = "인증 필요", body = ErrorBody),
+    )
+)]
+async fn login_method(
+    State(state): State<AppState>,
+    current: CurrentUser,
+) -> AppResult<AxumJson<LoginMethod>> {
+    let (has_password, issuer) = users::queries::login_method(&state.pool, current.user.id)
+        .await?
+        .ok_or(AppError::Unauthorized("auth.required"))?;
+    // OIDC 설정 읽기 전(설정 issuer 없음).
+    let configured: Option<&str> = None;
+    Ok(AxumJson(LoginMethod {
+        has_password,
+        oidc: oidc_link_state(configured, issuer.as_deref()),
+    }))
+}
+
+#[utoipa::path(
+    get,
     path = "/api/auth/sessions",
     responses(
         (status = 200, description = "본인 세션 목록", body = SessionsResponse),
@@ -281,4 +331,22 @@ async fn media_token(
     let expires_at = (Utc::now() + Duration::hours(1)).trunc_subsecs(0);
     let token = token::sign_media(&state.config.secret_key, current.user.id, expires_at);
     AxumJson(MediaTokenResponse { token, expires_at })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{OidcLinkState, oidc_link_state};
+
+    #[test]
+    fn link_state_compares_issuer() {
+        let a = "https://idp.test/a";
+        assert_eq!(oidc_link_state(None, None), OidcLinkState::None);
+        assert_eq!(oidc_link_state(Some(a), None), OidcLinkState::None);
+        assert_eq!(oidc_link_state(Some(a), Some(a)), OidcLinkState::Linked);
+        assert_eq!(
+            oidc_link_state(Some(a), Some("https://idp.test/b")),
+            OidcLinkState::Stale
+        );
+        assert_eq!(oidc_link_state(None, Some(a)), OidcLinkState::Stale);
+    }
 }

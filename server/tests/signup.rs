@@ -91,7 +91,7 @@ async fn username_case_insensitive_unique(pool: sqlx::PgPool) {
         &pool,
         NewUser {
             username: "MOM".to_string(),
-            password_hash: "x".to_string(),
+            password_hash: Some("x".to_string()),
             display_name: "다른 엄마".to_string(),
             role: Role::Family,
             email: None,
@@ -115,7 +115,7 @@ async fn update_role_reports_missing_user(pool: sqlx::PgPool) {
         &pool,
         NewUser {
             username: "dad".to_string(),
-            password_hash: "x".to_string(),
+            password_hash: Some("x".to_string()),
             display_name: "아빠".to_string(),
             role: Role::Family,
             email: None,

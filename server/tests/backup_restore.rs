@@ -195,7 +195,7 @@ async fn restore_refuses_nonempty_db(_: PgPoolOptions, conn: PgConnectOptions) {
         &pool,
         NewUser {
             username: "dad".to_owned(),
-            password_hash: "x".to_owned(),
+            password_hash: Some("x".to_owned()),
             display_name: "dad".to_owned(),
             role: Role::Owner,
             email: None,
