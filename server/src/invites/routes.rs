@@ -6,7 +6,6 @@ use axum::{
 use axum_extra::extract::CookieJar;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use utoipa::ToSchema;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
@@ -25,7 +24,7 @@ use crate::{
     request::{Json, Path},
     settings,
     state::AppState,
-    users::{self, NewUser, Role},
+    users::Role,
 };
 
 const DEFAULT_EXPIRY_HOURS: u32 = 72;
@@ -79,15 +78,6 @@ pub struct AcceptInviteRequest {
     username: String,
     password: String,
     display_name: String,
-}
-
-/// 원문 토큰 조회 후 사용 가능 여부 확인.
-async fn find_active(pool: &PgPool, raw: &str) -> AppResult<Invite> {
-    let invite = queries::find_by_raw(pool, raw)
-        .await?
-        .ok_or(AppError::NotFound("invite.notFound"))?;
-    invite.ensure_active()?;
-    Ok(invite)
 }
 
 #[utoipa::path(
@@ -216,7 +206,7 @@ async fn preview_invite(
     State(state): State<AppState>,
     Path(raw): Path<String>,
 ) -> AppResult<AxumJson<InvitePreview>> {
-    let invite = find_active(&state.pool, &raw).await?;
+    let invite = queries::find_active(&state.pool, &raw).await?;
     let settings = settings::queries::load(&state.pool).await?;
     Ok(AxumJson(InvitePreview {
         role: invite.role,
@@ -250,29 +240,19 @@ async fn accept_invite(
     let display_name = validate_display_name(&req.display_name)?;
 
     // 무효 초대의 해시 비용 회피. 확정 검사는 트랜잭션 내 행 잠금 후.
-    let invite = find_active(&state.pool, &raw).await?;
+    let invite = queries::find_active(&state.pool, &raw).await?;
     let password_hash = password::hash_async(req.password).await?;
-    let default_locale = settings::queries::load(&state.pool).await?.default_locale;
 
     let mut tx = state.pool.begin().await?;
-    let invite = queries::find_for_update(&mut *tx, invite.id)
-        .await?
-        .ok_or(AppError::NotFound("invite.notFound"))?;
-    invite.ensure_active()?;
-    // 사용자명 중복 시 롤백. 초대는 미사용 유지.
-    let user = users::queries::create(
-        &mut *tx,
-        NewUser {
-            username,
-            password_hash: Some(password_hash),
-            display_name,
-            role: invite.role,
-            email: None,
-            locale: default_locale,
-        },
+    let user = queries::accept(
+        &mut tx,
+        invite.id,
+        username,
+        Some(password_hash),
+        display_name,
+        None,
     )
     .await?;
-    queries::mark_used(&mut *tx, invite.id, user.id).await?;
     let (session_raw, _) =
         session::create(&mut *tx, user.id, session::user_agent(&headers)).await?;
     tx.commit().await?;

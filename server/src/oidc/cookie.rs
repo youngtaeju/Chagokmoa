@@ -23,6 +23,8 @@ pub enum Purpose {
     Login,
     /// 로그인한 본인 계정에 IdP 계정 연결.
     Link,
+    /// 초대 링크로 비밀번호 없는 계정 가입.
+    Invite,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -39,6 +41,18 @@ pub struct Progress {
     /// link 용도. 시작한 세션의 사용자.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub user_id: Option<Uuid>,
+    /// invite 용도. 초대 원문 토큰.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub invite: Option<String>,
+    /// invite 용도. 검사 통과한 정규화 아이디.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub username: Option<String>,
+    /// invite 용도. 검사 통과한 표시 이름.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+    /// invite 용도. 검사 통과한 계정 언어.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub locale: Option<String>,
 }
 
 pub fn encode(secret: &[u8], progress: &Progress) -> String {
@@ -89,6 +103,10 @@ mod tests {
             exp,
             redirect: None,
             user_id: Some(Uuid::now_v7()),
+            invite: None,
+            username: None,
+            display_name: None,
+            locale: None,
         }
     }
 

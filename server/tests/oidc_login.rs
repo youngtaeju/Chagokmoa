@@ -8,13 +8,14 @@ use axum_test::{TestResponse, TestServer};
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use chagokmoa::{
     auth::{password, session},
+    invites::{self, InviteStatus, NewInvite},
     oidc::{
         cookie::{self as progress, Progress},
         settings::{self, OidcConfig},
     },
     users::{self, NewUser, Role},
 };
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use common::{PASSWORD, XRW, XRW_VALUE, oidc::FakeIdp, test_config, test_server_without_cookies};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -106,6 +107,7 @@ fn location(res: &TestResponse) -> String {
 
 /// authorize 로 보낸 값과 진행 쿠키.
 struct Started {
+    url: String,
     state: String,
     nonce: String,
     challenge: String,
@@ -150,6 +152,7 @@ async fn start(
     );
     assert_eq!(progress.max_age().map(|d| d.whole_seconds()), Some(600));
     Started {
+        url: to,
         state: params["state"].clone(),
         nonce: params["nonce"].clone(),
         challenge: params["code_challenge"].clone(),
@@ -710,4 +713,327 @@ async fn start_redirect_rejects_external(pool: PgPool) {
         assert_eq!(location(&res), "/", "{redirect}");
         assert!(res.maybe_cookie(session::COOKIE_NAME).is_some());
     }
+}
+
+async fn new_invite(pool: &PgPool, created_by: Uuid, role: Role) -> String {
+    let (raw, _) = invites::queries::create(
+        pool,
+        NewInvite {
+            role,
+            created_by,
+            expires_in: Duration::hours(72),
+        },
+    )
+    .await
+    .expect("invite");
+    raw
+}
+
+async fn invite_row(pool: &PgPool, raw: &str) -> invites::Invite {
+    invites::queries::find_by_raw(pool, raw)
+        .await
+        .expect("find invite")
+        .expect("invite exists")
+}
+
+async fn user_count(pool: &PgPool) -> i64 {
+    users::queries::count(pool).await.expect("count")
+}
+
+fn invite_query(raw: &str, username: &str, display_name: &str) -> String {
+    format!("purpose=invite&invite={raw}&username={username}&display_name={display_name}")
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn invite_oidc_signup_uses_locale(pool: PgPool) {
+    let idp = FakeIdp::start().await;
+    configure(&pool, &idp.issuer, None).await;
+    let owner = create_user(&pool, "owner", true).await;
+    let server = test_server_without_cookies(pool.clone()).await;
+
+    // 허용 언어는 사용자 locale 로, 잘못된 값은 인스턴스 기본 언어(ko)로.
+    for (locale, expected) in [("en", "en"), ("xx", "ko")] {
+        let raw = new_invite(&pool, owner, Role::Guardian).await;
+        let query = format!(
+            "{}&locale={locale}",
+            invite_query(&raw, &format!("aunt_{locale}"), "Aunt")
+        );
+        let s = start(&server, &idp, &query, None).await;
+        let code = idp.issue_code(&format!("sub-{locale}"), &s.nonce, CLIENT_ID);
+        let res = callback(
+            &server,
+            Some(&s.progress),
+            None,
+            &[("code", &code), ("state", &s.state)],
+        )
+        .await;
+        assert_eq!(location(&res), "/");
+        let session_cookie = res.cookie(session::COOKIE_NAME);
+        let user = me(&server, &session_cookie).await["user"].clone();
+        assert_eq!(user["locale"], expected, "{locale}");
+    }
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn invite_oidc_signup_success(pool: PgPool) {
+    let idp = FakeIdp::start().await;
+    configure(&pool, &idp.issuer, None).await;
+    let owner = create_user(&pool, "owner", true).await;
+    let raw = new_invite(&pool, owner, Role::Guardian).await;
+    let server = test_server_without_cookies(pool.clone()).await;
+
+    // 아이디 소문자 정규화, 표시 이름 앞뒤 공백 제거. " 이모 " 인코딩.
+    let s = start(
+        &server,
+        &idp,
+        &invite_query(&raw, "Aunt", "%20%EC%9D%B4%EB%AA%A8%20"),
+        None,
+    )
+    .await;
+    // 초대 원문과 입력값은 IdP 주소에 없음. 진행 쿠키에만.
+    assert!(!s.url.contains(&raw), "{}", s.url);
+    assert!(!s.url.to_lowercase().contains("aunt"), "{}", s.url);
+    let decoded = progress::decode(&test_config().secret_key, s.progress.value(), Utc::now())
+        .expect("decode");
+    assert_eq!(decoded.invite.as_deref(), Some(raw.as_str()));
+    assert_eq!(decoded.username.as_deref(), Some("aunt"));
+    assert_eq!(decoded.display_name.as_deref(), Some("\u{c774}\u{baa8}"));
+
+    let code = idp.issue_code("sub-aunt", &s.nonce, CLIENT_ID);
+    let res = callback(
+        &server,
+        Some(&s.progress),
+        None,
+        &[("code", &code), ("state", &s.state)],
+    )
+    .await;
+    assert_eq!(location(&res), "/");
+    let session_cookie = res.cookie(session::COOKIE_NAME);
+    let user = me(&server, &session_cookie).await["user"].clone();
+    assert_eq!(user["username"], "aunt");
+    assert_eq!(user["display_name"], "\u{c774}\u{baa8}");
+    assert_eq!(user["role"], "guardian");
+    assert_eq!(user["locale"], "ko");
+    let id: Uuid = serde_json::from_value(user["id"].clone()).expect("user id");
+
+    let hash = sqlx::query_scalar!("SELECT password_hash FROM users WHERE id = $1", id)
+        .fetch_one(&pool)
+        .await
+        .expect("user row");
+    assert_eq!(hash, None);
+    assert_eq!(
+        stored_link(&pool, id).await,
+        (Some(idp.issuer.clone()), Some("sub-aunt".to_owned()))
+    );
+    let invite = invite_row(&pool, &raw).await;
+    assert_eq!(invite.status, InviteStatus::Used);
+    assert_eq!(invite.used_by, Some(id));
+    let method = login_method(&server, &session_cookie).await;
+    assert_eq!(method["has_password"], false);
+    assert_eq!(method["oidc"], "linked");
+
+    // 다음부터 외부 로그인.
+    let res = login_flow(&server, &idp, "purpose=login", "sub-aunt").await;
+    assert_eq!(location(&res), "/");
+    let new_session = res.cookie(session::COOKIE_NAME);
+    assert_eq!(me(&server, &new_session).await["user"]["id"], json!(id));
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn invite_start_validates(pool: PgPool) {
+    let idp = FakeIdp::start().await;
+    let owner = create_user(&pool, "owner", true).await;
+    create_user(&pool, "taken", true).await;
+    let raw = new_invite(&pool, owner, Role::Family).await;
+    let server = test_server_without_cookies(pool.clone()).await;
+
+    let expect = |query: String, to: String| {
+        let server = &server;
+        async move {
+            let res = server.get(&format!("/api/auth/oidc/start?{query}")).await;
+            assert_eq!(location(&res), to, "{query}");
+            assert!(res.maybe_cookie(progress::COOKIE_NAME).is_none(), "{query}");
+        }
+    };
+
+    // OIDC 꺼짐.
+    expect(
+        invite_query(&raw, "aunt", "aunt"),
+        format!("/invite/{raw}?oidc_error=oidc.disabled"),
+    )
+    .await;
+
+    configure(&pool, &idp.issuer, None).await;
+    for (username, display_name, key) in [
+        ("TAKEN", "aunt", "auth.usernameTaken"),
+        ("a!", "aunt", "auth.usernameInvalid"),
+        ("", "aunt", "auth.usernameInvalid"),
+        ("aunt", "%20%20", "auth.displayNameInvalid"),
+    ] {
+        expect(
+            invite_query(&raw, username, display_name),
+            format!("/invite/{raw}?oidc_error={key}"),
+        )
+        .await;
+    }
+
+    // 사용, 회수, 만료, 없는 초대.
+    let used = new_invite(&pool, owner, Role::Family).await;
+    server
+        .post(&format!("/api/invites/{used}/accept"))
+        .json(&json!({ "username": "uncle", "password": PASSWORD, "display_name": "uncle" }))
+        .await
+        .assert_status(StatusCode::CREATED);
+    expect(
+        invite_query(&used, "aunt", "aunt"),
+        format!("/invite/{used}?oidc_error=invite.used"),
+    )
+    .await;
+    let revoked = new_invite(&pool, owner, Role::Family).await;
+    invites::queries::revoke(&pool, invite_row(&pool, &revoked).await.id)
+        .await
+        .expect("revoke");
+    expect(
+        invite_query(&revoked, "aunt", "aunt"),
+        format!("/invite/{revoked}?oidc_error=invite.revoked"),
+    )
+    .await;
+    let expired = new_invite(&pool, owner, Role::Family).await;
+    expire(&pool, &expired).await;
+    expect(
+        invite_query(&expired, "aunt", "aunt"),
+        format!("/invite/{expired}?oidc_error=invite.expired"),
+    )
+    .await;
+    // 경로 조각으로 인코딩. 다른 경로나 쿼리로 새지 않음.
+    expect(
+        "purpose=invite&invite=..%2Fx%3Fa%23b&username=aunt&display_name=aunt".to_owned(),
+        "/invite/..%2Fx%3Fa%23b?oidc_error=invite.notFound".to_owned(),
+    )
+    .await;
+
+    // 초대 원문 없으면 돌아갈 초대 화면이 없음.
+    let res = server
+        .get("/api/auth/oidc/start?purpose=invite&username=aunt&display_name=aunt")
+        .await;
+    res.assert_status(StatusCode::BAD_REQUEST);
+    assert_eq!(res.json::<Value>()["error"], "request.invalidQuery");
+
+    assert!(idp.token_requests().is_empty());
+    assert_eq!(user_count(&pool).await, 3);
+    assert_eq!(invite_row(&pool, &raw).await.status, InviteStatus::Active);
+}
+
+async fn expire(pool: &PgPool, raw: &str) {
+    let id = invite_row(pool, raw).await.id;
+    sqlx::query!(
+        "UPDATE invites SET expires_at = now() - interval '1 second' WHERE id = $1",
+        id
+    )
+    .execute(pool)
+    .await
+    .expect("expire invite");
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn invite_callback_rechecks(pool: PgPool) {
+    let idp = FakeIdp::start().await;
+    configure(&pool, &idp.issuer, None).await;
+    let owner = create_user(&pool, "owner", true).await;
+    let server = test_server_without_cookies(pool.clone()).await;
+
+    // 아이디 선점.
+    let raw = new_invite(&pool, owner, Role::Family).await;
+    let s = start(&server, &idp, &invite_query(&raw, "aunt", "aunt"), None).await;
+    create_user(&pool, "Aunt", true).await;
+    let code = idp.issue_code("sub-aunt", &s.nonce, CLIENT_ID);
+    let res = callback(
+        &server,
+        Some(&s.progress),
+        None,
+        &[("code", &code), ("state", &s.state)],
+    )
+    .await;
+    assert_eq!(
+        location(&res),
+        format!("/invite/{raw}?oidc_error=auth.usernameTaken")
+    );
+    assert_no_session(&res);
+    assert_eq!(invite_row(&pool, &raw).await.status, InviteStatus::Active);
+
+    // 회수, 만료, 다른 사람이 먼저 수락.
+    let revoked = new_invite(&pool, owner, Role::Family).await;
+    let expired = new_invite(&pool, owner, Role::Family).await;
+    let used = new_invite(&pool, owner, Role::Family).await;
+    for (raw, key) in [
+        (&revoked, "invite.revoked"),
+        (&expired, "invite.expired"),
+        (&used, "invite.used"),
+    ] {
+        let s = start(&server, &idp, &invite_query(raw, "uncle", "uncle"), None).await;
+        match key {
+            "invite.revoked" => invites::queries::revoke(&pool, invite_row(&pool, raw).await.id)
+                .await
+                .expect("revoke"),
+            "invite.expired" => expire(&pool, raw).await,
+            _ => server
+                .post(&format!("/api/invites/{raw}/accept"))
+                .json(&json!({ "username": "cousin", "password": PASSWORD, "display_name": "cousin" }))
+                .await
+                .assert_status(StatusCode::CREATED),
+        }
+        let code = idp.issue_code("sub-uncle", &s.nonce, CLIENT_ID);
+        let res = callback(
+            &server,
+            Some(&s.progress),
+            None,
+            &[("code", &code), ("state", &s.state)],
+        )
+        .await;
+        assert_eq!(location(&res), format!("/invite/{raw}?oidc_error={key}"));
+        assert_no_session(&res);
+    }
+
+    // owner, 선점한 Aunt, 먼저 수락한 cousin 뿐.
+    assert_eq!(user_count(&pool).await, 3);
+    let linked = users::queries::find_by_oidc(&pool, &idp.issuer, "sub-aunt")
+        .await
+        .expect("find");
+    assert!(linked.is_none());
+    let linked = users::queries::find_by_oidc(&pool, &idp.issuer, "sub-uncle")
+        .await
+        .expect("find");
+    assert!(linked.is_none());
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn invite_rejects_already_linked_sub(pool: PgPool) {
+    let idp = FakeIdp::start().await;
+    configure(&pool, &idp.issuer, None).await;
+    let owner = create_user(&pool, "owner", true).await;
+    let mom = create_user(&pool, "mom", true).await;
+    link(&pool, mom, &idp.issuer, "sub-mom").await;
+    let raw = new_invite(&pool, owner, Role::Family).await;
+    let server = test_server_without_cookies(pool.clone()).await;
+
+    let s = start(&server, &idp, &invite_query(&raw, "aunt", "aunt"), None).await;
+    let code = idp.issue_code("sub-mom", &s.nonce, CLIENT_ID);
+    let res = callback(
+        &server,
+        Some(&s.progress),
+        None,
+        &[("code", &code), ("state", &s.state)],
+    )
+    .await;
+    assert_eq!(
+        location(&res),
+        format!("/invite/{raw}?oidc_error=oidc.alreadyLinked")
+    );
+    assert_no_session(&res);
+    assert_eq!(user_count(&pool).await, 2);
+    assert_eq!(invite_row(&pool, &raw).await.status, InviteStatus::Active);
+    assert_eq!(
+        stored_link(&pool, mom).await,
+        (Some(idp.issuer.clone()), Some("sub-mom".to_owned()))
+    );
 }

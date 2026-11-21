@@ -1,12 +1,13 @@
 use chrono::{DateTime, Utc};
-use sqlx::PgExecutor;
+use sqlx::{PgConnection, PgExecutor};
 use uuid::Uuid;
 
 use super::{Invite, InviteStatus, NewInvite};
 use crate::{
     auth::token,
     error::{AppError, AppResult},
-    users::Role,
+    settings,
+    users::{self, NewUser, Role, User},
 };
 
 /// `now`: DB 시각. 만료 판정을 `expires_at` 과 같은 시계로.
@@ -69,6 +70,50 @@ pub async fn find_by_raw(exec: impl PgExecutor<'_>, raw: &str) -> AppResult<Opti
     .fetch_optional(exec)
     .await?;
     Ok(row.map(Into::into))
+}
+
+/// 원문 토큰 조회 후 사용 가능 여부 확인. 없음 404, 만료, 사용됨, 회수됨 410.
+pub async fn find_active(exec: impl PgExecutor<'_>, raw: &str) -> AppResult<Invite> {
+    let invite = find_by_raw(exec, raw)
+        .await?
+        .ok_or(AppError::NotFound("invite.notFound"))?;
+    invite.ensure_active()?;
+    Ok(invite)
+}
+
+/// 비밀번호 수락과 OIDC 가입 공용. 트랜잭션 안에서 호출.
+/// 행 잠금 후 재확인, 초대 역할과 `locale`(없으면 인스턴스 기본 언어)로 사용자 생성, 초대 사용 처리.
+/// 사용자명 중복은 409 `auth.usernameTaken`. 호출자 롤백 시 초대 미사용 유지.
+pub async fn accept(
+    conn: &mut PgConnection,
+    invite_id: Uuid,
+    username: String,
+    password_hash: Option<String>,
+    display_name: String,
+    locale: Option<String>,
+) -> AppResult<User> {
+    let invite = find_for_update(&mut *conn, invite_id)
+        .await?
+        .ok_or(AppError::NotFound("invite.notFound"))?;
+    invite.ensure_active()?;
+    let locale = match locale {
+        Some(l) => l,
+        None => settings::queries::load(&mut *conn).await?.default_locale,
+    };
+    let user = users::queries::create(
+        &mut *conn,
+        NewUser {
+            username,
+            password_hash,
+            display_name,
+            role: invite.role,
+            email: None,
+            locale,
+        },
+    )
+    .await?;
+    mark_used(&mut *conn, invite.id, user.id).await?;
+    Ok(user)
 }
 
 /// 초대한 사용자 표시 이름.

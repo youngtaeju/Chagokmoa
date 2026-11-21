@@ -1,4 +1,4 @@
-//! OIDC 설정 API(owner, 응답에 client secret 없음)와 로그인, 계정 연결 흐름.
+//! OIDC 설정 API(owner, 응답에 client secret 없음)와 로그인, 계정 연결, 초대 가입 흐름.
 
 use axum::{
     Json as AxumJson,
@@ -22,8 +22,13 @@ use super::{
     settings::{self, DEFAULT_LABEL, OidcConfig},
 };
 use crate::{
-    auth::{extract::CurrentUser, session},
+    auth::{
+        extract::CurrentUser,
+        session,
+        validate::{validate_display_name, validate_locale, validate_username},
+    },
     error::{AppError, AppResult, ErrorBody},
+    invites,
     request::{Json, Query},
     state::AppState,
     users::{self, Role},
@@ -200,10 +205,19 @@ async fn delete_oidc_settings(
 #[into_params(parameter_in = Query)]
 pub struct StartQuery {
     /// `login`: 연결된 계정으로 로그인. `link`: 로그인한 본인 계정에 연결(세션 필요).
+    /// `invite`: 초대 링크로 비밀번호 없는 계정 가입(`invite` 필수).
     #[param(inline)]
     purpose: Purpose,
     /// `login` 성공 뒤 이동할 앱 경로. `/` 로 시작하고 `//` 아님, 역슬래시와 제어 문자 없음. 아니면 무시하고 `/`.
     redirect: Option<String>,
+    /// `invite` 용도. 초대 원문 토큰.
+    invite: Option<String>,
+    /// `invite` 용도. 초대 수락과 같은 규칙.
+    username: Option<String>,
+    /// `invite` 용도. 초대 수락과 같은 규칙.
+    display_name: Option<String>,
+    /// `invite` 용도. 생성할 계정의 언어(`ko`, `en`). 없거나 잘못되면 인스턴스 기본 언어.
+    locale: Option<String>,
 }
 
 /// IdP 가 붙여 보내는 값. 그 밖의 쿼리 무시.
@@ -221,8 +235,8 @@ pub struct CallbackQuery {
     path = "/api/auth/oidc/start",
     params(StartQuery),
     responses(
-        (status = 302, description = "진행 쿠키(`cgm_oidc`) 설정 후 IdP authorize 로 이동. OIDC 꺼짐이나 실패는 용도별 화면(`/login`, `/settings/login-method`)에 `oidc_error`, `link` 인데 세션 없으면 `/login`"),
-        (status = 400, description = "쿼리 오류 (`request.invalidQuery`)", body = ErrorBody),
+        (status = 302, description = "진행 쿠키(`cgm_oidc`) 설정 후 IdP authorize 로 이동. OIDC 꺼짐이나 실패는 용도별 화면(`/login`, `/settings/login-method`, `/invite/{invite}`)에 `oidc_error`, `link` 인데 세션 없으면 `/login`. `invite` 는 초대 수락과 같은 검사(초대 상태, 아이디 형식과 중복, 표시 이름) 통과해야 IdP 로"),
+        (status = 400, description = "쿼리 오류 (`request.invalidQuery`, `invite` 용도에 `invite` 없음)", body = ErrorBody),
     )
 )]
 async fn start(
@@ -231,26 +245,42 @@ async fn start(
     Query(q): Query<StartQuery>,
 ) -> Response {
     let purpose = q.purpose;
+    if purpose == Purpose::Invite && q.invite.is_none() {
+        return AppError::bad_request("request.invalidQuery").into_response();
+    }
+    let screen = screen(purpose, q.invite.as_deref());
     let config = match load_config(&state).await {
         Ok(Some(c)) => c,
-        Ok(None) => return fail(jar, purpose, "oidc.disabled"),
-        Err(key) => return fail(jar, purpose, key),
+        Ok(None) => return fail(jar, &screen, "oidc.disabled"),
+        Err(key) => return fail(jar, &screen, key),
     };
-    let user_id = match purpose {
-        Purpose::Login => None,
+    let mut user_id = None;
+    let mut signup = None;
+    match purpose {
+        Purpose::Login => {}
         Purpose::Link => match session_user(&state, &jar).await {
-            Ok(Some(id)) => Some(id),
-            Ok(None) => return found(jar, "/login"),
-            Err(key) => return fail(jar, purpose, key),
+            Ok(Some(id)) => user_id = Some(id),
+            Ok(None) => return found(jar, LOGIN_SCREEN),
+            Err(key) => return fail(jar, &screen, key),
         },
-    };
+        Purpose::Invite => {
+            let raw = q.invite.as_deref().unwrap_or_default();
+            let username = q.username.as_deref().unwrap_or_default();
+            let display_name = q.display_name.as_deref().unwrap_or_default();
+            match check_signup(&state, raw, username, display_name).await {
+                Ok(values) => signup = Some(values),
+                Err(key) => return fail(jar, &screen, key),
+            }
+        }
+    }
     let authorize = match flow::authorize(&config, &state.config.public_url).await {
         Ok(a) => a,
         Err(e) => {
             tracing::warn!(error = %e, "oidc start failed");
-            return fail(jar, purpose, "oidc.failed");
+            return fail(jar, &screen, "oidc.failed");
         }
     };
+    let (username, display_name) = signup.unzip();
     let progress = Progress {
         purpose,
         state: authorize.state,
@@ -263,9 +293,16 @@ async fn start(
                 .as_deref()
                 .and_then(safe_redirect)
                 .map(str::to_owned),
-            Purpose::Link => None,
+            Purpose::Link | Purpose::Invite => None,
         },
         user_id,
+        invite: q.invite.filter(|_| purpose == Purpose::Invite),
+        username,
+        display_name,
+        locale: q
+            .locale
+            .filter(|_| purpose == Purpose::Invite)
+            .and_then(|l| validate_locale(&l, "request.invalidQuery").ok()),
     };
     let value = cookie::encode(&state.config.secret_key, &progress);
     found(
@@ -279,7 +316,7 @@ async fn start(
     path = "/api/auth/oidc/callback",
     params(CallbackQuery),
     responses(
-        (status = 302, description = "진행 쿠키 삭제. `login` 성공은 세션 쿠키 발급 후 시작 때 `redirect` 또는 `/`, `link` 성공은 `/settings/login-method`. 실패는 용도별 화면에 `oidc_error`(`oidc.failed`, `oidc.denied`, `oidc.disabled`, `oidc.notLinked`, `oidc.alreadyLinked`, `oidc.sessionChanged`, `auth.disabled`)"),
+        (status = 302, description = "진행 쿠키 삭제. `login` 성공은 세션 쿠키 발급 후 시작 때 `redirect` 또는 `/`, `link` 성공은 `/settings/login-method`, `invite` 성공은 비밀번호 없는 계정 생성과 세션 쿠키 발급 후 `/`. 실패는 용도별 화면에 `oidc_error`(`oidc.failed`, `oidc.denied`, `oidc.disabled`, `oidc.notLinked`, `oidc.alreadyLinked`, `oidc.sessionChanged`, `auth.disabled`, 초대 용도는 초대 수락 오류 키)"),
     )
 )]
 async fn callback(
@@ -300,15 +337,15 @@ async fn callback(
             present = value.is_some(),
             "oidc callback without valid progress cookie"
         );
-        return fail(jar, Purpose::Login, "oidc.failed");
+        return fail(jar, LOGIN_SCREEN, "oidc.failed");
     };
-    let purpose = progress.purpose;
+    let screen = screen(progress.purpose, progress.invite.as_deref());
     match complete(&state, &headers, session_raw.as_deref(), progress, q).await {
         Ok(Done::LoggedIn { session, redirect }) => {
             found(jar.add(session::cookie(&state.config, session)), &redirect)
         }
         Ok(Done::Linked) => found(jar, LINK_SCREEN),
-        Err(key) => fail(jar, purpose, key),
+        Err(key) => fail(jar, &screen, key),
     }
 }
 
@@ -347,7 +384,9 @@ async fn complete(
     q: CallbackQuery,
 ) -> Result<Done, &'static str> {
     if let Some(error) = q.error {
-        tracing::info!(error = %error, "oidc idp returned error");
+        // 공격자가 정하는 값. Debug 이스케이프와 길이 제한으로 로그 줄 위조 차단.
+        let error: String = error.chars().take(200).collect();
+        tracing::info!(error = ?error, "oidc idp returned error");
         return Err("oidc.denied");
     }
     if !q
@@ -415,6 +454,82 @@ async fn complete(
             })?;
             Ok(Done::Linked)
         }
+        Purpose::Invite => {
+            let locale = progress.locale;
+            let (Some(raw), Some(username), Some(display_name)) =
+                (progress.invite, progress.username, progress.display_name)
+            else {
+                tracing::warn!("oidc invite progress without signup values");
+                return Err("oidc.failed");
+            };
+            let session = signup(
+                state,
+                headers,
+                &raw,
+                username,
+                display_name,
+                locale,
+                &identity,
+            )
+            .await
+            .map_err(invite_error)?;
+            Ok(Done::LoggedIn {
+                session,
+                redirect: "/".to_owned(),
+            })
+        }
+    }
+}
+
+/// 초대 수락과 같은 검사. 정규화한 (아이디, 표시 이름) 반환.
+async fn check_signup(
+    state: &AppState,
+    raw: &str,
+    username: &str,
+    display_name: &str,
+) -> Result<(String, String), &'static str> {
+    let username = validate_username(username).map_err(invite_error)?;
+    let display_name = validate_display_name(display_name).map_err(invite_error)?;
+    invites::queries::find_active(&state.pool, raw)
+        .await
+        .map_err(invite_error)?;
+    let taken = users::queries::find_by_username(&state.pool, &username)
+        .await
+        .map_err(internal)?;
+    if taken.is_some() {
+        return Err("auth.usernameTaken");
+    }
+    Ok((username, display_name))
+}
+
+/// 한 트랜잭션. 그사이 초대 상태 변경, 아이디 선점, 다른 계정에 연결된 sub 는 전부 롤백.
+async fn signup(
+    state: &AppState,
+    headers: &HeaderMap,
+    raw: &str,
+    username: String,
+    display_name: String,
+    locale: Option<String>,
+    identity: &flow::Identity,
+) -> AppResult<String> {
+    let mut tx = state.pool.begin().await?;
+    let invite = invites::queries::find_active(&mut *tx, raw).await?;
+    let user =
+        invites::queries::accept(&mut tx, invite.id, username, None, display_name, locale).await?;
+    users::queries::set_oidc_link(&mut *tx, user.id, &identity.issuer, &identity.subject).await?;
+    let (session, _) = session::create(&mut *tx, user.id, session::user_agent(headers)).await?;
+    tx.commit().await?;
+    Ok(session)
+}
+
+/// 초대, 입력 검사 오류는 그 키(`invite.*`, `auth.*`, `oidc.alreadyLinked`). 그 밖은 기록 후 `oidc.failed`.
+fn invite_error(e: AppError) -> &'static str {
+    match e {
+        AppError::NotFound(key)
+        | AppError::Gone(key)
+        | AppError::Conflict { key, .. }
+        | AppError::BadRequest { key, .. } => key,
+        e => internal(e),
     }
 }
 
@@ -450,15 +565,32 @@ fn same_secret(a: &str, b: &str) -> bool {
     Sha256::digest(a.as_bytes()) == Sha256::digest(b.as_bytes())
 }
 
-fn screen(purpose: Purpose) -> &'static str {
-    match purpose {
-        Purpose::Login => LOGIN_SCREEN,
-        Purpose::Link => LINK_SCREEN,
+/// 실패 시 돌아갈 앱 화면. 초대 용도는 그 초대 화면.
+fn screen(purpose: Purpose, invite: Option<&str>) -> String {
+    match (purpose, invite) {
+        (Purpose::Login, _) => LOGIN_SCREEN.to_owned(),
+        (Purpose::Link, _) => LINK_SCREEN.to_owned(),
+        (Purpose::Invite, Some(raw)) => format!("/invite/{}", path_segment(raw)),
+        // 시작 요청은 앞에서 400, 서명 쿠키에는 항상 있음.
+        (Purpose::Invite, None) => LOGIN_SCREEN.to_owned(),
     }
 }
 
-fn fail(jar: CookieJar, purpose: Purpose, key: &str) -> Response {
-    found(jar, &format!("{}?oidc_error={key}", screen(purpose)))
+fn fail(jar: CookieJar, screen: &str, key: &str) -> Response {
+    found(jar, &format!("{screen}?oidc_error={key}"))
+}
+
+/// 경로 조각 하나로 인코딩. RFC 3986 unreserved 외 바이트는 `%XX`(`/`, `?`, `#` 로 다른 경로나 쿼리가 되지 않게).
+fn path_segment(raw: &str) -> String {
+    let mut out = String::with_capacity(raw.len());
+    for b in raw.bytes() {
+        if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~') {
+            out.push(char::from(b));
+        } else {
+            out.push_str(&format!("%{b:02X}"));
+        }
+    }
+    out
 }
 
 /// 302. 헤더로 못 쓰는 주소(검사 통과한 비 ASCII 등)는 `/`.
