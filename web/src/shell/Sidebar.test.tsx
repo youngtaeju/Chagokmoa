@@ -92,7 +92,7 @@ describe('Sidebar', () => {
   it('sidebar_single_current_on_secondary', async () => {
     const { router } = renderShell('guardian', '/settings/trash')
     const { root } = await sidebar()
-    await screen.findByRole('heading', { level: 1, name: ko.nav.trash })
+    await screen.findByRole('heading', { level: 1, name: '우리 집 휴지통' })
     await waitFor(() => {
       expect(router.state.status).toBe('idle')
     })

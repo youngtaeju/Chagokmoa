@@ -55,6 +55,18 @@ function renderPage(
 }
 
 describe('settings sub pages', () => {
+  it.each([
+    ['/settings/profile', '내 계정 프로필'],
+    ['/settings/password', '내 계정 비밀번호 바꾸기'],
+    ['/settings/devices', '내 계정 로그인한 기기'],
+    ['/settings/appearance', '앱 화면과 언어'],
+  ])('title_has_section %s', async (path, name) => {
+    renderPage({}, { path })
+    expect(
+      await screen.findByRole('heading', { level: 1, name }),
+    ).toBeInTheDocument()
+  })
+
   it('wrong_current_password_stays_logged_in', async () => {
     const { user, router } = renderPage(
       {
@@ -118,7 +130,10 @@ describe('settings sub pages', () => {
     expect(within(group).getByRole('radio', { name: '한국어' })).toBeChecked()
     await user.click(within(group).getByRole('radio', { name: 'English' }))
     expect(
-      await screen.findByRole('heading', { name: 'Display & language' }),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'App Display & language',
+      }),
     ).toBeInTheDocument()
     expect(bodies).toEqual([{ locale: 'en' }])
   })

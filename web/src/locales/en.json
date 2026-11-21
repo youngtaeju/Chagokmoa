@@ -1113,7 +1113,6 @@
     "backupFailedMany": "Backup failed {{count}} times today. Check the backup screen"
   },
   "push": {
-    "title": "Notifications",
     "device": "This device",
     "deviceToggle": "Push notifications",
     "iosInstall": "Add to Home Screen to turn this on",

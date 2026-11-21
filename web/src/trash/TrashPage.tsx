@@ -172,7 +172,7 @@ export function TrashPage() {
   )
 
   return (
-    <SubPage title={t('nav.trash')} actions={menu}>
+    <SubPage section={t('me.home')} title={t('me.trash')} actions={menu}>
       {days != null && (
         <p className="text-sm text-muted-foreground">
           {days === 0

@@ -126,7 +126,10 @@ describe('SettingsPage', () => {
   it('back_pops_history', async () => {
     const { user, router } = renderMe('family')
     await user.click(await screen.findByRole('link', { name: '로그인한 기기' }))
-    await screen.findByRole('heading', { name: '로그인한 기기', level: 1 })
+    await screen.findByRole('heading', {
+      name: '내 계정 로그인한 기기',
+      level: 1,
+    })
     const length = window.history.length
     await user.click(screen.getByRole('button', { name: '뒤로' }))
     await waitFor(() => {

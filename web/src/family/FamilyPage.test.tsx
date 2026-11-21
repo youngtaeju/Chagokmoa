@@ -107,7 +107,7 @@ describe('FamilyPage', () => {
   it('header_back_and_invite', async () => {
     const { user, router } = renderMembers({}, { users: [OWNER, DAD] })
     const header = (
-      await screen.findByRole('heading', { level: 1, name: '가족' })
+      await screen.findByRole('heading', { level: 1, name: '우리 집 가족' })
     ).closest('header')
     if (!header) throw new Error('머리글 없음')
     expect(
