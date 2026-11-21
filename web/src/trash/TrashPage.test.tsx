@@ -39,6 +39,8 @@ function renderTrash(
     'GET /api/auth/me': () => json(200, { user: userFixture(role) }),
     'GET /api/settings': () => json(200, settings),
     'GET /api/trash': () => json(200, { items, next_cursor: null }),
+    'GET /api/auth/status': () =>
+      json(200, { signup_open: false, mail_enabled: false, oidc: null }),
     ...emptyFeedRoutes,
     ...extra,
   })
@@ -174,5 +176,9 @@ describe('TrashPage', () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/settings')
     })
+    // 설정 화면 렌더까지 대기. 그 화면의 조회 요청이 테스트 안에서 끝나게.
+    expect(
+      await screen.findByRole('heading', { level: 2, name: '내 계정' }),
+    ).toBeInTheDocument()
   })
 })
