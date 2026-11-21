@@ -603,3 +603,20 @@ async fn login_method_reports_password(pool: PgPool) {
         "auth.required",
     );
 }
+
+#[sqlx::test(migrations = "./migrations")]
+async fn login_method_survives_broken_oidc_setting(pool: PgPool) {
+    let server = common::test_server(pool.clone()).await;
+    signup(&server).await;
+    sqlx::query!(
+        "INSERT INTO settings (key, value) VALUES ('oidc', '\"broken\"'::jsonb)
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value"
+    )
+    .execute(&pool)
+    .await
+    .expect("broken setting");
+
+    let res = server.get("/api/auth/login-method").await;
+    res.assert_status_ok();
+    res.assert_json(&json!({ "has_password": true, "oidc": "none" }));
+}

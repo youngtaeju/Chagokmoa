@@ -20,6 +20,7 @@ use super::{
 use crate::{
     error::{AppError, AppResult, ErrorBody},
     mail,
+    oidc::{self, OidcLinkState, oidc_link_state},
     request::{Json, Path},
     settings,
     state::AppState,
@@ -69,25 +70,6 @@ pub struct MediaTokenResponse {
     expires_at: DateTime<Utc>,
 }
 
-/// 외부 IdP 계정 연결 상태.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
-#[serde(rename_all = "lowercase")]
-pub enum OidcLinkState {
-    None,
-    Linked,
-    /// 연결 값은 있으나 현재 설정 issuer 와 다름(설정 없음 포함). 로그인에 안 쓰임.
-    Stale,
-}
-
-/// 설정 issuer 와 사용자에 저장된 issuer 비교.
-pub fn oidc_link_state(configured: Option<&str>, stored: Option<&str>) -> OidcLinkState {
-    match (configured, stored) {
-        (_, None) => OidcLinkState::None,
-        (Some(c), Some(s)) if c == s => OidcLinkState::Linked,
-        _ => OidcLinkState::Stale,
-    }
-}
-
 #[derive(Serialize, ToSchema)]
 pub struct LoginMethod {
     has_password: bool,
@@ -99,6 +81,15 @@ pub struct StatusResponse {
     signup_open: bool,
     /// 메일 설정됨. 비밀번호 찾기 화면 분기.
     mail_enabled: bool,
+    /// OIDC 설정됨이면 로그인 버튼 정보, 아니면 null.
+    #[schema(required = true)]
+    oidc: Option<OidcStatus>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct OidcStatus {
+    /// 로그인 버튼 이름.
+    label: String,
 }
 
 #[utoipa::path(
@@ -161,14 +152,25 @@ async fn signup(
 #[utoipa::path(
     get,
     path = "/api/auth/status",
-    responses((status = 200, description = "가입 가능 여부와 메일 사용 가능 여부", body = StatusResponse))
+    responses((status = 200, description = "가입 가능 여부, 메일 사용 가능 여부, OIDC 로그인 버튼", body = StatusResponse))
 )]
 async fn status(State(state): State<AppState>) -> AppResult<AxumJson<StatusResponse>> {
     let signup_open = users::queries::count(&state.pool).await? == 0;
     let mail_enabled = mail::is_configured(&state.pool).await?;
+    // 설정 값 손상이 비밀번호 로그인 화면까지 막지 않게 경고 후 꺼짐 취급.
+    let oidc = match oidc::settings::load(&state.pool).await {
+        Ok(config) => config.map(|c| OidcStatus {
+            label: c.button_label,
+        }),
+        Err(e) => {
+            tracing::warn!(error = %e, "oidc settings unreadable, hiding oidc login");
+            None
+        }
+    };
     Ok(AxumJson(StatusResponse {
         signup_open,
         mail_enabled,
+        oidc,
     }))
 }
 
@@ -266,11 +268,17 @@ async fn login_method(
     let (has_password, issuer) = users::queries::login_method(&state.pool, current.user.id)
         .await?
         .ok_or(AppError::Unauthorized("auth.required"))?;
-    // OIDC 설정 읽기 전(설정 issuer 없음).
-    let configured: Option<&str> = None;
+    // status 와 같이 설정 손상은 경고 후 설정 없음 취급.
+    let configured = oidc::settings::load(&state.pool).await.unwrap_or_else(|e| {
+        tracing::warn!(error = %e, "oidc settings unreadable, treating as unset");
+        None
+    });
     Ok(AxumJson(LoginMethod {
         has_password,
-        oidc: oidc_link_state(configured, issuer.as_deref()),
+        oidc: oidc_link_state(
+            configured.as_ref().map(|c| c.issuer_url.as_str()),
+            issuer.as_deref(),
+        ),
     }))
 }
 
@@ -331,22 +339,4 @@ async fn media_token(
     let expires_at = (Utc::now() + Duration::hours(1)).trunc_subsecs(0);
     let token = token::sign_media(&state.config.secret_key, current.user.id, expires_at);
     AxumJson(MediaTokenResponse { token, expires_at })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{OidcLinkState, oidc_link_state};
-
-    #[test]
-    fn link_state_compares_issuer() {
-        let a = "https://idp.test/a";
-        assert_eq!(oidc_link_state(None, None), OidcLinkState::None);
-        assert_eq!(oidc_link_state(Some(a), None), OidcLinkState::None);
-        assert_eq!(oidc_link_state(Some(a), Some(a)), OidcLinkState::Linked);
-        assert_eq!(
-            oidc_link_state(Some(a), Some("https://idp.test/b")),
-            OidcLinkState::Stale
-        );
-        assert_eq!(oidc_link_state(None, Some(a)), OidcLinkState::Stale);
-    }
 }

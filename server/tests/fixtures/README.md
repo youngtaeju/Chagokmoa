@@ -98,3 +98,17 @@ ffmpeg -v error -y -f lavfi -i testsrc2=size=160x120:rate=15:duration=2 \
 ffprobe -v error -print_format json -show_format -show_streams clip-h264.mp4 > probe/h264.json
 ffprobe -v error -print_format json -show_format -show_streams clip-hevc.mov > probe/hevc-rotated.json
 ```
+
+## OIDC 테스트 키
+
+가짜 OIDC 제공자(`tests/common/oidc.rs`)가 ID 토큰 서명에 쓰는 테스트 전용 RSA 2048 키입니다. 운영에서 쓰지 않습니다. `openidconnect` 가 PKCS#1 PEM 만 읽어서 `-traditional` 로 만듭니다.
+
+| 파일 | 내용 |
+|---|---|
+| `oidc_test_key.pem` | JWKS 로 공개하는 서명 키 |
+| `oidc_other_key.pem` | JWKS 에 없는 키. 서명 검증 실패 시험용 |
+
+```bash
+openssl genrsa -traditional -out oidc_test_key.pem 2048
+openssl genrsa -traditional -out oidc_other_key.pem 2048
+```

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"linked!\",\n                  count(*) FILTER (WHERE password_hash IS NULL) AS \"passwordless!\"\n           FROM users WHERE oidc_issuer = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "linked!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "passwordless!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "aa235bd2a15e67ddbf2dcade6137347dcd31393cca9a29b962c55682c5858ab5"
+}

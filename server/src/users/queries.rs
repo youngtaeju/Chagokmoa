@@ -178,6 +178,19 @@ pub async fn login_method(
     Ok(row.map(|r| (r.has_password, r.oidc_issuer)))
 }
 
+/// `issuer` 로 연결된 사용자 수와 그중 비밀번호 없는 수. 정지 사용자 포함.
+pub async fn oidc_link_counts(exec: impl PgExecutor<'_>, issuer: &str) -> AppResult<(i64, i64)> {
+    let row = sqlx::query!(
+        r#"SELECT count(*) AS "linked!",
+                  count(*) FILTER (WHERE password_hash IS NULL) AS "passwordless!"
+           FROM users WHERE oidc_issuer = $1"#,
+        issuer,
+    )
+    .fetch_one(exec)
+    .await?;
+    Ok((row.linked, row.passwordless))
+}
+
 pub async fn update_password(
     exec: impl PgExecutor<'_>,
     id: Uuid,

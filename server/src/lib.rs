@@ -19,6 +19,7 @@ pub mod media;
 pub mod memories;
 pub mod milestones;
 pub mod notifications;
+pub mod oidc;
 pub mod openapi;
 pub mod password_resets;
 pub mod push;
