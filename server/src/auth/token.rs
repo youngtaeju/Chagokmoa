@@ -27,6 +27,24 @@ fn mac(secret: &[u8], payload: &str) -> HmacSha256 {
     mac
 }
 
+/// 형식 `<base64url payload>.<base64url hmac-sha256>`. MAC 대상은 `<context>:<base64url payload>`.
+/// `context` 로 용도 분리(다른 서명 값의 재사용 차단). 만료 등 내용 검사는 호출자.
+pub fn sign_opaque(secret: &[u8], context: &str, payload: &[u8]) -> String {
+    let encoded = URL_SAFE_NO_PAD.encode(payload);
+    let sig = mac(secret, &format!("{context}:{encoded}")).finalize();
+    format!("{encoded}.{}", URL_SAFE_NO_PAD.encode(sig.into_bytes()))
+}
+
+/// 형식 오류, MAC 불일치는 `None`. MAC 비교는 상수 시간(`verify_slice`).
+pub fn verify_opaque(secret: &[u8], context: &str, token: &str) -> Option<Vec<u8>> {
+    let (encoded, sig) = token.split_once('.')?;
+    let sig = URL_SAFE_NO_PAD.decode(sig).ok()?;
+    mac(secret, &format!("{context}:{encoded}"))
+        .verify_slice(&sig)
+        .ok()?;
+    URL_SAFE_NO_PAD.decode(encoded).ok()
+}
+
 /// 형식 `<uuid>.<unix exp>.<base64url hmac-sha256>`. MAC 은 앞 두 파트 문자열 전체 대상.
 pub fn sign_media(secret: &[u8], user_id: Uuid, exp: DateTime<Utc>) -> String {
     let payload = format!("{user_id}.{}", exp.timestamp());
@@ -97,6 +115,25 @@ mod tests {
 
         let forged_exp = format!("{}.{}.{}", parts[0], exp.timestamp() + 3600, parts[2]);
         assert_eq!(verify_media(secret, &forged_exp, now), None);
+    }
+
+    #[test]
+    fn opaque_roundtrip_and_tampering() {
+        let secret = b"secret";
+        let t = sign_opaque(secret, "ctx", b"{\"a\":1}");
+        assert_eq!(
+            verify_opaque(secret, "ctx", &t).as_deref(),
+            Some(&b"{\"a\":1}"[..])
+        );
+        assert_eq!(verify_opaque(b"other", "ctx", &t), None);
+        assert_eq!(verify_opaque(secret, "other", &t), None);
+
+        let (_, sig) = t.split_once('.').unwrap();
+        let forged = format!("{}.{sig}", URL_SAFE_NO_PAD.encode(b"{\"a\":2}"));
+        assert_eq!(verify_opaque(secret, "ctx", &forged), None);
+        for bad in ["", "abc", ".", &format!("{t}.x"), &format!("{t}x")] {
+            assert_eq!(verify_opaque(secret, "ctx", bad), None, "{bad}");
+        }
     }
 
     #[test]

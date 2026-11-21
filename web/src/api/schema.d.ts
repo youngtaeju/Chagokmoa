@@ -388,6 +388,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/oidc/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["callback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/oidc/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["unlink"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/oidc/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["start"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/sessions": {
         parameters: {
             query?: never;
@@ -4364,6 +4412,106 @@ export interface operations {
             };
             /** @description CSRF 헤더 누락 */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    callback: {
+        parameters: {
+            query?: {
+                code?: string;
+                state?: string;
+                /** @description IdP 오류(사용자 거부 등). 있으면 `oidc.denied`. */
+                error?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 진행 쿠키 삭제. `login` 성공은 세션 쿠키 발급 후 시작 때 `redirect` 또는 `/`, `link` 성공은 `/settings/login-method`. 실패는 용도별 화면에 `oidc_error`(`oidc.failed`, `oidc.denied`, `oidc.disabled`, `oidc.notLinked`, `oidc.alreadyLinked`, `oidc.sessionChanged`, `auth.disabled`) */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    unlink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 본인 계정의 IdP 연결 해제(연결 없어도 성공) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 비밀번호 없는 계정 (`oidc.needPassword`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    start: {
+        parameters: {
+            query: {
+                /** @description `login`: 연결된 계정으로 로그인. `link`: 로그인한 본인 계정에 연결(세션 필요). */
+                purpose: "login" | "link";
+                /** @description `login` 성공 뒤 이동할 앱 경로. `/` 로 시작하고 `//` 아님, 역슬래시와 제어 문자 없음. 아니면 무시하고 `/`. */
+                redirect?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 진행 쿠키(`cgm_oidc`) 설정 후 IdP authorize 로 이동. OIDC 꺼짐이나 실패는 용도별 화면(`/login`, `/settings/login-method`)에 `oidc_error`, `link` 인데 세션 없으면 `/login` */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 쿼리 오류 (`request.invalidQuery`) */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

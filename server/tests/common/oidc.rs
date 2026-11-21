@@ -79,6 +79,9 @@ impl FakeIdp {
             .route("/jwks", get(jwks))
             .route("/authorize", get(|| async { "fake authorize" }))
             .route("/token", post(token))
+            // 리다이렉트 비추종, 본문 상한 시험용 discovery.
+            .route("/moved/.well-known/openid-configuration", get(moved))
+            .route("/huge/.well-known/openid-configuration", get(huge))
             .with_state(IdpState {
                 issuer: issuer.clone(),
                 shared: shared.clone(),
@@ -140,15 +143,34 @@ fn signing_key(pem: &str) -> CoreRsaPrivateSigningKey {
         .expect("test rsa key")
 }
 
-async fn discovery(State(idp): State<IdpState>) -> Json<Value> {
-    let base = &idp.issuer;
-    let issuer = idp
-        .shared
+/// discovery 와 ID 토큰 `iss` 공용. 덮어쓴 값이 있으면 그 값.
+fn issuer(idp: &IdpState) -> String {
+    idp.shared
         .lock()
         .expect("idp state")
         .discovery_issuer
         .clone()
-        .unwrap_or_else(|| base.clone());
+        .unwrap_or_else(|| idp.issuer.clone())
+}
+
+async fn moved(State(idp): State<IdpState>) -> (StatusCode, [(header::HeaderName, String); 1]) {
+    (
+        StatusCode::FOUND,
+        [(
+            header::LOCATION,
+            format!("{}/.well-known/openid-configuration", idp.issuer),
+        )],
+    )
+}
+
+/// 상한(1 MiB) 넘는 본문.
+async fn huge() -> String {
+    format!("{{\"pad\":\"{}\"}}", "x".repeat(2 * 1024 * 1024))
+}
+
+async fn discovery(State(idp): State<IdpState>) -> Json<Value> {
+    let base = &idp.issuer;
+    let issuer = issuer(&idp);
     Json(json!({
         "issuer": issuer,
         "authorization_endpoint": format!("{base}/authorize"),
@@ -195,7 +217,7 @@ async fn token(
     let access_token = AccessToken::new(Uuid::now_v7().simple().to_string());
     let now = Utc::now();
     let claims = CoreIdTokenClaims::new(
-        IssuerUrl::new(idp.issuer.clone()).expect("issuer url"),
+        IssuerUrl::new(issuer(&idp)).expect("issuer url"),
         vec![Audience::new(grant.aud)],
         now + Duration::minutes(5),
         now,
