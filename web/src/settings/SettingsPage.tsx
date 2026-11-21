@@ -1,8 +1,9 @@
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import IconChevron from '~icons/material-symbols/chevron-right-rounded'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { hasRole, useMe } from '@/auth/session'
+import { authStatusQuery, hasRole, useMe } from '@/auth/session'
 import { useSignOut } from '@/auth/useSignOut'
 import { cn } from '@/lib/utils'
 
@@ -18,6 +19,7 @@ type RowPath =
   | '/settings/backup'
   | '/settings/mail'
   | '/settings/login'
+  | '/settings/login-method'
   | '/family'
 
 const ROW =
@@ -50,6 +52,7 @@ export function SettingsPage() {
   const { t } = useTranslation()
   const { user } = useMe()
   const signOut = useSignOut()
+  const status = useQuery(authStatusQuery)
   const initial = Array.from(user?.display_name ?? '')[0] ?? '?'
 
   return (
@@ -79,6 +82,9 @@ export function SettingsPage() {
         <NavRow to="/settings/profile" label={t('me.profile')} />
         <NavRow to="/settings/password" label={t('me.password')} />
         <NavRow to="/settings/devices" label={t('me.devices')} />
+        {status.data?.oidc && (
+          <NavRow to="/settings/login-method" label={t('me.loginMethod')} />
+        )}
       </Group>
       <Group title={t('me.app')}>
         <NavRow to="/settings/notifications" label={t('me.notifications')} />

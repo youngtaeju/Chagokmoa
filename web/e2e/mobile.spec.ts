@@ -219,6 +219,8 @@ test('auth_screens_fit_width', async ({ page, request }) => {
   await expect(
     page.getByRole('button', { name: '비밀번호를 잊었어요' }),
   ).toBeVisible()
+  // 로그인(OIDC) 미설정 스택: SSO 버튼 없음.
+  await expect(page.locator('a[href*="/api/auth/oidc/start"]')).toHaveCount(0)
   await expectNoHorizontalOverflow(page)
 
   await page.goto(await createInvitePath(request))

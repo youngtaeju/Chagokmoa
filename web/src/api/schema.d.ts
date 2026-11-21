@@ -388,6 +388,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/oidc/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["callback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/oidc/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["unlink"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/oidc/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["start"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/sessions": {
         parameters: {
             query?: never;
@@ -4364,6 +4412,117 @@ export interface operations {
             };
             /** @description CSRF 헤더 누락 */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    callback: {
+        parameters: {
+            query?: {
+                code?: string;
+                state?: string;
+                /** @description IdP 오류(사용자 거부 등). 있으면 `oidc.denied`. */
+                error?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 진행 쿠키 삭제. `login` 성공은 세션 쿠키 발급 후 시작 때 `redirect` 또는 `/`, `link` 성공은 `/settings/login-method`, `invite` 성공은 비밀번호 없는 계정 생성과 세션 쿠키 발급 후 `/`. 실패는 용도별 화면에 `oidc_error`(`oidc.failed`, `oidc.denied`, `oidc.disabled`, `oidc.notLinked`, `oidc.alreadyLinked`, `oidc.sessionChanged`, `auth.disabled`, 초대 용도는 초대 수락 오류 키) */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    unlink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 본인 계정의 IdP 연결 해제(연결 없어도 성공) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 비밀번호 없는 계정 (`oidc.needPassword`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    start: {
+        parameters: {
+            query: {
+                /**
+                 * @description `login`: 연결된 계정으로 로그인. `link`: 로그인한 본인 계정에 연결(세션 필요).
+                 *     `invite`: 초대 링크로 비밀번호 없는 계정 가입(`invite` 필수).
+                 */
+                purpose: "login" | "link" | "invite";
+                /** @description `login` 성공 뒤 이동할 앱 경로. `/` 로 시작하고 `//` 아님, 역슬래시와 제어 문자 없음. 아니면 무시하고 `/`. */
+                redirect?: string;
+                /** @description `invite` 용도. 초대 원문 토큰. */
+                invite?: string;
+                /** @description `invite` 용도. 초대 수락과 같은 규칙. */
+                username?: string;
+                /** @description `invite` 용도. 초대 수락과 같은 규칙. */
+                display_name?: string;
+                /** @description `invite` 용도. 생성할 계정의 언어(`ko`, `en`). 없거나 잘못되면 인스턴스 기본 언어. */
+                locale?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 진행 쿠키(`cgm_oidc`) 설정 후 IdP authorize 로 이동. OIDC 꺼짐이나 실패는 용도별 화면(`/login`, `/settings/login-method`, `/invite/{invite}`)에 `oidc_error`, `link` 인데 세션 없으면 `/login`. `invite` 는 초대 수락과 같은 검사(초대 상태, 아이디 형식과 중복, 표시 이름) 통과해야 IdP 로 */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 쿼리 오류 (`request.invalidQuery`, `invite` 용도에 `invite` 없음) */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -5,6 +5,13 @@ const LOCALES: &[&str] = &["ko", "en"];
 
 /// 가입·초대 수락 공용. 정규화(소문자) 사용자명 반환.
 pub fn validate_credentials(username: &str, password: &str) -> AppResult<String> {
+    let username = validate_username(username)?;
+    validate_password(password)?;
+    Ok(username)
+}
+
+/// 비밀번호 없는 OIDC 초대 가입과 공용. 3~32자 소문자, 숫자, `_`. 정규화(소문자) 사용자명 반환.
+pub fn validate_username(username: &str) -> AppResult<String> {
     let username = username.to_lowercase();
     let len = username.chars().count();
     let valid_chars = username
@@ -13,7 +20,6 @@ pub fn validate_credentials(username: &str, password: &str) -> AppResult<String>
     if !(3..=32).contains(&len) || !valid_chars {
         return Err(AppError::bad_request("auth.usernameInvalid"));
     }
-    validate_password(password)?;
     Ok(username)
 }
 

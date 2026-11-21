@@ -378,3 +378,34 @@ async fn login_method_reads_configured_issuer(pool: PgPool) {
     let res = server.get("/api/auth/login-method").await;
     res.assert_json(&json!({ "has_password": true, "oidc": "linked" }));
 }
+
+#[sqlx::test(migrations = "./migrations")]
+async fn discovery_does_not_follow_redirect(pool: PgPool) {
+    // 302 대상은 정상 discovery. 따라가면 issuer 불일치로 다른 문구.
+    let idp = FakeIdp::start().await;
+    let (server, _) = server_as(&pool, "mom", Role::Owner).await;
+    let res = put_oidc(
+        &server,
+        &config_body(&format!("{}/moved", idp.issuer), None),
+    )
+    .await;
+    res.assert_status(StatusCode::BAD_REQUEST);
+    let body = res.json::<Value>();
+    assert_eq!(body["error"], "oidc.discoveryFailed");
+    let message = body["params"]["message"].as_str().expect("message");
+    assert!(message.contains("302"), "{message}");
+    assert_eq!(stored(&pool).await, None);
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn discovery_rejects_oversized_body(pool: PgPool) {
+    let idp = FakeIdp::start().await;
+    let (server, _) = server_as(&pool, "mom", Role::Owner).await;
+    let res = put_oidc(&server, &config_body(&format!("{}/huge", idp.issuer), None)).await;
+    res.assert_status(StatusCode::BAD_REQUEST);
+    let body = res.json::<Value>();
+    assert_eq!(body["error"], "oidc.discoveryFailed");
+    let message = body["params"]["message"].as_str().expect("message");
+    assert!(message.contains("too large"), "{message}");
+    assert_eq!(stored(&pool).await, None);
+}

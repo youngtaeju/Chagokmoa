@@ -1,5 +1,7 @@
 //! 외부 IdP(OpenID Connect) 로그인. 설정은 `settings` 키 `oidc`, 키 있으면 켜짐.
 
+pub mod cookie;
+pub mod flow;
 pub mod http;
 pub mod routes;
 pub mod settings;
@@ -23,6 +25,9 @@ pub enum OidcError {
     /// discovery 문서, JWKS 조회와 검사 실패. 문구에 비밀값 없음.
     #[error("{0}")]
     Discovery(String),
+    /// 로그인 흐름 실패(code 교환, ID 토큰 검증 등). 문구에 code, 토큰 없음.
+    #[error("{0}")]
+    Flow(String),
 }
 
 /// 외부 IdP 계정 연결 상태.

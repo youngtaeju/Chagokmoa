@@ -5,11 +5,12 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { api, call } from '@/api/client'
 import { ApiError } from '@/api/errors'
-import { setSignedIn } from '@/auth/session'
+import { authStatusQuery, setSignedIn } from '@/auth/session'
 import { Field, FormError } from '@/components/Field'
 import { PasswordField } from '@/components/PasswordField'
 import { Button } from '@/components/ui/button'
 import { errorMessage } from '@/i18n'
+import { OidcErrorNotice, useOidcError } from '@/oidc/useOidcError'
 import { AuthLayout } from './AuthLayout'
 import {
   errorField,
@@ -33,6 +34,8 @@ function invalidLinkReason(
 export function InvitePage() {
   const { t, i18n } = useTranslation()
   const { raw } = useParams({ from: '/invite/$raw' })
+  const oidcError = useOidcError()
+  const status = useQuery(authStatusQuery)
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [step, setStep] = useState<1 | 2>(1)
@@ -110,6 +113,15 @@ export function InvitePage() {
     }
   }
 
+  // 비밀번호 없이 가입. 아이디가 비었으면 이동 대신 아이디 칸으로 포커스.
+  const oidcSignupHref = `/api/auth/oidc/start?${new URLSearchParams({
+    purpose: 'invite',
+    invite: raw,
+    username: values.username,
+    display_name: values.display_name,
+    locale: i18n.language,
+  }).toString()}`
+
   const mismatch = confirmTouched && values.password_confirm !== values.password
 
   // 다르면 요청 없이 확인 칸으로 포커스. 같으면 true.
@@ -172,6 +184,7 @@ export function InvitePage() {
               : undefined
           }
         />
+        <OidcErrorNotice message={oidcError} />
         <div ref={body}>
           {step === 1 && (
             <form
@@ -253,6 +266,30 @@ export function InvitePage() {
                 {t('auth.invite.submit')}
               </Button>
             </form>
+          )}
+          {step === 2 && status.data?.oidc && (
+            <div className="mt-6 grid gap-4">
+              <div
+                role="separator"
+                className="flex items-center gap-3 text-sm text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border"
+              >
+                {t('auth.invite.or')}
+              </div>
+              <Button asChild variant="outline">
+                <a
+                  href={oidcSignupHref}
+                  onClick={(e) => {
+                    if (values.username.trim() !== '') return
+                    e.preventDefault()
+                    body.current
+                      ?.querySelector<HTMLInputElement>('[name="username"]')
+                      ?.focus()
+                  }}
+                >
+                  {t('auth.invite.oidc', { label: status.data.oidc.label })}
+                </a>
+              </Button>
+            </div>
           )}
         </div>
       </div>

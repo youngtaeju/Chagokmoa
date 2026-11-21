@@ -28,12 +28,16 @@ function browserLanguage(lang: string) {
 }
 
 // 로그인 화면 공통 요청. me 는 상태 변수로 로그인 전후 응답 전환.
-function authRoutes(state: { me: User | null }, signupOpen = false) {
+function authRoutes(
+  state: { me: User | null },
+  signupOpen = false,
+  oidc: { label: string } | null = null,
+) {
   return {
     ...emptyFeedRoutes,
     'GET /api/auth/me': () =>
       state.me ? json(200, { user: state.me }) : apiError(401, 'auth.required'),
-    'GET /api/auth/status': () => json(200, { signup_open: signupOpen }),
+    'GET /api/auth/status': () => json(200, { signup_open: signupOpen, oidc }),
     'GET /api/settings': () => json(200, settingsFixture),
   }
 }
@@ -723,6 +727,47 @@ describe('forgot_password', () => {
   })
 })
 
+describe('login oidc', () => {
+  it('oidc_button_when_enabled', async () => {
+    mockFetch(authRoutes({ me: null }, false, { label: 'Authentik' }))
+    renderApp('/login?redirect=%2Fbabies')
+    const link = await screen.findByRole('link', {
+      name: 'Authentik로 로그인',
+    })
+    expect(link).toHaveAttribute(
+      'href',
+      '/api/auth/oidc/start?purpose=login&redirect=%2Fbabies',
+    )
+  })
+
+  it('oidc_button_without_redirect', async () => {
+    mockFetch(authRoutes({ me: null }, false, { label: 'SSO' }))
+    renderApp('/login')
+    expect(
+      await screen.findByRole('link', { name: 'SSO로 로그인' }),
+    ).toHaveAttribute('href', '/api/auth/oidc/start?purpose=login')
+  })
+
+  it('no_oidc_button_when_disabled', async () => {
+    mockFetch(authRoutes({ me: null }))
+    renderApp('/login')
+    await screen.findByLabelText(ko.auth.username)
+    expect(screen.queryByRole('link', { name: /로 로그인$/ })).toBeNull()
+  })
+
+  it('shows_oidc_error', async () => {
+    mockFetch(authRoutes({ me: null }))
+    const { router } = renderApp('/login?oidc_error=oidc.notLinked')
+    expect(
+      await screen.findByText(ko.errors.oidc.notLinked),
+    ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(router.state.location.search).not.toHaveProperty('oidc_error')
+    })
+    expect(screen.getByText(ko.errors.oidc.notLinked)).toBeInTheDocument()
+  })
+})
+
 describe('invite', () => {
   const raw = 'Ab3_x-9QzT'
   const preview = {
@@ -768,6 +813,55 @@ describe('invite', () => {
     expect(
       screen.getByRole('link', { name: ko.auth.toLogin }),
     ).toBeInTheDocument()
+  })
+
+  it('oidc_signup_button', async () => {
+    mockFetch({
+      ...authRoutes({ me: null }, false, { label: 'Authentik' }),
+      [`GET /api/invites/${raw}/preview`]: () => json(200, preview),
+    })
+    const { user } = renderApp(`/invite/${raw}`)
+    await user.type(await screen.findByLabelText(ko.auth.displayName), '아빠 A')
+    await user.click(screen.getByRole('button', { name: ko.auth.invite.next }))
+    await user.type(screen.getByLabelText(ko.auth.username), 'dad')
+    const link = screen.getByRole('link', { name: 'Authentik로 가입' })
+    const url = new URL(link.getAttribute('href') ?? '', 'http://localhost')
+    expect(url.pathname).toBe('/api/auth/oidc/start')
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      purpose: 'invite',
+      invite: raw,
+      username: 'dad',
+      display_name: '아빠 A',
+      locale: 'ko',
+    })
+  })
+
+  it('oidc_signup_requires_username', async () => {
+    mockFetch({
+      ...authRoutes({ me: null }, false, { label: 'Authentik' }),
+      [`GET /api/invites/${raw}/preview`]: () => json(200, preview),
+    })
+    const { user } = renderApp(`/invite/${raw}`)
+    await user.type(await screen.findByLabelText(ko.auth.displayName), '아빠')
+    await user.click(screen.getByRole('button', { name: ko.auth.invite.next }))
+    const link = screen.getByRole('link', { name: 'Authentik로 가입' })
+    await user.click(link)
+    expect(screen.getByLabelText(ko.auth.username)).toHaveFocus()
+  })
+
+  it('invite_shows_oidc_error', async () => {
+    mockFetch({
+      ...authRoutes({ me: null }, false, { label: 'Authentik' }),
+      [`GET /api/invites/${raw}/preview`]: () => json(200, preview),
+    })
+    const { router } = renderApp(`/invite/${raw}?oidc_error=auth.usernameTaken`)
+    expect(
+      await screen.findByText(ko.errors.auth.usernameTaken),
+    ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(router.state.location.search).not.toHaveProperty('oidc_error')
+    })
+    expect(screen.getByText(ko.errors.auth.usernameTaken)).toBeInTheDocument()
   })
 
   it('invite_accept', async () => {

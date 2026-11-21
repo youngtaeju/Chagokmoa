@@ -191,6 +191,61 @@ pub async fn oidc_link_counts(exec: impl PgExecutor<'_>, issuer: &str) -> AppRes
     Ok((row.linked, row.passwordless))
 }
 
+/// IdP 계정(issuer + sub)으로 연결된 사용자.
+pub async fn find_by_oidc(
+    exec: impl PgExecutor<'_>,
+    issuer: &str,
+    subject: &str,
+) -> AppResult<Option<User>> {
+    let user = sqlx::query_as!(
+        User,
+        r#"SELECT id, username, display_name, role AS "role: Role", email, locale,
+                  created_at, disabled_at
+           FROM users WHERE oidc_issuer = $1 AND oidc_subject = $2"#,
+        issuer,
+        subject,
+    )
+    .fetch_optional(exec)
+    .await?;
+    Ok(user)
+}
+
+/// 기존 연결은 덮어씀. 같은 IdP 계정이 다른 사용자에 연결돼 있으면 `oidc.alreadyLinked`.
+pub async fn set_oidc_link(
+    exec: impl PgExecutor<'_>,
+    id: Uuid,
+    issuer: &str,
+    subject: &str,
+) -> AppResult<()> {
+    sqlx::query!(
+        "UPDATE users SET oidc_issuer = $2, oidc_subject = $3 WHERE id = $1",
+        id,
+        issuer,
+        subject,
+    )
+    .execute(exec)
+    .await
+    .map_err(|e| match &e {
+        sqlx::Error::Database(db) if db.constraint() == Some("users_oidc_link_idx") => {
+            AppError::conflict("oidc.alreadyLinked")
+        }
+        _ => AppError::Db(e),
+    })?;
+    Ok(())
+}
+
+/// 비밀번호 있는 계정만 해제. 해제(또는 원래 연결 없음) 여부 반환. 비밀번호 없으면 false.
+pub async fn clear_oidc_link(exec: impl PgExecutor<'_>, id: Uuid) -> AppResult<bool> {
+    let result = sqlx::query!(
+        "UPDATE users SET oidc_issuer = NULL, oidc_subject = NULL
+         WHERE id = $1 AND password_hash IS NOT NULL",
+        id,
+    )
+    .execute(exec)
+    .await?;
+    Ok(result.rows_affected() > 0)
+}
+
 pub async fn update_password(
     exec: impl PgExecutor<'_>,
     id: Uuid,

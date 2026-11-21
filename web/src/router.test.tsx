@@ -28,6 +28,7 @@ function mockApp(role: Role) {
   mockFetch({
     ...emptyFeedRoutes,
     'GET /api/auth/me': () => json(200, { user: userFixture(role) }),
+    'GET /api/auth/status': () => json(200, { signup_open: false, oidc: null }),
     'GET /api/settings': () => json(200, settingsFixture),
     'GET /api/auth/sessions': () => json(200, { sessions: [] }),
     'GET /api/users': () => json(200, { users: [userFixture(role)] }),
