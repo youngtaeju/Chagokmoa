@@ -54,7 +54,7 @@ export function ProfilePage() {
   const { t } = useTranslation()
   const me = useQuery(meQuery)
   return (
-    <SubPage title={t('me.profile')}>
+    <SubPage section={t('me.account')} title={t('me.profile')}>
       <Body>
         <Loaded query={{ ...me, data: me.data ?? undefined }}>
           {(user) => <ProfileSection user={user} />}
@@ -67,7 +67,7 @@ export function ProfilePage() {
 export function PasswordPage() {
   const { t } = useTranslation()
   return (
-    <SubPage title={t('me.password')}>
+    <SubPage section={t('me.account')} title={t('me.password')}>
       <Body>
         <PasswordSection />
       </Body>
@@ -78,7 +78,7 @@ export function PasswordPage() {
 export function DevicesPage() {
   const { t } = useTranslation()
   return (
-    <SubPage title={t('me.devices')}>
+    <SubPage section={t('me.account')} title={t('me.devices')}>
       <Body>
         <SessionsSection />
       </Body>
@@ -90,7 +90,7 @@ export function AppearancePage() {
   const { t } = useTranslation()
   const me = useQuery(meQuery)
   return (
-    <SubPage title={t('me.appearance')}>
+    <SubPage section={t('me.app')} title={t('me.appearance')}>
       <Body>
         <Loaded query={{ ...me, data: me.data ?? undefined }}>
           {(user) => <AppearanceSection user={user} />}

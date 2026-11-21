@@ -58,6 +58,13 @@ const deviceSwitch = () =>
   screen.findByRole('switch', { name: ko.push.deviceToggle })
 
 describe('NotificationSettingsPage', () => {
+  it('title_has_section', async () => {
+    render()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '앱 알림 설정' }),
+    ).toBeInTheDocument()
+  })
+
   it('settings_states', async () => {
     // unsupported
     render()

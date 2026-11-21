@@ -1107,7 +1107,6 @@
     "backupFailedMany": "오늘 백업이 {{count}}번 실패했어요. 백업 화면에서 확인해 주세요"
   },
   "push": {
-    "title": "알림 설정",
     "device": "이 기기",
     "deviceToggle": "푸시 알림 받기",
     "iosInstall": "홈 화면에 추가한 뒤 켤 수 있어요",

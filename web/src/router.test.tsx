@@ -98,7 +98,7 @@ describe('router', () => {
     mockApp('family')
     const { router } = renderApp('/family')
     expect(
-      await screen.findByRole('heading', { name: ko.members.usersTitle }),
+      await screen.findByRole('heading', { level: 1, name: '우리 집 가족' }),
     ).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/family')
     // 초대·역할 변경은 관리자만.
@@ -111,7 +111,7 @@ describe('router', () => {
     mockApp('guardian')
     const { router } = renderApp('/settings/trash')
     expect(
-      await screen.findByRole('heading', { name: ko.nav.trash }),
+      await screen.findByRole('heading', { level: 1, name: '우리 집 휴지통' }),
     ).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/settings/trash')
   })

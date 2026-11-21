@@ -183,7 +183,7 @@ export function FamilyPage() {
   )
 
   return (
-    <SubPage title={t('me.family')} actions={invite}>
+    <SubPage section={t('me.home')} title={t('me.family')} actions={invite}>
       <div className="mx-auto grid w-full max-w-xl gap-6">
         <section aria-label={t('members.usersTitle')} className="grid gap-2">
           <FormError error={users.error} />

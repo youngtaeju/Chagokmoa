@@ -119,7 +119,7 @@ function KindsGroup() {
 export function NotificationSettingsPage() {
   const { t } = useTranslation()
   return (
-    <SubPage title={t('push.title')}>
+    <SubPage section={t('me.app')} title={t('me.notifications')}>
       {/* 휴대폰은 실선이 화면 끝까지(-mx-4), 넓은 화면은 가운데 열. */}
       <div className="-mx-4 grid sm:mx-auto sm:max-w-xl">
         <DeviceGroup />
