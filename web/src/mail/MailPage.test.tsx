@@ -75,6 +75,19 @@ describe('mail settings', () => {
     expect(screen.getByText(ko.mail.hintGmail)).toBeInTheDocument()
   })
 
+  it('empty_fields_explain_values', async () => {
+    renderMail(null)
+    const username = await screen.findByLabelText(ko.mail.username)
+    expect(username).toHaveAttribute('placeholder', ko.mail.usernamePlaceholder)
+    expect(username).toHaveAccessibleDescription(ko.mail.usernameHint)
+    expect(screen.getByLabelText(ko.mail.password)).toHaveAccessibleDescription(
+      ko.mail.passwordHint,
+    )
+    expect(
+      screen.getByLabelText(ko.mail.fromAddress),
+    ).toHaveAccessibleDescription(ko.mail.fromAddressHint)
+  })
+
   it('shows_saved_preset', async () => {
     renderMail(SAVED)
     const select = await screen.findByLabelText(ko.mail.service)
