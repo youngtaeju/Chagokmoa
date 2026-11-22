@@ -81,6 +81,24 @@ describe('session', () => {
     expect(onLogout).toHaveBeenCalledTimes(1)
   })
 
+  // 로그아웃 뒤 늦게 도착한 401 은 다시 정리하지 않음. 로그인 화면의 조회(외부 로그인 버튼) 유지.
+  it('late_401_after_sign_out_keeps_cache', async () => {
+    mockFetch({
+      'GET /api/notifications/unread-count': () =>
+        json(401, { error: 'auth.required', params: {} }),
+    })
+    const { onLogout, qc } = setup()
+    qc.setQueryData(meQueryKey, null)
+    qc.setQueryData(['auth', 'status'], { oidc: { label: 'Google' } })
+    const late = () => call(api.GET('/api/notifications/unread-count'))
+
+    await expect(qc.query({ queryKey: ['c'], queryFn: late })).rejects.toThrow()
+    expect(onLogout).not.toHaveBeenCalled()
+    expect(qc.getQueryData(['auth', 'status'])).toEqual({
+      oidc: { label: 'Google' },
+    })
+  })
+
   // 가드 경로는 재시도 없이 즉시 '모름'. 오프라인 이동 지연 방지.
   it('load_me_does_not_retry', async () => {
     let calls = 0
