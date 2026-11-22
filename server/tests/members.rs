@@ -244,6 +244,14 @@ async fn patch_me_validations(pool: PgPool) {
         (json!({ "display_name": "   " }), "auth.displayNameInvalid"),
         (json!({ "locale": "ja" }), "users.invalidLocale"),
         (json!({ "email": "no-at-sign" }), "users.invalidEmail"),
+        // 메일 발송 주소 검증과 같은 규칙. 저장되면 비밀번호 찾기가 조용히 실패.
+        (json!({ "email": "a@b@c" }), "users.invalidEmail"),
+        (json!({ "email": "@example.com" }), "users.invalidEmail"),
+        (json!({ "email": "kim@" }), "users.invalidEmail"),
+        (
+            json!({ "email": "kim lee@example.com" }),
+            "users.invalidEmail",
+        ),
         (
             json!({ "email": format!("{}@example.com", "a".repeat(243)) }),
             "users.invalidEmail",
@@ -260,8 +268,14 @@ async fn patch_me_validations(pool: PgPool) {
     assert_eq!(me["user"]["display_name"], "dad");
     assert_eq!(me["user"]["locale"], "ko");
 
-    // 254자 경계는 허용.
-    let email = format!("{}@example.com", "a".repeat(242));
+    // 254자 경계는 허용. 로컬 파트 64자, 도메인 라벨 63자 이하(RFC 5321).
+    let email = format!(
+        "{}@{}.{}.{}.com",
+        "a".repeat(64),
+        "b".repeat(63),
+        "c".repeat(63),
+        "d".repeat(57)
+    );
     assert_eq!(email.len(), 254);
     patch_me(&server, json!({ "email": email }))
         .await

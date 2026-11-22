@@ -14,13 +14,10 @@ use crate::{
         validate::{validate_display_name, validate_locale, validate_password},
     },
     error::{AppError, AppResult, ErrorBody},
-    password_resets,
+    mail, password_resets,
     request::{Json, Path},
     state::AppState,
 };
-
-/// RFC 5321 경로 길이 상한.
-const EMAIL_MAX_CHARS: usize = 254;
 
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
@@ -63,13 +60,13 @@ pub struct ChangePasswordRequest {
     new_password: String,
 }
 
-/// 앞뒤 공백 제거. 빈 값 → `None`(삭제).
+/// 앞뒤 공백 제거. 빈 값 → `None`(삭제). 메일 발송 주소와 같은 검증(저장된 주소로 재설정 링크 발송).
 fn normalize_email(raw: &str) -> AppResult<Option<String>> {
     let email = raw.trim();
     if email.is_empty() {
         return Ok(None);
     }
-    if !email.contains('@') || email.chars().count() > EMAIL_MAX_CHARS {
+    if !mail::valid_address(email) {
         return Err(AppError::bad_request("users.invalidEmail"));
     }
     Ok(Some(email.to_string()))
