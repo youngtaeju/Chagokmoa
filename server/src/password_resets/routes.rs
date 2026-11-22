@@ -138,7 +138,7 @@ async fn create_password_reset(
                 &url,
                 queries::ADMIN_RESET_HOURS,
             );
-            Some(mail::send_now(&state, to, text).await == MailOutcome::Sent)
+            Some(mail::send_now(&state, to, &target.locale, text).await == MailOutcome::Sent)
         }
     };
     Ok((

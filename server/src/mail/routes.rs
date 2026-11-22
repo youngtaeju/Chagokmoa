@@ -218,6 +218,7 @@ async fn send_test_mail(
         .ok_or(AppError::conflict("mail.notConfigured"))?;
     let (subject, body) = test_text(&current.user.locale);
     let msg = Outgoing {
+        sender: super::text::sender(&current.user.locale),
         to: to.to_owned(),
         subject: subject.to_owned(),
         body: body.to_owned(),

@@ -37,7 +37,18 @@ pub async fn run(state: &AppState, user_id: Uuid) -> anyhow::Result<()> {
         &url,
         SELF_RESET_HOURS,
     );
-    if let Err(err) = super::send(state, &config, Outgoing { to, subject, body }).await {
+    if let Err(err) = super::send(
+        state,
+        &config,
+        Outgoing {
+            sender: text::sender(&user.locale),
+            to,
+            subject,
+            body,
+        },
+    )
+    .await
+    {
         resets::delete(&state.pool, id).await?;
         return Err(err.into());
     }

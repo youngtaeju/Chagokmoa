@@ -187,6 +187,11 @@ async fn test_mail_delivered(pool: PgPool) {
     instance::set(&pool, "instance_name", json!("Little Home"))
         .await
         .unwrap();
+    // 보내는 이름은 가족 이름 대신 보낸 사람 언어의 앱 이름
+    sqlx::query("UPDATE users SET locale = 'en' WHERE username = 'mom'")
+        .execute(&pool)
+        .await
+        .unwrap();
     put_mail(&server, &config_body(receiver.port, None, None))
         .await
         .assert_status_ok();
@@ -204,7 +209,8 @@ async fn test_mail_delivered(pool: PgPool) {
         .lines()
         .find(|l| l.starts_with("From:"))
         .expect("From header");
-    assert!(from_header.contains("Little Home"), "{from_header}");
+    assert!(from_header.contains("Chagokmoa"), "{from_header}");
+    assert!(!from_header.contains("Little Home"), "{from_header}");
     assert!(from_header.contains(&format!("<{FROM}>")), "{from_header}");
     let message_id = mail
         .data
