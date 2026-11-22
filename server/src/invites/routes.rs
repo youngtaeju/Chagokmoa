@@ -137,7 +137,10 @@ async fn create_invite(
                 &url,
                 hours,
             );
-            Some(mail::send_now(&state, to, text).await == MailOutcome::Sent)
+            Some(
+                mail::send_now(&state, to, &instance.default_locale, text).await
+                    == MailOutcome::Sent,
+            )
         }
         None => None,
     };

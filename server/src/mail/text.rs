@@ -1,5 +1,14 @@
 //! 메일 제목과 본문. 일반 텍스트, `en` 아니면 ko. 유효 기간은 시각 대신 길이(시간대 변환 회피).
 
+/// 보내는 이름. 본문과 같은 언어.
+pub fn sender(locale: &str) -> &'static str {
+    if locale == "en" {
+        "Chagokmoa"
+    } else {
+        "차곡모아"
+    }
+}
+
 /// 초대 메일 (제목, 본문).
 pub fn invite(locale: &str, instance: &str, url: &str, hours: u32) -> (String, String) {
     if locale == "en" {
@@ -78,5 +87,8 @@ mod tests {
 
         let (_, body) = reset("en", "Home", "dad", "http://x/reset/r", 1);
         assert!(body.contains("account dad") && body.contains("within 1 hour."));
+
+        assert_eq!(sender("en"), "Chagokmoa");
+        assert_eq!(sender("ja"), "차곡모아");
     }
 }

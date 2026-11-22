@@ -137,6 +137,7 @@ function ConfigForm({ res }: { res: OidcResponse }) {
         label={t('oidc.buttonLabel')}
         name="button_label"
         defaultValue={config?.button_label ?? ''}
+        placeholder={t('oidc.buttonLabelPlaceholder')}
         hint={t('oidc.buttonLabelHint')}
         autoComplete="off"
       />
@@ -151,6 +152,8 @@ function ConfigForm({ res }: { res: OidcResponse }) {
         required
         autoCapitalize="none"
         spellCheck={false}
+        placeholder={t('oidc.issuerUrlPlaceholder')}
+        hint={t('oidc.issuerUrlHint')}
       />
       <Field
         label={t('oidc.clientId')}
@@ -160,6 +163,7 @@ function ConfigForm({ res }: { res: OidcResponse }) {
         autoComplete="off"
         autoCapitalize="none"
         spellCheck={false}
+        hint={t('oidc.clientIdHint')}
       />
       <Field
         label={t('oidc.clientSecret')}

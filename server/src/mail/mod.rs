@@ -20,7 +20,6 @@ pub use settings::{MailConfig, MailSecurity};
 
 use crate::{
     error::{AppError, AppResult},
-    settings::queries as instance,
     state::AppState,
 };
 
@@ -31,6 +30,8 @@ const ADDRESS_MAX: usize = 254;
 
 /// 일반 텍스트 메일 한 통.
 pub struct Outgoing {
+    /// 보내는 이름. `text::sender`.
+    pub sender: &'static str,
     pub to: String,
     pub subject: String,
     pub body: String,
@@ -61,9 +62,8 @@ pub async fn is_configured(exec: impl PgExecutor<'_>) -> AppResult<bool> {
     Ok(exists)
 }
 
-/// 보내는 이름은 `instance_name`. 전체 과정 `state.mail_timeout` 제한.
+/// 전체 과정 `state.mail_timeout` 제한.
 pub async fn send(state: &AppState, cfg: &MailConfig, msg: Outgoing) -> Result<(), MailError> {
-    let instance_name = instance::load(&state.pool).await?.instance_name;
     let fail = |e: &dyn std::fmt::Display| MailError::Send(redact(cfg, &e.to_string()));
 
     let from = cfg.from_address.parse::<Address>().map_err(|e| fail(&e))?;
@@ -72,7 +72,7 @@ pub async fn send(state: &AppState, cfg: &MailConfig, msg: Outgoing) -> Result<(
     let message_id = format!("<{}@{}>", Uuid::now_v7(), from.domain());
     let message = Message::builder()
         .message_id(Some(message_id))
-        .from(Mailbox::new(Some(instance_name), from))
+        .from(Mailbox::new(Some(msg.sender.to_owned()), from))
         .to(Mailbox::new(None, to))
         .subject(msg.subject)
         .header(ContentType::TEXT_PLAIN)
@@ -111,9 +111,11 @@ pub enum MailOutcome {
 }
 
 /// 미설정, 발송 실패, 내부 오류 모두 `Failed`. 경고 문구는 비밀번호 제거된 오류만.
+/// `locale` 은 본문과 같은 값(보내는 이름용).
 pub async fn send_now(
     state: &AppState,
     to: &str,
+    locale: &str,
     (subject, body): (String, String),
 ) -> MailOutcome {
     let config = match settings::load(&state.pool).await {
@@ -125,6 +127,7 @@ pub async fn send_now(
         }
     };
     let msg = Outgoing {
+        sender: text::sender(locale),
         to: to.to_owned(),
         subject,
         body,

@@ -134,6 +134,7 @@ function ConfigForm({ config }: { config: MailConfig | null }) {
         required
         autoCapitalize="none"
         spellCheck={false}
+        placeholder={t('mail.hostPlaceholder')}
       />
       <div className="grid grid-cols-2 gap-3">
         <Field
@@ -176,6 +177,8 @@ function ConfigForm({ config }: { config: MailConfig | null }) {
         autoComplete="off"
         autoCapitalize="none"
         spellCheck={false}
+        placeholder={t('mail.usernamePlaceholder')}
+        hint={t('mail.usernameHint')}
       />
       <Field
         label={t('mail.password')}
@@ -187,6 +190,7 @@ function ConfigForm({ config }: { config: MailConfig | null }) {
         }}
         autoComplete="new-password"
         placeholder={config?.password_set ? t('mail.passwordSet') : undefined}
+        hint={t('mail.passwordHint')}
       />
       <Field
         label={t('mail.fromAddress')}
@@ -194,6 +198,8 @@ function ConfigForm({ config }: { config: MailConfig | null }) {
         type="email"
         defaultValue={config?.from_address ?? ''}
         required
+        placeholder={t('mail.fromAddressPlaceholder')}
+        hint={t('mail.fromAddressHint')}
       />
       <FormError error={save.error} />
       <div>
