@@ -240,7 +240,11 @@ async fn leave_stale_lock(repo: &Repo, dir: &Path) {
     let locks = dir.join("locks");
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
     loop {
-        let held = std::fs::read_dir(&locks).is_ok_and(|mut d| d.next().is_some());
+        // `<id>-tmp-<n>` 기록 후 rename. 임시 이름은 restic 이 잠금으로 안 봄, rename 완료까지 대기.
+        let held = std::fs::read_dir(&locks).is_ok_and(|d| {
+            d.flatten()
+                .any(|e| !e.file_name().to_string_lossy().contains("-tmp-"))
+        });
         if held {
             break;
         }
