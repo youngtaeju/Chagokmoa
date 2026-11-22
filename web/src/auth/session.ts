@@ -133,6 +133,8 @@ export function createQueryClient(onLogout: () => void): QueryClient {
   })
   function handle(e: unknown) {
     if (!isLogoutError(e)) return
+    // 이미 로그아웃(me null). 로그아웃 뒤 늦게 도착한 401 로 로그인 화면의 조회까지 지우지 않게.
+    if (qc.getQueryData(meQueryKey) === null) return
     setSignedOut(qc)
     onLogout()
   }
