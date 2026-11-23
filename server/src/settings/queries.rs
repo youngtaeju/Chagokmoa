@@ -40,6 +40,7 @@ pub async fn load(exec: impl PgExecutor<'_>) -> AppResult<Settings> {
                 assign(&mut settings.trash_retention_days, &row.key, row.value)
             }
             "primary_baby_id" => assign(&mut settings.primary_baby_id, &row.key, row.value),
+            "update_check" => assign(&mut settings.update_check, &row.key, row.value),
             _ => {}
         }
     }

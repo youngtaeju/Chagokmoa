@@ -36,6 +36,7 @@ export const settingsFixture: Settings = {
   derivatives_avif: false,
   trash_retention_days: 30,
   primary_baby_id: null,
+  update_check: true,
 }
 
 export function apiError(status: number, key: string): Response {

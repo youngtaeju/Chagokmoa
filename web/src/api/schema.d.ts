@@ -1236,6 +1236,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_update"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/uploads": {
         parameters: {
             query?: never;
@@ -2292,6 +2308,8 @@ export interface components {
              * @description 0~3650. 0 은 자동 비우기 끔.
              */
             trash_retention_days?: number | null;
+            /** @description 새 버전 확인. 켜면 즉시 1회 조회, 끄면 결과 숨김. */
+            update_check?: boolean | null;
         };
         /** @description 생략 필드는 유지. */
         PatchUserRequest: {
@@ -2481,6 +2499,8 @@ export interface components {
              * @description 휴지통 자동 비우기 일수. 0 은 끔.
              */
             trash_retention_days: number;
+            /** @description GitHub 최신 릴리스 하루 1회 조회. 끄면 외부 요청 없음. */
+            update_check: boolean;
         };
         /** @enum {string} */
         Sex: "female" | "male";
@@ -2611,6 +2631,14 @@ export interface components {
             custom_label?: string | null;
             note?: string | null;
             preset_key?: string | null;
+        };
+        UpdateStatus: {
+            /** @description 실행 중인 버전. */
+            current: string;
+            /** @description 더 새 릴리스 버전. 없거나 확인 꺼짐, 조회 전, 실패면 null. */
+            latest: string | null;
+            /** @description 그 릴리스 페이지. */
+            release_url: string | null;
         };
         /** @description 보낸 필드만 교체. */
         UpdateStoryRequest: {
@@ -8199,6 +8227,44 @@ export interface operations {
                 };
             };
             /** @description guardian 이상 아님 또는 CSRF 헤더 누락 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 새 버전 확인 결과. GitHub 조회는 서버가 하루 1회 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStatus"];
+                };
+            };
+            /** @description 인증 필요 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description owner 아님 */
             403: {
                 headers: {
                     [name: string]: unknown;

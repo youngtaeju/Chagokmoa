@@ -1,4 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{Arc, RwLock},
+    time::Duration,
+};
 
 use sqlx::PgPool;
 use tokio::sync::{Notify, OnceCell};
@@ -10,6 +13,7 @@ use crate::{
     mail::MAIL_TIMEOUT,
     media::locks::DerivativeLocks,
     push::vapid::{self, Vapid},
+    update::{self, Latest},
     uploads::{UPLOAD_IDLE_TIMEOUT, locks::UploadLocks},
 };
 
@@ -34,6 +38,12 @@ pub struct AppState {
     pub push_endpoint_check: bool,
     /// 백업의 서버 버전 확인과 덤프. 테스트에서 가짜로 교체.
     pub backup_db: DbSteps,
+    /// 최신 릴리스 조회 주소. 테스트에서 가짜 서버로 교체.
+    pub update_url: String,
+    /// 마지막 새 버전 조회 결과. 메모리만, 재시작 시 다시 조회.
+    pub update_latest: Arc<RwLock<Option<Latest>>>,
+    /// 새 버전 확인을 켤 때 즉시 조회.
+    pub update_wake: Arc<Notify>,
 }
 
 impl AppState {
@@ -50,6 +60,9 @@ impl AppState {
             push_wake: Arc::new(Notify::new()),
             push_endpoint_check: true,
             backup_db: DbSteps::default(),
+            update_url: update::RELEASES_URL.to_owned(),
+            update_latest: Arc::default(),
+            update_wake: Arc::new(Notify::new()),
         }
     }
 

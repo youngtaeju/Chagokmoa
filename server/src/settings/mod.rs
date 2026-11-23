@@ -21,6 +21,8 @@ pub struct Settings {
     /// 홈 대표 아기. 미설정이면 표시 순서 첫째.
     #[schema(required = true)]
     pub primary_baby_id: Option<Uuid>,
+    /// GitHub 최신 릴리스 하루 1회 조회. 끄면 외부 요청 없음.
+    pub update_check: bool,
 }
 
 impl Default for Settings {
@@ -32,6 +34,7 @@ impl Default for Settings {
             derivatives_avif: false,
             trash_retention_days: 0,
             primary_baby_id: None,
+            update_check: true,
         }
     }
 }

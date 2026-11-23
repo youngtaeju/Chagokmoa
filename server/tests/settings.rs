@@ -34,6 +34,7 @@ async fn defaults_then_patch(pool: PgPool) {
             "derivatives_avif": false,
             "trash_retention_days": 0,
             "primary_baby_id": null,
+            "update_check": true,
         })
     );
 
@@ -50,6 +51,7 @@ async fn defaults_then_patch(pool: PgPool) {
         "derivatives_avif": false,
         "trash_retention_days": 0,
         "primary_baby_id": null,
+        "update_check": true,
     });
     res.assert_json(&expected);
     assert_eq!(get_settings(&server).await, expected);
@@ -67,6 +69,7 @@ async fn defaults_then_patch(pool: PgPool) {
         "derivatives_avif": true,
         "trash_retention_days": 0,
         "primary_baby_id": null,
+        "update_check": true,
     }));
 }
 
@@ -189,6 +192,7 @@ async fn wrong_typed_stored_value_falls_back_to_default(pool: PgPool) {
             "derivatives_avif": false,
             "trash_retention_days": 0,
             "primary_baby_id": null,
+            "update_check": true,
         })
     );
 }
