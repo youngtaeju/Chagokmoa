@@ -10,6 +10,7 @@ use chagokmoa::{
     push,
     shutdown::{forced, shutdown_signal},
     state::AppState,
+    update,
     users::reset,
 };
 use clap::{Parser, Subcommand};
@@ -115,6 +116,7 @@ async fn main() -> anyhow::Result<()> {
             let (stop, force) = shutdown_signal()?;
             let maintenance = maintenance::spawn(state.clone(), stop.clone());
             let backup_schedule = backup::run::spawn(state.clone(), stop.clone());
+            let update_check = update::spawn(state.clone(), stop.clone());
             video::check_tools().await;
             let requeued = jobs::requeue_running(&state.pool).await?;
             if requeued > 0 {
@@ -134,6 +136,7 @@ async fn main() -> anyhow::Result<()> {
                     .await?;
                 maintenance.await?;
                 backup_schedule.await?;
+                update_check.await?;
                 // 한 워커의 실패가 나머지 join 을 막지 않게.
                 for worker in workers {
                     if let Err(err) = worker.await {

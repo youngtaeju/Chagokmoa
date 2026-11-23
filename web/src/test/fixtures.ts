@@ -36,6 +36,7 @@ export const settingsFixture: Settings = {
   derivatives_avif: false,
   trash_retention_days: 30,
   primary_baby_id: null,
+  update_check: true,
 }
 
 export function apiError(status: number, key: string): Response {
@@ -247,6 +248,9 @@ export const emptyFeedRoutes = {
   'GET /api/memories': () => json(200, null),
   'GET /api/users': () => json(200, { users: [] }),
   'GET /api/notifications/unread-count': () => json(200, { count: 0 }),
+  // 관리자 설정 화면의 새 버전 확인. 기본은 새 버전 없음
+  'GET /api/update': () =>
+    json(200, { current: '1.0.0', latest: null, release_url: null }),
 }
 
 // 백업 설정 전, 빈 폴더 연결됨.

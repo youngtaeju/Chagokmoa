@@ -100,6 +100,8 @@ For reverse proxies, https, backups, mail, and OIDC sign-in, see the [operations
 
 ### Upgrading
 
+When a new version is released, it appears next to the app version on the admin's settings screen. The server checks GitHub releases for the latest version; you can turn this off in Settings → System → General.
+
 Change `CHAGOKMOA_VERSION` in `.env` to the new version, then run the command below. If you use the default `latest`, run it without changing the value.
 
 ```bash

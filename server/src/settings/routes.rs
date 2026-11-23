@@ -38,6 +38,8 @@ pub struct PatchSettingsRequest {
     #[serde(default, deserialize_with = "crate::records::present")]
     #[schema(value_type = Option<Uuid>)]
     primary_baby_id: Option<Option<Uuid>>,
+    /// 새 버전 확인. 켜면 즉시 1회 조회, 끄면 결과 숨김.
+    update_check: Option<bool>,
 }
 
 #[utoipa::path(
@@ -99,6 +101,10 @@ async fn patch_settings(
         updates.push(("trash_retention_days", Value::from(days)));
     }
 
+    if let Some(on) = req.update_check {
+        updates.push(("update_check", Value::Bool(on)));
+    }
+
     if let Some(Some(id)) = req.primary_baby_id {
         if !crate::babies::queries::exists(&state.pool, id).await? {
             return Err(AppError::bad_request("settings.primaryBabyInvalid"));
@@ -115,5 +121,15 @@ async fn patch_settings(
     }
     let settings = queries::load(&mut *tx).await?;
     tx.commit().await?;
+    match req.update_check {
+        Some(true) => state.update_wake.notify_one(),
+        Some(false) => {
+            *state
+                .update_latest
+                .write()
+                .unwrap_or_else(|e| e.into_inner()) = None
+        }
+        None => {}
+    }
     Ok(AxumJson(settings))
 }

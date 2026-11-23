@@ -722,6 +722,8 @@
     "defaultLocale": "새 멤버 기본 언어",
     "avif": "AVIF 파생물도 만들기",
     "avifHint": "용량은 줄지만 처리 시간이 늘어요.",
+    "updateCheck": "새 버전 확인",
+    "updateCheckHint": "GitHub 릴리스에서 최신 버전을 하루 한 번 확인해요",
     "trashRetention": "휴지통 보관 일수",
     "trashRetentionHint": "0 이면 자동으로 비우지 않아요. 최대 3650일까지 정할 수 있어요.",
     "primaryBaby": "대표 아기",
@@ -933,6 +935,7 @@
     "login": "로그인(OIDC)",
     "logout": "로그아웃",
     "version": "앱 버전 {{version}}",
+    "newVersion": "새 버전 {{version}}",
     "back": "뒤로",
     "loginMethod": "로그인 연결"
   },

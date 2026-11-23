@@ -723,6 +723,8 @@
     "defaultLocale": "Default language for new members",
     "avif": "Also generate AVIF derivatives",
     "avifHint": "Smaller files, longer processing.",
+    "updateCheck": "Check for new versions",
+    "updateCheckHint": "Checks GitHub releases for the latest version once a day",
     "trashRetention": "Trash retention (days)",
     "trashRetentionHint": "0 never empties the trash automatically. Up to 3650 days.",
     "primaryBaby": "Main baby",
@@ -939,6 +941,7 @@
     "login": "Sign-in (OIDC)",
     "logout": "Sign out",
     "version": "App version {{version}}",
+    "newVersion": "New version {{version}}",
     "back": "Back",
     "loginMethod": "Sign-in method"
   },

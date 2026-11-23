@@ -13,10 +13,23 @@ beforeEach(() => {
 
 afterEach(cleanup)
 
+type UpdateStatus = {
+  current: string
+  latest: string | null
+  release_url: string | null
+}
+
+const NO_UPDATE: UpdateStatus = {
+  current: '1.0.0',
+  latest: null,
+  release_url: null,
+}
+
 function renderMe(
   role: Role,
   path = '/settings',
   oidc: { label: string } | null = null,
+  update: () => Response = () => json(200, NO_UPDATE),
 ) {
   mockFetch({
     'GET /api/auth/me': () => json(200, { user: userFixture(role) }),
@@ -25,9 +38,47 @@ function renderMe(
     'GET /api/auth/sessions': () => json(200, { sessions: [] }),
     'POST /api/auth/logout': () => json(204, null),
     ...emptyFeedRoutes,
+    'GET /api/update': update,
   })
   return renderApp(path)
 }
+
+describe('new version', () => {
+  const RELEASE = 'https://github.com/youngtaeju/Chagokmoa/releases/tag/v1.0.1'
+
+  it('owner_sees_new_version_link', async () => {
+    renderMe('owner', '/settings', null, () =>
+      json(200, { current: '1.0.0', latest: '1.0.1', release_url: RELEASE }),
+    )
+    const link = await screen.findByRole('link', { name: '새 버전 1.0.1' })
+    expect(link).toHaveAttribute('href', RELEASE)
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link.getAttribute('rel')).toContain('noreferrer')
+  })
+
+  it('no_link_when_latest_null', async () => {
+    renderMe('owner')
+    await screen.findByRole('heading', { name: ko.me.account })
+    await waitFor(() => {
+      expect(screen.getByText(/^앱 버전 /)).toBeVisible()
+    })
+    expect(screen.queryByRole('link', { name: /^새 버전/ })).toBeNull()
+  })
+
+  it('family_does_not_fetch_update', async () => {
+    let calls = 0
+    renderMe('family', '/settings', null, () => {
+      calls += 1
+      return json(200, NO_UPDATE)
+    })
+    await screen.findByRole('heading', { name: ko.me.account })
+    await waitFor(() => {
+      expect(screen.getByText(/^앱 버전 /)).toBeVisible()
+    })
+    expect(screen.queryByRole('link', { name: /^새 버전/ })).toBeNull()
+    expect(calls).toBe(0)
+  })
+})
 
 describe('SettingsPage', () => {
   it('login_method_row_only_when_oidc', async () => {

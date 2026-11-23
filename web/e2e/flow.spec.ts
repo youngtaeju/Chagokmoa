@@ -1378,3 +1378,21 @@ test('oidc_settings_screen', async ({ ownerPage: page }) => {
   await page.getByRole('button', { name: '저장' }).click()
   await expect(page.getByText(/IdP 정보를 가져오지 못했어요/)).toBeVisible()
 })
+
+test('update_check_toggle', async ({ ownerPage: page }) => {
+  await page.goto('/settings/general')
+  const box = page.getByLabel('새 버전 확인')
+  await expect(box).toBeChecked()
+  await box.uncheck()
+  await page.getByRole('button', { name: '저장' }).click()
+  await expect(page.getByText('설정을 저장했어요')).toBeVisible()
+  await page.reload()
+  await expect(page.getByLabel('새 버전 확인')).not.toBeChecked()
+
+  // 다음 실행에 영향 없게 다시 켬
+  await page.getByLabel('새 버전 확인').check()
+  await page.getByRole('button', { name: '저장' }).click()
+  await expect(page.getByText('설정을 저장했어요').first()).toBeVisible()
+  await page.reload()
+  await expect(page.getByLabel('새 버전 확인')).toBeChecked()
+})
