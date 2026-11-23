@@ -3,6 +3,7 @@ import type { Settings } from '@/api/types'
 import { Field, FormError, formText } from '@/components/Field'
 import { SelectField } from '@/components/NativeSelect'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { primaryBaby } from '@/babies/usePrimaryBaby'
 import { useBabies } from '@/timeline/useBabies'
 import { useSaveSettings } from './useSettings'
@@ -41,6 +42,7 @@ export function GeneralSection({ settings }: { settings: Settings }) {
           primary_baby_id: picker
             ? formText(form, 'primary_baby_id')
             : settings.primary_baby_id,
+          update_check: form.get('update_check') === 'on',
         }
         const body: SettingsPatch = {}
         if (next.instance_name !== settings.instance_name) {
@@ -53,6 +55,9 @@ export function GeneralSection({ settings }: { settings: Settings }) {
         // 보이는 선택과 비교. 그대로 두면 보내지 않음.
         if (picker && next.primary_baby_id !== shownPrimary) {
           body.primary_baby_id = next.primary_baby_id
+        }
+        if (next.update_check !== settings.update_check) {
+          body.update_check = next.update_check
         }
         if (Object.keys(body).length > 0) save.mutate(body)
       }}
@@ -98,6 +103,21 @@ export function GeneralSection({ settings }: { settings: Settings }) {
           ))}
         </SelectField>
       )}
+      <div className="grid gap-1">
+        <div className="flex items-center gap-2">
+          <input
+            id="update-check"
+            name="update_check"
+            type="checkbox"
+            className="size-4 accent-primary"
+            defaultChecked={settings.update_check}
+          />
+          <Label htmlFor="update-check">{t('settings.updateCheck')}</Label>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {t('settings.updateCheckHint')}
+        </p>
+      </div>
       <FormError error={save.error} />
       <div>
         <Button type="submit" disabled={save.isPending}>

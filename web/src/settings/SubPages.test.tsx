@@ -1,4 +1,5 @@
 import { act, cleanup, screen, waitFor, within } from '@testing-library/react'
+import { toast } from 'sonner'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Role, SessionInfo, Settings } from '@/api/types'
 import { initI18n } from '@/i18n'
@@ -239,6 +240,37 @@ describe('settings sub pages', () => {
     expect(screen.getByLabelText('새 멤버 기본 언어')).toBeInTheDocument()
     expect(screen.queryByLabelText('AVIF 파생물도 만들기')).toBeNull()
     expect(screen.queryByLabelText('휴지통 보관 일수')).toBeNull()
+  })
+
+  it('general_update_check_toggle', async () => {
+    const bodies: unknown[] = []
+    const { user } = renderPage(
+      {
+        'PATCH /api/settings': async (req) => {
+          bodies.push(await req.json())
+          return json(200, { ...settingsFixture, update_check: false })
+        },
+      },
+      { role: 'owner', path: '/settings/general' },
+    )
+    const box = await screen.findByLabelText('새 버전 확인')
+    expect(box).toBeChecked()
+    expect(
+      screen.getByText('GitHub 릴리스에서 최신 버전을 하루 한 번 확인해요'),
+    ).toBeInTheDocument()
+    await user.click(box)
+    await user.click(screen.getByRole('button', { name: '저장' }))
+    await waitFor(() => {
+      expect(bodies).toEqual([{ update_check: false }])
+    })
+    // 토스트는 sonner 전역 상태라 다음 테스트로 남음. 닫고 사라질 때까지 대기
+    expect(await screen.findByText('설정을 저장했어요')).toBeInTheDocument()
+    act(() => {
+      toast.dismiss()
+    })
+    await waitFor(() => {
+      expect(screen.queryByText('설정을 저장했어요')).toBeNull()
+    })
   })
 
   it('media_saves_changed_fields_only', async () => {

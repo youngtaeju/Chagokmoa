@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import IconChevron from '~icons/material-symbols/chevron-right-rounded'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { api, call } from '@/api/client'
 import { authStatusQuery, hasRole, useMe } from '@/auth/session'
 import { useSignOut } from '@/auth/useSignOut'
 import { cn } from '@/lib/utils'
@@ -53,6 +54,14 @@ export function SettingsPage() {
   const { user } = useMe()
   const signOut = useSignOut()
   const status = useQuery(authStatusQuery)
+  // 새 버전 표시는 관리자만. 다른 역할은 조회 안 함.
+  const update = useQuery({
+    queryKey: ['update'],
+    queryFn: () => call(api.GET('/api/update')),
+    enabled: hasRole(user, 'owner'),
+  })
+  const latest = update.data?.latest
+  const releaseUrl = update.data?.release_url
   const initial = Array.from(user?.display_name ?? '')[0] ?? '?'
 
   return (
@@ -117,6 +126,19 @@ export function SettingsPage() {
         </button>
         <p className="text-center text-xs text-muted-foreground tabular-nums">
           {t('me.version', { version: __APP_VERSION__ })}
+          {latest && releaseUrl && (
+            <>
+              {' '}
+              <a
+                href={releaseUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="font-bold text-accent-ink underline-offset-2 hover:underline"
+              >
+                {t('me.newVersion', { version: latest })}
+              </a>
+            </>
+          )}
         </p>
       </section>
     </div>
