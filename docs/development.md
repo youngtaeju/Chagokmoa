@@ -93,6 +93,8 @@ SQL 쿼리를 바꾼 뒤에는 `cargo sqlx prepare -- --all-targets` 를 실행�
 
 릴리스 절차는 [release.md](release.md) 를 참고하십시오.
 
-## README 배너
+## README 이미지
 
 README 맨 위 배너(`docs/assets/banner.ko.png`, `banner.en.png`)는 `docs/assets/banner.html` 에서 만듭니다. 문구나 장면을 바꾼 뒤 파일 머리 주석의 명령을 `web/` 에서 실행하면 두 이미지를 다시 만듭니다.
+
+기능 절의 화면 이미지(`docs/assets/screenshots/{ko,en}/*.webp`)는 시연 데이터를 넣은 앱 화면을 찍어 폭 600px WebP 로 줄인 것입니다. 찍는 도구와 시연 데이터는 이 레포 밖에서 관리합니다.

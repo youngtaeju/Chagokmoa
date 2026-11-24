@@ -9,64 +9,76 @@
 <p align="center">
   <a href="https://github.com/youngtaeju/Chagokmoa/releases/latest"><img src="https://img.shields.io/github/v/release/youngtaeju/Chagokmoa?label=release" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/youngtaeju/Chagokmoa" alt="License"></a>
+  <a href="https://chagokmoa.com/en/"><img src="https://img.shields.io/badge/website-chagokmoa.com-ff9e57" alt="Website"></a>
 </p>
 
-## About
+<p align="center">
+  <b>Chagokmoa is inspired by a Korean expression meaning "to gather and keep things neatly, one by one."</b><br>
+  A growth album of your child that your whole family keeps together.<br>
+  Keep photos, videos, and precious moments on a server you run yourself.
+</p>
 
-A self-hosted baby photo journal for your family. Keep your child's photos, videos, and growth records on a single server you run at home. One server serves one family, with no external cloud, ads, tracking, or subscriptions. Original photos and videos are kept exactly as uploaded.
-
-The name comes from the Korean phrase *chagok-chagok moa duda*, "to gather and stack up neatly, one by one."
+<p align="center">
+  <img src="docs/assets/screenshots/en/mobile-home.webp" alt="Home timeline with a 1 month ago today memory card" width="24%">
+  <img src="docs/assets/screenshots/en/mobile-comments.webp" alt="Family comments in the photo viewer" width="24%">
+  <img src="docs/assets/screenshots/en/mobile-growth.webp" alt="Height chart over WHO reference curves" width="24%">
+  <img src="docs/assets/screenshots/en/mobile-calendar.webp" alt="Calendar marking days with photos" width="24%">
+</p>
 
 ## Features
 
-**Photos and videos**
+### Photos and videos
 
-- Upload many files at once and resume interrupted uploads. Duplicate files are skipped.
-- HEIC photos and phone videos are supported. Originals are stored byte for byte, while the app shows thumbnails and web-playable versions.
+- Upload many photos and videos at once, and resume if an upload is interrupted. Duplicate files are not stored twice.
+- HEIC photos and phone videos are supported. Originals are kept byte for byte, and thumbnails and web playback files are created separately.
 - Timeline by capture date, full-screen viewer, and original downloads.
-- Deleted photos go to the trash first, so nothing is lost by accident.
+- Deleted photos can be restored from the trash.
 
-**Family**
+### Family
 
-- Family members join only through invite links. There are three roles: Admin, Guardian (uploads photos and edits baby info), and Family (views and reacts).
-- Hearts, comments, mentions, and favorites.
-- Web push notifications for new photos, comments, mentions, stories, and milestones.
+- Family members join through invite links. Roles are Admin, Guardian (uploads photos and manages child info), and Family (views and reacts).
+- Talk with hearts, comments, and mentions, and save the photos you love to favorites.
+- Get web push notifications for new photos, comments, mentions, stories, and milestones.
 
-**Records**
+### Records
 
-- Baby profiles with age in days and months. Multiple babies are supported.
-- Stories (text and photos), height and weight, and milestones such as rolling over, walking alone, and the first tooth.
-- Growth charts with WHO reference curves.
+- See each child's profile with age in days and months, and keep records for more than one child.
+- Record stories (text and photos), height and weight, and growth milestones such as rolling over, first steps, and the first tooth.
+- See height and weight on growth charts together with the WHO growth standard curves.
 
-**Browse**
+### Browse
 
 - Find photos by date on the calendar, and revisit memories from a year or a few months ago today.
-- Group photos into albums.
+- Gather photos into albums by theme. Albums by month of age are created automatically.
 
-**Operations**
+### Operations
 
-- Use it in the browser or install it to the home screen (PWA). Dark mode, Korean, and English.
-- Runs on a home server or NAS with one Docker image and one PostgreSQL database.
-- Encrypted backups with restic (local folder and remote repository) and restore, configured in the app.
-- Optional: SMTP mail (invites, password recovery) and OIDC sign-in (Authentik, Authelia, Keycloak, Google, and others).
+- Runs on a home server or NAS with a Docker image and PostgreSQL.
+- Set up encrypted backups with restic (local folder and remote repository) and restore in the app.
+- Optionally connect SMTP mail (invites, password resets) and OIDC sign-in (Authentik, Keycloak, Google, and others).
+- When a new version is released, it is shown on the admin's settings screen.
+- Dark mode, Korean, and English.
 
 ## Browser and home screen app
 
-Open your server address in a browser and start using it. Install it as an app (PWA) on your phone or computer to open it full screen without the address bar and to receive push notifications. No app store is involved.
+Open your server address and start using it right in the browser. Chagokmoa is a PWA (Progressive Web App), so you can install it on your phone or computer without an app store and use it in its own app window.
 
-- iPhone, iPad: In Safari, tap Share, then "Add to Home Screen"
-- Android: In the Chrome menu, choose Install app (or Add to Home screen)
-- Computer: The install icon in the Chrome or Edge address bar
+- **iPhone, iPad:** In Safari, open the Share menu and choose "Add to Home Screen"
+- **Android:** In the Chrome menu, choose "Install app" or "Add to Home screen"
+- **Computer:** The install icon in the Chrome or Edge address bar
 
-Turn on push notifications per device in Settings → Notifications. On iPhone and iPad, push notifications work only in the app added to the home screen. App installation and push notifications work only over https (or localhost).
+Turn on push notifications per device in `Settings → Notifications`. On iPhone and iPad, web push notifications work through the app added to the home screen on iOS/iPadOS 16.4 or later.
+
+PWA installation and push notifications generally require HTTPS. localhost is treated as a secure context exception for local development.
 
 ### Supported browsers
 
-- Chrome, Edge, Firefox, and Safari released within the last two years
-- Safari on iOS 16.4 or later (including the app added to the home screen)
-- Chrome on Android
+- **Desktop:** Chrome, Edge, Firefox, Safari
+- **Mobile:** iOS/iPadOS Safari, Android Chrome
 
-Browsers without `Intl.supportedValuesOf` show only the current value in the time zone picker.
+Using the latest stable version is recommended. Support for PWA installation and web push notifications may vary by browser and operating system.
+
+In browsers without `Intl.supportedValuesOf`, the time zone picker shows only the current time zone.
 
 ## Installation
 
